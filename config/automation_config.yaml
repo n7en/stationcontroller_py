@@ -1,0 +1,144 @@
+# Automation Engine Configuration
+#
+# Home Assistant style: Trigger → Condition → Action
+#
+# An automation fires when ANY trigger detects its transition event.
+# ALL conditions must pass for the action to execute.
+#
+# ── Trigger types ────────────────────────────────────────────────────────────
+#   sensor_above   (sensor, threshold)      — value crosses above threshold
+#   sensor_below   (sensor, threshold)      — value crosses below threshold
+#   sensor_changed (sensor, [min_delta])    — value changes by >= min_delta
+#   band_entered   (band)                   — frequency enters named band
+#   band_exited    (band)                   — frequency leaves named band
+#   band_changed                            — any band transition
+#   ptt_on                                  — PTT becomes active
+#   ptt_off                                 — PTT becomes inactive
+#   radio_connected                         — radio comes online
+#   radio_disconnected                      — radio goes offline
+#   manual                                  — documents manual-test support
+#
+# ── Condition types ───────────────────────────────────────────────────────────
+#   (same as before — see condition.py for full list)
+#   ptt_active / radio_connected / mode_is / frequency_in_band
+#   sensor_above / sensor_below / sensor_between / sensor_present
+#   relay_on / relay_off
+#   and / or / not
+#
+# ── Action types ─────────────────────────────────────────────────────────────
+#   log            (message, [level])
+#   sequence       (actions: list)
+#   conditional    (condition, if_true, [if_false])
+#   set_radio_power (watts)         — requires radio_interface in context
+#   set_relay      (dcn_address, relay_num, state: 0|1)
+#
+# ── Execution modes ──────────────────────────────────────────────────────────
+#   single   (default) — skip if action is already running
+#   restart            — cancel running action and start fresh
+#   queued             — queue up executions (max 10)
+#   parallel           — run concurrently
+#
+# ── Manual testing ────────────────────────────────────────────────────────────
+#   engine.trigger("automation_name", ctx)
+#   engine.trigger("automation_name", ctx, bypass_conditions=True)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Optional custom band definitions (omit to use built-in amateur HF/VHF/UHF).
+# bands:
+#   - name: "40m"
+#     start_hz: 7000000
+#     end_hz: 7300000
+
+automations:
+
+  # ── Protection ───────────────────────────────────────────────────────────
+
+  - name: "protect_high_swr"
+    tier: protection
+    priority: 100
+    description: "Warn when SWR exceeds 3:1 during a transmission"
+    trigger:
+      - type: sensor_above
+        sensor: watt_meter_swr
+        threshold: 3.0
+      - type: manual
+    condition:
+      - type: ptt_active
+    action:
+      type: log
+      message: "High SWR detected — check antenna system"
+      level: WARNING
+
+  - name: "protect_overheat"
+    tier: protection
+    priority: 90
+    description: "Critical warning when shack temperature exceeds 150°F"
+    trigger:
+      - type: sensor_above
+        sensor: gpio_temp_1_f
+        threshold: 150.0
+      - type: manual
+    action:
+      type: log
+      message: "Shack temperature critical — check cooling"
+      level: ERROR
+
+  # ── Configuration ────────────────────────────────────────────────────────
+
+  - name: "log_entered_20m"
+    tier: configuration
+    priority: 50
+    description: "Log when operating frequency enters 20m"
+    trigger:
+      - type: band_entered
+        band: "20m"
+      - type: manual
+    action:
+      type: log
+      message: "Entered 20m band"
+      level: INFO
+
+  - name: "log_entered_40m"
+    tier: configuration
+    priority: 50
+    description: "Log when operating frequency enters 40m"
+    trigger:
+      - type: band_entered
+        band: "40m"
+      - type: manual
+    action:
+      type: log
+      message: "Entered 40m band"
+      level: INFO
+
+  # Example: set radio drive when amplifier relay is engaged.
+  # Uncomment and adjust to match your hardware.
+  #
+  # - name: "amp_engaged_set_drive"
+  #   tier: configuration
+  #   priority: 60
+  #   description: "Set radio drive to 5 W when amp relay closes"
+  #   trigger:
+  #     - type: sensor_above   # relay 3 on → value crosses 0.5
+  #       sensor: gpio_relay_3
+  #       threshold: 0.5
+  #     - type: manual
+  #   action:
+  #     type: set_radio_power
+  #     watts: 5.0
+
+  # ── Advisory ─────────────────────────────────────────────────────────────
+
+  - name: "warn_low_voltage"
+    tier: advisory
+    priority: 10
+    description: "Warn when supply voltage drops below 12 V"
+    trigger:
+      - type: sensor_below
+        sensor: gpio_voltmeter_1
+        threshold: 12.0
+      - type: manual
+    action:
+      type: log
+      message: "Supply voltage below 12 V"
+      level: WARNING

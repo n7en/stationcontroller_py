@@ -1,0 +1,70 @@
+# Station Controller — DCN Communications Configuration
+#
+# Each entry under 'networks' defines an independent DCN transport.
+# Multiple networks run simultaneously with independent address spaces
+# and baud rates.
+#
+# Transport types:
+#   rs485        — direct RS-485 USB serial connection
+#   nodered_mqtt — bridge through a Node-RED flow via an MQTT broker
+#   nodered_tcp  — bridge through a Node-RED flow via a TCP socket
+#
+# Uncomment and configure only the entries that match your hardware setup.
+# At minimum you need one active transport.
+
+networks:
+
+  # ── Direct RS-485: main control network ─────────────────────────────
+  # Used for GPIO module, antenna relays, coax switch, etc.
+  # 9600 baud is standard for control messages.
+  - name: control
+    type: rs485
+    port: /dev/ttyUSB0        # Linux. Windows example: COM3
+    baud_rate: 9600
+    description: "Main control DCN — GPIO, antennas, coax"
+
+  # ── Direct RS-485: high-speed power meter network ───────────────────
+  # Keep the power meter on a SEPARATE DCN at 115200 baud for real-time
+  # measurements.  Do NOT mix control traffic on this network.
+  #- name: power
+  #  type: rs485
+  #  port: /dev/ttyUSB1       # Linux. Windows example: COM4
+  #  baud_rate: 115200
+  #  description: "High-speed power meter DCN"
+
+  # ── Node-RED MQTT bridge: Node-RED on the SAME device ───────────────
+  # Node-RED publishes DCN serial data to topic_rx.
+  # Python publishes commands to topic_tx; Node-RED forwards to serial.
+  # Import nodered/dcn_mqtt_bridge_flow.json into Node-RED.
+  #- name: nodered_local
+  #  type: nodered_mqtt
+  #  broker: localhost
+  #  port: 1883
+  #  topic_rx: dcn/control/rx
+  #  topic_tx: dcn/control/tx
+  #  username: ""
+  #  password: ""
+  #  description: "Node-RED on same device via local MQTT broker"
+
+  # ── Node-RED MQTT bridge: Node-RED on a REMOTE device ───────────────
+  # Identical to the above but with the remote host IP.
+  #- name: nodered_remote
+  #  type: nodered_mqtt
+  #  broker: 192.168.1.100
+  #  port: 1883
+  #  topic_rx: dcn/control/rx
+  #  topic_tx: dcn/control/tx
+  #  username: ""
+  #  password: ""
+  #  description: "Node-RED on Raspberry Pi via MQTT"
+
+  # ── Node-RED TCP bridge: no MQTT broker required ────────────────────
+  # Python listens as TCP server; Node-RED connects as TCP client.
+  # Import nodered/dcn_tcp_bridge_flow.json into Node-RED.
+  # Configure the Node-RED flow's TCP node to connect to this machine's
+  # IP address and the port specified below.
+  #- name: nodered_tcp
+  #  type: nodered_tcp
+  #  host: 0.0.0.0            # 0.0.0.0 = listen on all interfaces
+  #  port: 4880
+  #  description: "Node-RED on same device via TCP (no MQTT broker)"

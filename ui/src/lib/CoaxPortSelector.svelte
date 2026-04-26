@@ -1,0 +1,94 @@
+<script>
+  /**
+   * CX-1 4-port coax switch widget.
+   * Displays 4 port buttons; clicking one sends CX,<port> via WebSocket relay_cmd.
+   */
+  import { sendCmd } from '../stores/ws.js'
+
+  export let deviceName = 'coax'   // matches the name used in SensorRegistry keys
+  export let deviceAddr = '02'
+  export let labelsMap = {}         // hardware_key → friendly label (full registry)
+  export let sensorsMap = {}        // hardware_key → {value, ...}
+
+  const N = 4
+
+  $: activePort = (() => {
+    const ap = sensorsMap[`${deviceName}_active_port`]
+    return ap != null ? Math.round(ap.value) : null
+  })()
+
+  function portLabel(i) {
+    return labelsMap[`${deviceName}_port_${i}`] || `Port ${i}`
+  }
+
+  function select(port) {
+    // Use relay_cmd with relay_num=0 as a CX select — server handles CX,<port>
+    // We send a custom coax_select message instead
+    sendCmd({ type: 'coax_select', device_addr: deviceAddr, port })
+  }
+</script>
+
+<div class="coax-switch">
+  <div class="device-title">
+    {labelsMap[`${deviceName}_active_port`] ? '' : ''}{deviceName.toUpperCase()} Coax Switch
+    {#if activePort != null}
+      <span class="active-badge">Port {activePort} active</span>
+    {/if}
+  </div>
+  <div class="port-grid">
+    {#each Array.from({length: N}, (_, i) => i + 1) as port}
+      <button
+        class="port-btn"
+        class:active={activePort === port}
+        on:click={() => select(port)}
+      >
+        {portLabel(port)}
+      </button>
+    {/each}
+  </div>
+</div>
+
+<style>
+  .coax-switch {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+  }
+  .device-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .active-badge {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.7rem;
+  }
+  .port-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.4rem;
+  }
+  .port-btn {
+    padding: 0.5rem 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    cursor: pointer;
+    font-size: 0.8rem;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .port-btn.active { border-color: var(--accent); background: var(--accent-dim); font-weight: 700; }
+  .port-btn:hover:not(.active) { border-color: var(--accent); }
+</style>

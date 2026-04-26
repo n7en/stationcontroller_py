@@ -1,0 +1,21 @@
+telemetry:
+  enabled: true
+
+  database:
+    url: "sqlite+aiosqlite:///data/station.db"
+    # For MariaDB swap to:
+    # url: "mysql+aiomysql://user:pass@localhost/stationdb"
+
+  sensor_recording:
+    min_interval_s: 1.0          # minimum seconds between writes per sensor
+    min_change_threshold: 0.0    # minimum value change required (0 = any change)
+    exclude: []                  # sensor names to never record, e.g. [debug_temp]
+
+  dcn_logging:
+    enabled: false   # set true only for debugging — high IO volume
+
+  retention:
+    sensor_readings_days: 90
+    device_events_days: 365
+    automation_events_days: 365
+    application_log_days: 30

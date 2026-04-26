@@ -1,0 +1,69 @@
+# Hardware Integration Test Configuration
+#
+# 1. Copy this section to match your physical setup.
+# 2. Set 'enabled: true' only for networks that are physically wired.
+# 3. Set 'present: true' only for devices that are powered and connected.
+# 4. Run with:  pytest --hardware
+#
+# CAUTION: relay toggle tests will briefly activate physical relays.
+# Set restore_relay_state: true to return relays to their original state.
+
+# ── Control network (9600 baud) ──────────────────────────────────────────────
+control_network:
+  enabled: true
+  port: COM3                # Windows: COM3  Linux: /dev/ttyUSB0
+  baud_rate: 9600
+  response_timeout: 2.0    # seconds to wait for a device reply
+
+# ── Power meter network (115200 baud, keep SEPARATE from control) ────────────
+power_network:
+  enabled: false
+  port: COM4                # Windows: COM4  Linux: /dev/ttyUSB1
+  baud_rate: 115200
+  response_timeout: 1.0
+
+# ── Devices ──────────────────────────────────────────────────────────────────
+devices:
+
+  # GPIO Module (#321) — default address 01
+  gpio_module:
+    present: true
+    address: "01"
+    test_relay: 1            # relay number (1-8) used for toggle tests
+    restore_relay_state: true  # restore relays to original state after test
+
+  # HF Coax Relay Module (#331) — default address 02
+  coax_relay:
+    present: false
+    address: "02"
+
+  # RF Watt Meter (#335) — default address 03
+  watt_meter:
+    present: false
+    address: "03"
+    max_expected_watts: 1500.0   # sanity-check upper bound for readings
+
+  # 2nd GPIO Module (#321) — default address 04
+  gpio_module_2:
+    present: false
+    address: "04"
+
+  # VHF/UHF Antenna Relay — default address 05
+  vhf_relay:
+    present: false
+    address: "05"
+
+  # 8-Channel Antenna Relay (#361) — default address 06
+  antenna_relay_8ch:
+    present: false
+    address: "06"
+
+# ── Radio control (via rigctld) ──────────────────────────────────────────────
+radio:
+  enabled: false
+  rigctld_host: localhost
+  rigctld_port: 4532
+  response_timeout: 5.0
+  poll_interval_s: 0.5
+  expected_min_freq_hz: 1000000        # 1 MHz — sanity lower bound
+  expected_max_freq_hz: 30000000       # 30 MHz — HF upper bound (adjust for VHF/UHF)

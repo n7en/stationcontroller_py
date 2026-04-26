@@ -1,0 +1,9 @@
+# StationController application settings
+
+updates:
+  # GitHub repository URL used for update checks.
+  # Example: https://github.com/yourname/StationController_Py
+  github_url: ""
+
+  # How often the background task checks for updates (minimum 1 hour).
+  check_interval_hours: 24

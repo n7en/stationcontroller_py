@@ -1,0 +1,53 @@
+id: main
+title: "Station Monitor"
+icon: radio
+
+cards:
+  - type: power_meter
+    title: "Forward Power"
+    sensor: watt_meter_forward_power_w
+    max_w: 1500
+    color: "#4ade80"
+
+  - type: power_meter
+    title: "Reflected Power"
+    sensor: watt_meter_reflected_power_w
+    max_w: 1500
+    color: "#f87171"
+
+  - type: swr_bar
+    title: "SWR"
+    sensor: watt_meter_swr
+    thresholds:
+      good: 1.5
+      warning: 2.0
+      critical: 3.0
+
+  - type: relay
+    title: "Beam — 20m"
+    relay_key: gpio_01_relay_1
+    device_addr: "01"
+    relay_num: 1
+
+  - type: relay
+    title: "Vertical — 40m"
+    relay_key: gpio_01_relay_2
+    device_addr: "01"
+    relay_num: 2
+
+  - type: sensor
+    title: "PA Temperature"
+    sensor: temp_pa
+    unit: "°F"
+    warn_above: 140
+    critical_above: 160
+
+  - type: sensor
+    title: "12V Supply"
+    sensor: voltage_12v
+    unit: "V"
+    warn_below: 12.0
+    critical_below: 11.5
+
+  - type: radio_status
+    title: "Radio"

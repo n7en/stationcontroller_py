@@ -1,0 +1,187 @@
+"""
+Rigctld TCP backend.
+
+Connects to a running rigctld daemon (hamlib) over TCP.
+Works identically for local (127.0.0.1:4532) and remote (host:4532) daemons.
+"""
+from __future__ import annotations
+
+import asyncio
+from typing import Optional
+
+from .base import RadioBackend, RadioBackendError
+
+
+class RigctldBackend(RadioBackend):
+
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 4532,
+        timeout_s: float = 5.0,
+    ) -> None:
+        self._host = host
+        self._port = port
+        self._timeout = timeout_s
+        self._reader: Optional[asyncio.StreamReader] = None
+        self._writer: Optional[asyncio.StreamWriter] = None
+        self._lock = asyncio.Lock()
+        self._connected = False
+
+    @property
+    def connected(self) -> bool:
+        return self._connected
+
+    async def connect(self) -> None:
+        try:
+            self._reader, self._writer = await asyncio.wait_for(
+                asyncio.open_connection(self._host, self._port),
+                timeout=self._timeout,
+            )
+            self._connected = True
+        except (OSError, asyncio.TimeoutError) as exc:
+            self._connected = False
+            raise RadioBackendError(
+                f"Cannot connect to rigctld at {self._host}:{self._port}: {exc}"
+            ) from exc
+
+    async def disconnect(self) -> None:
+        self._connected = False
+        if self._writer:
+            try:
+                self._writer.close()
+                await self._writer.wait_closed()
+            except OSError:
+                pass
+            self._writer = None
+            self._reader = None
+
+    # ------------------------------------------------------------------
+    # Low-level command exchange
+    # ------------------------------------------------------------------
+
+    async def _cmd(self, command: str) -> list[str]:
+        """
+        Send one extended-mode command, return response lines excluding RPRT.
+        Raises RadioBackendError on RPRT < 0 or connection loss.
+        """
+        if not self._connected or self._writer is None:
+            raise RadioBackendError("Not connected to rigctld")
+
+        async with self._lock:
+            try:
+                self._writer.write((command + "\n").encode())
+                await self._writer.drain()
+                return await asyncio.wait_for(
+                    self._read_response(), timeout=self._timeout
+                )
+            except (OSError, ConnectionResetError) as exc:
+                self._connected = False
+                self._writer = None
+                self._reader = None
+                raise RadioBackendError(f"rigctld connection lost: {exc}") from exc
+            except asyncio.TimeoutError as exc:
+                self._connected = False
+                self._writer = None
+                self._reader = None
+                raise RadioBackendError("rigctld response timed out") from exc
+
+    async def _read_response(self) -> list[str]:
+        lines: list[str] = []
+        while True:
+            raw = await self._reader.readline()
+            if not raw:
+                raise ConnectionResetError("rigctld closed the connection")
+            line = raw.decode().rstrip("\n\r")
+            if line.startswith("RPRT "):
+                code = int(line.split()[1])
+                if code < 0:
+                    raise RadioBackendError(f"rigctld error RPRT {code}")
+                return lines
+            lines.append(line)
+
+    # ------------------------------------------------------------------
+    # Frequency
+    # ------------------------------------------------------------------
+
+    async def get_frequency(self) -> float:
+        lines = await self._cmd(r"\get_freq")
+        return float(lines[0])
+
+    async def set_frequency(self, hz: float) -> None:
+        await self._cmd(rf"\set_freq {int(hz)}")
+
+    # ------------------------------------------------------------------
+    # Mode and filter
+    # ------------------------------------------------------------------
+
+    async def get_mode(self) -> tuple[str, float]:
+        lines = await self._cmd(r"\get_mode")
+        mode = lines[0]
+        bw = float(lines[1]) if len(lines) > 1 else 0.0
+        return mode, bw
+
+    async def set_mode(self, mode: str, bandwidth_hz: float = 0) -> None:
+        await self._cmd(rf"\set_mode {mode} {int(bandwidth_hz)}")
+
+    # ------------------------------------------------------------------
+    # VFO
+    # ------------------------------------------------------------------
+
+    async def get_vfo(self) -> str:
+        lines = await self._cmd(r"\get_vfo")
+        return lines[0]
+
+    async def set_vfo(self, vfo: str) -> None:
+        await self._cmd(rf"\set_vfo {vfo}")
+
+    # ------------------------------------------------------------------
+    # PTT
+    # ------------------------------------------------------------------
+
+    async def get_ptt(self) -> bool:
+        lines = await self._cmd(r"\get_ptt")
+        return lines[0].strip() != "0"
+
+    async def set_ptt(self, transmit: bool) -> None:
+        await self._cmd(rf"\set_ptt {1 if transmit else 0}")
+
+    # ------------------------------------------------------------------
+    # Split
+    # ------------------------------------------------------------------
+
+    async def get_split(self) -> tuple[bool, Optional[float]]:
+        vfo_lines = await self._cmd(r"\get_split_vfo")
+        active = vfo_lines[0].strip() != "0"
+        tx_hz: Optional[float] = None
+        if active:
+            try:
+                freq_lines = await self._cmd(r"\get_split_freq")
+                tx_hz = float(freq_lines[0])
+            except RadioBackendError:
+                pass
+        return active, tx_hz
+
+    async def set_split(self, active: bool, tx_hz: Optional[float] = None) -> None:
+        await self._cmd(rf"\set_split_vfo {1 if active else 0} VFOB")
+        if active and tx_hz is not None:
+            await self._cmd(rf"\set_split_freq {int(tx_hz)}")
+
+    # ------------------------------------------------------------------
+    # Levels
+    # ------------------------------------------------------------------
+
+    async def get_level(self, level_name: str) -> float:
+        lines = await self._cmd(rf"\get_level {level_name}")
+        return float(lines[0])
+
+    async def set_level(self, level_name: str, value: float) -> None:
+        await self._cmd(rf"\set_level {level_name} {value}")
+
+    # ------------------------------------------------------------------
+    # Info
+    # ------------------------------------------------------------------
+
+    async def get_info(self) -> str:
+        lines = await self._cmd(r"\get_info")
+        return lines[0] if lines else ""

@@ -1,0 +1,49 @@
+# Radio control configuration
+#
+# Each entry under 'radios' defines one radio.  Two backends are available:
+#
+#   rigctld       — TCP client to a running rigctld daemon.
+#                   Works for local (localhost) or remote (network) daemons.
+#                   Recommended for most deployments.
+#
+#   hamlib_direct — Python hamlib bindings in-process.
+#                   Local only (serial port on this machine).
+#                   Requires the hamlib Python bindings (python3-hamlib on Linux).
+
+radios:
+
+  # --------------------------------------------------------------------------
+  # Example: IC-7300 via local rigctld daemon
+  #   Start the daemon with: rigctld -m 351 -r /dev/ttyUSB0 -s 9600
+  # --------------------------------------------------------------------------
+  - name: ic7300
+    backend: rigctld
+    host: localhost
+    port: 4532
+    poll_interval_s: 0.5
+    reconnect_delay_s: 5.0
+
+  # --------------------------------------------------------------------------
+  # Example: Remote radio (rigctld running on another machine on the network)
+  # --------------------------------------------------------------------------
+  # - name: remote_hf
+  #   backend: rigctld
+  #   host: 192.168.1.50
+  #   port: 4532
+  #   poll_interval_s: 1.0
+  #   reconnect_delay_s: 10.0
+
+  # --------------------------------------------------------------------------
+  # Example: FT-991A via direct hamlib Python bindings (Linux)
+  #   model_id 135 = Yaesu FT-991A  (use model_id 1 for DUMMY/testing)
+  # --------------------------------------------------------------------------
+  # - name: ft991
+  #   backend: hamlib_direct
+  #   model_id: 135
+  #   port: /dev/ttyUSB1    # Windows: COM3
+  #   baud_rate: 38400
+  #   data_bits: 8
+  #   stop_bits: 1
+  #   parity: N
+  #   poll_interval_s: 1.0
+  #   reconnect_delay_s: 5.0
