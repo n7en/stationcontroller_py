@@ -78,6 +78,20 @@ The startup script activates the virtualenv if one is present, builds the fronte
 
 On first run the `data/` directory is created and Alembic applies the database migrations automatically.
 
+### Network access
+
+The server binds to `0.0.0.0:8080`, so any device on the same network can reach the UI at `http://<machine-ip>:8080` — useful for phones, tablets, or a second computer in the shack.
+
+**Windows:** the firewall may block port 8080 the first time Python tries to bind to it. To open it:
+
+```powershell
+netsh advfirewall firewall add rule name="StationController" dir=in action=allow protocol=TCP localport=8080
+```
+
+Or via the GUI: **Windows Defender Firewall → Advanced Settings → Inbound Rules → New Rule → Port → TCP 8080**.
+
+**Linux / Raspberry Pi:** no firewall blocks the port by default — other devices can connect immediately.
+
 ### Manual start
 
 ```bash

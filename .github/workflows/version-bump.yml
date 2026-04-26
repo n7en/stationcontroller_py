@@ -9,7 +9,7 @@ name: Version Bump
 on:
   pull_request:
     types: [closed]
-    branches: [main]
+    branches: [dev, main]
 
 permissions:
   contents: write   # push VERSION commit + tag
@@ -28,7 +28,7 @@ jobs:
           # If your repo has branch protection, create a PAT with repo scope,
           # store it as a secret (e.g. RELEASE_TOKEN), and replace the line below.
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: main
+          ref: ${{ github.event.pull_request.base.ref }}
           fetch-depth: 0
 
       - name: Read current version
