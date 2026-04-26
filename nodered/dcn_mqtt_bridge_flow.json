@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "DCN MQTT Bridge",
         "disabled": false,
-        "info": "Sierra Radio Systems — DCN ↔ MQTT Bridge\n\nBridges the DCN RS-485 serial bus to MQTT topics so the Python\nStation Controller application can communicate with the DCN.\n\nSetup:\n1. Double-click the 'DCN Serial Port' config node and set the correct\n   serial port and baud rate for your hardware.\n2. Double-click the 'Local MQTT Broker' config node and set the broker\n   address / credentials to match your comms_config.yaml.\n3. If you changed the topic names in comms_config.yaml, update the\n   MQTT In and MQTT Out nodes to match.\n4. Deploy.\n\nData flow:\n  RS-485 serial IN  → validate → MQTT publish  → dcn/control/rx\n  dcn/control/tx    → MQTT subscribe → RS-485 serial OUT"
+        "info": "Sierra Radio Systems — DCN ↔ MQTT Bridge\n\nBridges one DCN RS-485 serial bus to MQTT topics so the Python\nStation Controller application can communicate with the DCN.\n\nSetup (single bus):\n1. Double-click the 'DCN Serial Port' config node and set the correct\n   serial port and baud rate for your hardware.\n2. Double-click the 'Local MQTT Broker' config node and set the broker\n   address / credentials to match your comms_config.yaml.\n3. If you changed the topic names in comms_config.yaml, update the\n   MQTT In and MQTT Out nodes to match.\n4. Deploy.\n\nSetup (multiple DCN buses):\nEach physical RS-485 bus needs its own copy of this flow tab.\nTo add a second bus:\n1. Import this flow file again — Node-RED will create a second tab.\n2. On the new tab:\n   a. Set a different serial port (e.g. /dev/ttyUSB1) and baud rate.\n   b. Change the MQTT Out topic to match the second bus, e.g. dcn/power/rx.\n   c. Change the MQTT In  topic to match the second bus, e.g. dcn/power/tx.\n   The MQTT broker client ID is intentionally left blank so Node-RED\n   generates a unique ID per flow instance — no conflict between tabs.\n3. In comms_config.yaml, add a second bus entry pointing at the new topics.\n\nData flow:\n  RS-485 serial IN  → validate → MQTT publish  → dcn/control/rx\n  dcn/control/tx    → MQTT subscribe → RS-485 serial OUT"
     },
     {
         "id": "dcn-serial-config",
@@ -27,7 +27,7 @@
         "name": "Local MQTT Broker",
         "broker": "localhost",
         "port": "1883",
-        "clientid": "dcn-bridge",
+        "clientid": "",
         "autoConnect": true,
         "usetls": false,
         "protocolVersion": "4",

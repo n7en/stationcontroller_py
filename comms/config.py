@@ -13,3 +13,8 @@ def load_config(path: str | Path) -> dict[str, Any]:
 
 def get_networks(config: dict[str, Any]) -> list[dict[str, Any]]:
     return config.get("networks", [])
+
+
+def get_buses(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return the list of bus definitions from the new 'buses:' schema."""
+    return config.get("buses", [])

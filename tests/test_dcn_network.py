@@ -417,3 +417,160 @@ class TestFromConfig:
         net = DCNNetwork.from_config(str(cfg))
         assert "good" in net.transports
         assert "bad" not in net.transports
+
+
+# ---------------------------------------------------------------------------
+# buses_from_config factory
+# ---------------------------------------------------------------------------
+
+class TestBusesFromConfig:
+
+    def _yaml(self, text: str, tmp_path) -> str:
+        p = tmp_path / "c.yaml"
+        p.write_text(text)
+        return str(p)
+
+    def test_returns_dict_keyed_by_bus_name(self, tmp_path):
+        path = self._yaml(
+            "buses:\n"
+            "  - name: control\n"
+            "    transports:\n"
+            "      - name: ctrl_serial\n"
+            "        type: rs485\n"
+            "        port: /dev/ttyUSB0\n"
+            "  - name: power\n"
+            "    transports:\n"
+            "      - name: pwr_serial\n"
+            "        type: rs485\n"
+            "        port: /dev/ttyUSB1\n"
+            "        baud_rate: 115200\n",
+            tmp_path,
+        )
+        buses = DCNNetwork.buses_from_config(path)
+        assert set(buses.keys()) == {"control", "power"}
+        assert isinstance(buses["control"], DCNNetwork)
+        assert isinstance(buses["power"], DCNNetwork)
+
+    def test_each_bus_has_own_transports(self, tmp_path):
+        path = self._yaml(
+            "buses:\n"
+            "  - name: control\n"
+            "    transports:\n"
+            "      - name: ctrl_serial\n"
+            "        type: rs485\n"
+            "        port: COM3\n"
+            "  - name: power\n"
+            "    transports:\n"
+            "      - name: pwr_serial\n"
+            "        type: rs485\n"
+            "        port: COM4\n"
+            "        baud_rate: 115200\n",
+            tmp_path,
+        )
+        buses = DCNNetwork.buses_from_config(path)
+        assert "ctrl_serial" in buses["control"].transports
+        assert "pwr_serial" in buses["power"].transports
+        assert "ctrl_serial" not in buses["power"].transports
+
+    def test_baud_rate_preserved_per_bus(self, tmp_path):
+        path = self._yaml(
+            "buses:\n"
+            "  - name: power\n"
+            "    transports:\n"
+            "      - name: pwr\n"
+            "        type: rs485\n"
+            "        port: COM4\n"
+            "        baud_rate: 115200\n",
+            tmp_path,
+        )
+        buses = DCNNetwork.buses_from_config(path)
+        assert buses["power"].transport("pwr").baud_rate == 115200
+
+    def test_multiple_transports_on_one_bus(self, tmp_path):
+        path = self._yaml(
+            "buses:\n"
+            "  - name: control\n"
+            "    transports:\n"
+            "      - name: ctrl_serial\n"
+            "        type: rs485\n"
+            "        port: COM3\n"
+            "      - name: ctrl_tcp\n"
+            "        type: nodered_tcp\n"
+            "        port: 4880\n",
+            tmp_path,
+        )
+        buses = DCNNetwork.buses_from_config(path)
+        assert len(buses) == 1
+        assert "ctrl_serial" in buses["control"].transports
+        assert "ctrl_tcp" in buses["control"].transports
+
+    def test_unknown_transport_type_skipped(self, tmp_path):
+        path = self._yaml(
+            "buses:\n"
+            "  - name: control\n"
+            "    transports:\n"
+            "      - name: good\n"
+            "        type: rs485\n"
+            "        port: COM3\n"
+            "      - name: bad\n"
+            "        type: zigbee\n",
+            tmp_path,
+        )
+        buses = DCNNetwork.buses_from_config(path)
+        assert "good" in buses["control"].transports
+        assert "bad" not in buses["control"].transports
+
+    def test_empty_buses_list(self, tmp_path):
+        path = self._yaml("buses: []\n", tmp_path)
+        buses = DCNNetwork.buses_from_config(path)
+        assert buses == {}
+
+    def test_no_buses_key_returns_empty(self, tmp_path):
+        path = self._yaml("networks: []\n", tmp_path)
+        buses = DCNNetwork.buses_from_config(path)
+        assert buses == {}
+
+    def test_master_addr_applied_to_all_buses(self, tmp_path):
+        path = self._yaml(
+            "buses:\n"
+            "  - name: a\n"
+            "    transports: []\n"
+            "  - name: b\n"
+            "    transports: []\n",
+            tmp_path,
+        )
+        buses = DCNNetwork.buses_from_config(path, master_addr="07")
+        assert buses["a"].master_addr == "07"
+        assert buses["b"].master_addr == "07"
+
+    def test_buses_are_independent_networks(self, tmp_path):
+        path = self._yaml(
+            "buses:\n"
+            "  - name: a\n"
+            "    transports: []\n"
+            "  - name: b\n"
+            "    transports: []\n",
+            tmp_path,
+        )
+        buses = DCNNetwork.buses_from_config(path)
+        assert buses["a"] is not buses["b"]
+
+    def test_same_device_address_on_two_buses(self, tmp_path):
+        """Two watt meters at address 03 on separate buses — valid config."""
+        path = self._yaml(
+            "buses:\n"
+            "  - name: power1\n"
+            "    transports:\n"
+            "      - name: p1\n"
+            "        type: rs485\n"
+            "        port: COM4\n"
+            "  - name: power2\n"
+            "    transports:\n"
+            "      - name: p2\n"
+            "        type: rs485\n"
+            "        port: COM5\n",
+            tmp_path,
+        )
+        buses = DCNNetwork.buses_from_config(path)
+        assert "power1" in buses
+        assert "power2" in buses

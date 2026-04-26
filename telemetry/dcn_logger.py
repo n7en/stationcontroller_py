@@ -31,6 +31,11 @@ class DCNMessageLogger:
         network.on_packet(self._on_rx)
         network.on_transmit(self._on_tx)
 
+    def attach_all(self, networks: "dict[str, DCNNetwork]") -> None:
+        """Attach to every bus in *networks*."""
+        for network in networks.values():
+            self.attach(network)
+
     async def _on_rx(self, packet: DCNPacket, transport_name: str) -> None:
         try:
             await self._store.record_dcn_message(

@@ -26,7 +26,7 @@ import logging
 from pathlib import Path
 from typing import Callable, Awaitable, Optional, Union
 
-from .config import load_config, get_networks
+from .config import load_config, get_buses, get_networks
 from .dcn_packet import DCNPacket, build_packet, build_broadcast, MASTER_ADDR
 from .transport.base import DCNTransport, PacketHandler
 from .transport.rs485 import RS485Transport
@@ -247,6 +247,54 @@ class DCNNetwork:
                 logger.exception("Failed to create transport '%s'", name)
 
         return network
+
+    @classmethod
+    def buses_from_config(
+        cls,
+        config_path: str | Path,
+        master_addr: str = MASTER_ADDR,
+    ) -> "dict[str, DCNNetwork]":
+        """Create one DCNNetwork per bus entry in the 'buses:' config schema.
+
+        Returns a dict keyed by bus name so callers can attach devices to
+        specific buses by name::
+
+            networks = DCNNetwork.buses_from_config("config/comms_config.yaml")
+            gpio.attach(networks["control"])
+            watt_meter.attach(networks["power"])
+        """
+        config = load_config(config_path)
+        buses: dict[str, DCNNetwork] = {}
+
+        for bus_cfg in get_buses(config):
+            bus_name = bus_cfg.get("name") or f"bus_{len(buses)}"
+            network = cls(master_addr=master_addr)
+
+            for transport_cfg in bus_cfg.get("transports", []):
+                transport_type = transport_cfg.get("type")
+                transport_cls = _TRANSPORT_REGISTRY.get(transport_type)
+                if transport_cls is None:
+                    logger.warning(
+                        "Unknown transport type '%s' in bus '%s' — skipping",
+                        transport_type, bus_name,
+                    )
+                    continue
+                t_name = transport_cfg.get("name") or transport_type
+                try:
+                    transport = transport_cls(name=t_name, config=transport_cfg)
+                    network.add_transport(transport)
+                    logger.debug(
+                        "Bus '%s': loaded transport '%s' (%s)",
+                        bus_name, t_name, transport_type,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Failed to create transport '%s' in bus '%s'", t_name, bus_name
+                    )
+
+            buses[bus_name] = network
+
+        return buses
 
     def __repr__(self) -> str:
         names = list(self._transports.keys())

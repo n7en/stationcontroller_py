@@ -18,10 +18,11 @@ from main import _read_db_url, _run_migrations
 @pytest.fixture(autouse=True)
 def reset_api_state():
     """Reset the module-level AppState singleton between tests."""
-    from api.deps import _state
+    from api.deps import _state, AppState
     yield
-    for attr in vars(_state):
-        setattr(_state, attr, None)
+    fresh = AppState()
+    for attr in vars(fresh):
+        setattr(_state, attr, getattr(fresh, attr))
 
 
 @pytest.fixture

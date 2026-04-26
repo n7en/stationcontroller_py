@@ -8,7 +8,7 @@ Usage:
     python main.py
 
 Config files (edit before first run):
-    config/comms_config.yaml      — DCN serial / MQTT / TCP transports
+    config/comms_config.yaml      — DCN buses, transports, and device instances
     config/radio_config.yaml      — radio backend (rigctld or hamlib)
     config/automation_config.yaml — automation rules
     config/telemetry_config.yaml  — SQLite path and recording settings
@@ -104,39 +104,28 @@ async def main() -> None:
 
     sensor_registry.attach_labels(label_registry)
 
-    # ── 3. DCN network ───────────────────────────────────────────────────
+    # ── 3. DCN buses ─────────────────────────────────────────────────────
     from comms.dcn_network import DCNNetwork
+    from devices.loader    import load_devices
 
-    network: DCNNetwork | None = None
+    networks: dict[str, DCNNetwork] = {}
+    devices:  dict[str, object]     = {}
+    addr_bus: dict[str, str]        = {}
+
     if COMMS_CFG.exists():
-        network = DCNNetwork.from_config(COMMS_CFG)
-        log.info("DCN network: %s", network)
+        networks = DCNNetwork.buses_from_config(COMMS_CFG)
+        for bus_name, net in networks.items():
+            log.info("DCN bus '%s': %s", bus_name, net)
+
+        devices, addr_bus = load_devices(COMMS_CFG, sensor_registry, networks)
+        log.info(
+            "Loaded %d device(s) across %d bus(es): %s",
+            len(devices), len(networks), list(devices.keys()),
+        )
     else:
         log.warning("comms_config.yaml not found — running without DCN hardware")
 
-    # ── 4. Device modules ────────────────────────────────────────────────
-    # Addresses are set by dip switches on the physical hardware.
-    from devices.gpio_module     import GPIOModule
-    from devices.coax_switch     import CoaxSwitch
-    from devices.watt_meter      import WattMeter
-    from devices.vhf_coax_relay  import VHFCoaxRelay
-    from devices.antenna_relay   import AntennaRelayModule
-
-    gpio = GPIOModule(       name="gpio_01",    address="01", registry=sensor_registry)
-    coax = CoaxSwitch(       name="coax",       address="02", registry=sensor_registry)
-    wm   = WattMeter(        name="watt_meter", address="03", registry=sensor_registry)
-    vhf  = VHFCoaxRelay(     name="vhf_relay",  address="05", registry=sensor_registry)
-    ant  = AntennaRelayModule(name="ant_relay",  address="06", registry=sensor_registry)
-
-    if network is not None:
-        gpio.attach(network)
-        coax.attach(network)
-        wm.attach(network)
-        vhf.attach(network)
-        ant.attach(network)
-        log.info("Device modules attached")
-
-    # ── 5. Radio ─────────────────────────────────────────────────────────
+    # ── 4. Radio ─────────────────────────────────────────────────────────
     from radio.radio_manager import RadioManager
     from radio.radio_state   import RadioState
 
@@ -157,7 +146,7 @@ async def main() -> None:
     else:
         log.warning("radio_config.yaml not found — radio control disabled")
 
-    # ── 6. Automation engine ─────────────────────────────────────────────
+    # ── 5. Automation engine ─────────────────────────────────────────────
     from automation.config  import load_engine as load_automation
     from automation.context import AutomationContext
 
@@ -171,7 +160,7 @@ async def main() -> None:
         except Exception:
             log.exception("Failed to load automation config — automations disabled")
 
-    # ── 7. Telemetry ─────────────────────────────────────────────────────
+    # ── 6. Telemetry ─────────────────────────────────────────────────────
     from telemetry.config import load_telemetry
 
     store = recorder = dcn_logger = None
@@ -181,20 +170,22 @@ async def main() -> None:
             store, recorder, dcn_logger = load_telemetry(config_path=TELEMETRY_CFG)
             await store.open()
             recorder.attach(sensor_registry)
-            if dcn_logger and network:
-                dcn_logger.attach(network)
+            if dcn_logger and networks:
+                dcn_logger.attach_all(networks)
             log.info("Telemetry store open")
         except Exception:
             log.exception("Failed to open telemetry store — telemetry disabled")
 
-    # ── 8. AppState + FastAPI app ─────────────────────────────────────────
+    # ── 7. AppState + FastAPI app ─────────────────────────────────────────
     from api.app  import create_app
     from api.deps import AppState
 
     state                  = AppState()
     state.sensor_registry  = sensor_registry
     state.label_registry   = label_registry
-    state.control_network  = network
+    state.networks         = networks
+    state.devices          = devices
+    state.device_bus       = addr_bus
     state.radio_state      = radio_state
     state.radio_interface  = radio_interface
     state.engine           = engine
@@ -204,7 +195,10 @@ async def main() -> None:
     app    = create_app(state)
     ws_hub = state.ws_hub  # populated by create_app()
 
-    # ── 9. Cross-wiring ───────────────────────────────────────────────────
+    # ── 8. Cross-wiring ───────────────────────────────────────────────────
+
+    # Control bus reference used by automation (single-bus for now).
+    control_network = state.control_network
 
     # Radio state changes → WS broadcast + automation engine
     if radio_interface is not None:
@@ -216,7 +210,7 @@ async def main() -> None:
                     registry=sensor_registry,
                     band_registry=band_registry,
                     radio_interface=radio_interface,
-                    control_network=network,
+                    control_network=control_network,
                 )
                 await engine.process(ctx)
 
@@ -232,7 +226,7 @@ async def main() -> None:
                     registry=sensor_registry,
                     band_registry=band_registry,
                     radio_interface=radio_interface,
-                    control_network=network,
+                    control_network=control_network,
                 )
                 loop.create_task(
                     engine.process(ctx),
@@ -243,9 +237,12 @@ async def main() -> None:
 
         sensor_registry.on_any(_on_sensor)
 
-    # ── 10. Connect hardware ──────────────────────────────────────────────
-    if network:
-        await network.connect_all()
+    # ── 9. Connect hardware ──────────────────────────────────────────────
+    for bus_name, net in networks.items():
+        try:
+            await net.connect_all()
+        except Exception:
+            log.exception("Failed to connect bus '%s'", bus_name)
 
     if radio_interface:
         try:
@@ -254,7 +251,7 @@ async def main() -> None:
         except Exception:
             log.warning("Radio connect failed — will retry in background")
 
-    # ── 11. Serve ─────────────────────────────────────────────────────────
+    # ── 10. Serve ─────────────────────────────────────────────────────────
     config = uvicorn.Config(
         app,
         host="0.0.0.0",
@@ -275,8 +272,11 @@ async def main() -> None:
         if radio_interface:
             await radio_interface.stop()
             await radio_interface.disconnect()
-        if network:
-            await network.disconnect_all()
+        for bus_name, net in networks.items():
+            try:
+                await net.disconnect_all()
+            except Exception:
+                log.exception("Error disconnecting bus '%s'", bus_name)
         if store:
             await store.close()
         log.info("Stopped.")

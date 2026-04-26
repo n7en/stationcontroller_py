@@ -193,6 +193,10 @@ class TestSend:
             reader, writer = await asyncio.open_connection("127.0.0.1", port)
             await asyncio.sleep(0.05)  # let server register connection
 
+            # Drain the initial CR ping sent on connect
+            ping = await asyncio.wait_for(reader.read(1), timeout=1.0)
+            assert ping == b"\r"
+
             pkt = build_packet("01", "RY1,1")
             await t.send(pkt)
 
@@ -212,6 +216,10 @@ class TestSend:
         try:
             reader, writer = await asyncio.open_connection("127.0.0.1", port)
             await asyncio.sleep(0.05)
+
+            # Drain the initial CR ping sent on connect
+            ping = await asyncio.wait_for(reader.read(1), timeout=1.0)
+            assert ping == b"\r"
 
             pkt = build_broadcast("PING")
             await t.send(pkt)

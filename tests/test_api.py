@@ -33,8 +33,9 @@ def app_state():
 @pytest.fixture
 def app(app_state):
     # Reset module-level state between tests
-    for attr in vars(_state):
-        setattr(_state, attr, None)
+    fresh = AppState()
+    for attr in vars(fresh):
+        setattr(_state, attr, getattr(fresh, attr))
     return create_app(app_state)
 
 
@@ -68,8 +69,9 @@ class TestSensorsRouter:
         assert r.status_code == 404
 
     async def test_no_registry_returns_empty(self):
-        for attr in vars(_state):
-            setattr(_state, attr, None)
+        fresh = AppState()
+        for attr in vars(fresh):
+            setattr(_state, attr, getattr(fresh, attr))
         app = create_app()
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
             r = await c.get("/api/sensors")
@@ -92,8 +94,9 @@ class TestRadioRouter:
         assert data["ptt"] is False
 
     async def test_no_radio_returns_disconnected(self):
-        for attr in vars(_state):
-            setattr(_state, attr, None)
+        fresh = AppState()
+        for attr in vars(fresh):
+            setattr(_state, attr, getattr(fresh, attr))
         app = create_app()
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
             r = await c.get("/api/radio")
@@ -222,3 +225,62 @@ class TestNotificationsRouter:
         r = await client.post("/api/push/unsubscribe", json=sub)
         assert r.status_code == 200
         assert r.json()["removed"] == 1
+
+
+# ---------------------------------------------------------------------------
+# AppState.control_network / network_for_addr
+# ---------------------------------------------------------------------------
+
+class TestAppStateNetworking:
+
+    def test_control_network_returns_named_control_bus(self):
+        from comms.dcn_network import DCNNetwork
+        s = AppState()
+        ctrl = DCNNetwork()
+        s.networks = {"control": ctrl}
+        assert s.control_network is ctrl
+
+    def test_control_network_falls_back_to_first_bus(self):
+        from comms.dcn_network import DCNNetwork
+        s = AppState()
+        first = DCNNetwork()
+        s.networks = {"power": first}
+        assert s.control_network is first
+
+    def test_control_network_returns_none_when_empty(self):
+        s = AppState()
+        s.networks = {}
+        assert s.control_network is None
+
+    def test_control_network_returns_none_with_default_state(self):
+        s = AppState()
+        assert s.control_network is None
+
+    def test_network_for_addr_uses_device_bus_map(self):
+        from comms.dcn_network import DCNNetwork
+        s = AppState()
+        ctrl = DCNNetwork()
+        power = DCNNetwork()
+        s.networks = {"control": ctrl, "power": power}
+        s.device_bus = {"03": "power"}
+        assert s.network_for_addr("03") is power
+
+    def test_network_for_addr_falls_back_to_control_bus(self):
+        from comms.dcn_network import DCNNetwork
+        s = AppState()
+        ctrl = DCNNetwork()
+        s.networks = {"control": ctrl}
+        s.device_bus = {}
+        assert s.network_for_addr("01") is ctrl
+
+    def test_network_for_addr_unknown_address_uses_control(self):
+        from comms.dcn_network import DCNNetwork
+        s = AppState()
+        ctrl = DCNNetwork()
+        s.networks = {"control": ctrl}
+        s.device_bus = {"03": "power"}  # "power" bus not in networks
+        assert s.network_for_addr("03") is ctrl
+
+    def test_network_for_addr_no_networks_returns_none(self):
+        s = AppState()
+        assert s.network_for_addr("01") is None

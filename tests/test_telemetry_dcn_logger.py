@@ -240,3 +240,50 @@ class TestDCNMessageLoggerTx:
         async with store._session() as s:
             rows = list((await s.execute(select(DcnMessageLog))).scalars())
         assert rows[0].raw == "/0001:RY1,1:XX"
+
+
+# ---------------------------------------------------------------------------
+# DCNMessageLogger.attach_all
+# ---------------------------------------------------------------------------
+
+class TestAttachAll:
+
+    async def test_attach_all_logs_packets_from_every_bus(self, store):
+        bus_a = DCNNetwork()
+        bus_b = DCNNetwork()
+        logger = DCNMessageLogger(store)
+        logger.attach_all({"control": bus_a, "power": bus_b})
+
+        pkt_a = build_packet("01", "STATE")
+        pkt_b = build_packet("03", "STATE")
+        await bus_a._route_packet(pkt_a, "control_serial")
+        await bus_b._route_packet(pkt_b, "power_serial")
+        await asyncio.sleep(0)
+
+        async with store._session() as s:
+            rows = list((await s.execute(select(DcnMessageLog))).scalars())
+        to_addrs = {r.to_addr for r in rows}
+        assert "01" in to_addrs
+        assert "03" in to_addrs
+
+    async def test_attach_all_empty_dict_is_noop(self, store):
+        logger = DCNMessageLogger(store)
+        logger.attach_all({})  # should not raise
+
+        async with store._session() as s:
+            rows = list((await s.execute(select(DcnMessageLog))).scalars())
+        assert rows == []
+
+    async def test_attach_all_single_bus(self, store):
+        bus = DCNNetwork()
+        logger = DCNMessageLogger(store)
+        logger.attach_all({"control": bus})
+
+        pkt = build_broadcast("ROLLCALL")
+        await bus._route_packet(pkt, "control_serial")
+        await asyncio.sleep(0)
+
+        async with store._session() as s:
+            rows = list((await s.execute(select(DcnMessageLog))).scalars())
+        assert len(rows) == 1
+        assert rows[0].broadcast is True

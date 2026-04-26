@@ -1,70 +1,126 @@
 # Station Controller — DCN Communications Configuration
 #
-# Each entry under 'networks' defines an independent DCN transport.
-# Multiple networks run simultaneously with independent address spaces
-# and baud rates.
+# Each entry under 'buses' defines an independent DCN network (separate address
+# space).  Devices on different buses cannot hear each other's packets.
+#
+# Each bus may have one or more 'transports' — simultaneous physical connections
+# to the same bus (e.g. RS-485 + MQTT fallback on the same wire segment).
 #
 # Transport types:
 #   rs485        — direct RS-485 USB serial connection
 #   nodered_mqtt — bridge through a Node-RED flow via an MQTT broker
 #   nodered_tcp  — bridge through a Node-RED flow via a TCP socket
 #
-# Uncomment and configure only the entries that match your hardware setup.
-# At minimum you need one active transport.
+# Device-to-bus assignment is configured in main.py.
+# Uncomment/add bus entries to match your hardware layout.
 
-networks:
+buses:
 
-  # ── Direct RS-485: main control network ─────────────────────────────
-  # Used for GPIO module, antenna relays, coax switch, etc.
-  # 9600 baud is standard for control messages.
+  # ── Control bus ──────────────────────────────────────────────────────────
+  # Carries GPIO module (01), coax switch (02), VHF relay (05),
+  # and antenna relay module (06) at standard 9600 baud.
   - name: control
-    type: rs485
-    port: /dev/ttyUSB0        # Linux. Windows example: COM3
-    baud_rate: 9600
-    description: "Main control DCN — GPIO, antennas, coax"
+    transports:
 
-  # ── Direct RS-485: high-speed power meter network ───────────────────
-  # Keep the power meter on a SEPARATE DCN at 115200 baud for real-time
-  # measurements.  Do NOT mix control traffic on this network.
+      # Direct RS-485 USB adapter
+      - name: control_serial
+        type: rs485
+        port: /dev/ttyUSB0      # Linux. Windows example: COM3
+        baud_rate: 9600
+        description: "Main control DCN — GPIO, antennas, coax"
+
+      # ── Optional: Node-RED MQTT bridge for this bus ───────────────────
+      # Use when a Raspberry Pi / Node-RED box sits between the PC and
+      # the RS-485 wire.  Import nodered/dcn_mqtt_bridge_flow.json.
+      #- name: control_mqtt
+      #  type: nodered_mqtt
+      #  broker: localhost        # or remote Pi IP, e.g. 192.168.1.100
+      #  port: 1883
+      #  topic_rx: dcn/control/rx
+      #  topic_tx: dcn/control/tx
+      #  username: ""
+      #  password: ""
+      #  description: "Node-RED MQTT bridge for control bus"
+
+      # ── Optional: Node-RED TCP bridge (no MQTT broker needed) ─────────
+      # Python listens as TCP server; Node-RED connects as TCP client.
+      # Import nodered/dcn_tcp_bridge_flow.json.
+      #- name: control_tcp
+      #  type: nodered_tcp
+      #  host: 0.0.0.0            # listen on all interfaces
+      #  port: 4880
+      #  description: "Node-RED TCP bridge for control bus"
+
+  # ── Power meter bus (separate high-speed segment) ─────────────────────
+  # The RF watt meter (#351, address 03) runs at 115200 baud for real-time
+  # measurements.  Keep it on its own USB adapter — do NOT mix control
+  # traffic on this segment.
   #- name: power
-  #  type: rs485
-  #  port: /dev/ttyUSB1       # Linux. Windows example: COM4
-  #  baud_rate: 115200
-  #  description: "High-speed power meter DCN"
+  #  transports:
+  #    - name: power_serial
+  #      type: rs485
+  #      port: /dev/ttyUSB1      # Linux. Windows example: COM4
+  #      baud_rate: 115200
+  #      description: "High-speed power meter DCN"
 
-  # ── Node-RED MQTT bridge: Node-RED on the SAME device ───────────────
-  # Node-RED publishes DCN serial data to topic_rx.
-  # Python publishes commands to topic_tx; Node-RED forwards to serial.
-  # Import nodered/dcn_mqtt_bridge_flow.json into Node-RED.
-  #- name: nodered_local
-  #  type: nodered_mqtt
-  #  broker: localhost
-  #  port: 1883
-  #  topic_rx: dcn/control/rx
-  #  topic_tx: dcn/control/tx
-  #  username: ""
-  #  password: ""
-  #  description: "Node-RED on same device via local MQTT broker"
+  # ── Example: second shack controller on a third USB dongle ────────────
+  #- name: shack2
+  #  transports:
+  #    - name: shack2_serial
+  #      type: rs485
+  #      port: /dev/ttyUSB2      # Windows: COM5
+  #      baud_rate: 9600
+  #      description: "Second antenna controller in shack 2"
 
-  # ── Node-RED MQTT bridge: Node-RED on a REMOTE device ───────────────
-  # Identical to the above but with the remote host IP.
-  #- name: nodered_remote
-  #  type: nodered_mqtt
-  #  broker: 192.168.1.100
-  #  port: 1883
-  #  topic_rx: dcn/control/rx
-  #  topic_tx: dcn/control/tx
-  #  username: ""
-  #  password: ""
-  #  description: "Node-RED on Raspberry Pi via MQTT"
 
-  # ── Node-RED TCP bridge: no MQTT broker required ────────────────────
-  # Python listens as TCP server; Node-RED connects as TCP client.
-  # Import nodered/dcn_tcp_bridge_flow.json into Node-RED.
-  # Configure the Node-RED flow's TCP node to connect to this machine's
-  # IP address and the port specified below.
-  #- name: nodered_tcp
-  #  type: nodered_tcp
-  #  host: 0.0.0.0            # 0.0.0.0 = listen on all interfaces
-  #  port: 4880
-  #  description: "Node-RED on same device via TCP (no MQTT broker)"
+# ── Device instances ──────────────────────────────────────────────────────────
+# Each entry defines one physical hardware module, the bus it lives on, and
+# the name prefix used for sensor registry keys.
+#
+# Device types:
+#   gpio          — DCN #321 GPIO module (relays, inputs, voltmeters, temps)
+#   coax_switch   — DCN #331 CX-1 4-port HF coax relay
+#   watt_meter    — DCN #351 RF watt/SWR meter
+#   vhf_relay     — DCN #332 CX-2 VHF/UHF SPDT coax relay
+#   antenna_relay — DCN #361 8-relay antenna relay control module
+#
+# 'address' is set by the dip switches on the physical hardware.
+# 'bus' must match a bus name defined above.
+# 'name' becomes the sensor key prefix (e.g. name="wm1" → "wm1_forward_power_w").
+#
+# Multiple devices of the same type are supported — give each a unique name
+# and bus.  Watt meters in streaming mode typically run on dedicated high-speed
+# buses (see the 'power' bus example above).
+
+devices:
+
+  - type: gpio
+    name: gpio_01
+    address: "01"
+    bus: control
+
+  - type: coax_switch
+    name: coax
+    address: "02"
+    bus: control
+
+  - type: watt_meter
+    name: watt_meter
+    address: "03"
+    bus: control          # change to 'power' if using a dedicated 115200-baud bus
+
+  - type: vhf_relay
+    name: vhf_relay
+    address: "05"
+    bus: control
+
+  - type: antenna_relay
+    name: ant_relay
+    address: "06"
+    bus: control
+
+  # ── Example: second watt meter on its own high-speed bus ─────────────
+  #- type: watt_meter
+  #  name: watt_meter_2
+  #  address: "03"
+  #  bus: power            # dedicated 115200-baud bus defined above

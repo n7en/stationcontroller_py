@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "DCN TCP Bridge",
         "disabled": false,
-        "info": "Sierra Radio Systems — DCN ↔ TCP Bridge\n\nBridges the DCN RS-485 serial bus to a TCP socket.  No MQTT broker\nrequired.  The Python Station Controller listens as TCP server;\nthis Node-RED flow connects as the TCP client.\n\nSetup:\n1. Double-click 'DCN Serial Port' and configure your serial port / baud rate.\n2. In the 'Send to Python' TCP node, set the host to the IP address of\n   the machine running the Python Station Controller and the port to\n   match nodered_tcp.port in comms_config.yaml (default 4880).\n3. The 'Receive from Python' TCP node uses the same host and port —\n   update it to match as well.\n4. Deploy, then start the Python application so it is listening before\n   Node-RED tries to connect.\n\nData flow:\n  RS-485 serial IN  → validate → TCP OUT  → Python server (port 4880)\n  Python server     → TCP IN   → RS-485 serial OUT"
+        "info": "Sierra Radio Systems — DCN ↔ TCP Bridge\n\nBidirectional bridge between one DCN RS-485 serial bus and a single TCP\nsocket.  No MQTT broker required.\n\nConnection model:\n  Python (server, port 4880) ← Node-RED (client, this flow)\n\nA SINGLE TCP connection carries traffic in BOTH directions:\n  RS-485 serial IN  → [Validate + Attach Session] → tcp out (reply)\n  tcp in (client)   → [Store Session + Route]     → RS-485 serial OUT\n\nThe 'tcp in' node opens the connection when Node-RED starts.  Python\nsends one CR byte on connect so this node fires immediately and stores\nthe TCP session.  After that, serial→Python packets are forwarded on\nthe same socket using 'Reply to TCP' mode.\n\nSetup (single bus):\n1. Double-click 'DCN Serial Port' — set your serial port and baud rate.\n2. In the 'Connect to Python' tcp in node, set host to the Python\n   machine IP and port to match nodered_tcp.port in comms_config.yaml\n   (default 4880).\n3. Start Python first so the TCP server is listening, then deploy.\n\nSetup (multiple DCN buses):\nImport this flow again for each additional bus.  On each new tab:\n  a. Set a different serial port and baud rate.\n  b. Change the port in the 'Connect to Python' tcp in node (e.g. 4881).\n  c. Add a matching bus entry in comms_config.yaml.\n\nMultiple modules on one bus: no changes needed.  The flow forwards all\npackets transparently; Python routes to device handlers by address."
     },
     {
         "id": "dcn-tcp-serial-config",
@@ -29,13 +29,13 @@
         "x": 140,
         "y": 140,
         "z": "dcn-tcp-tab",
-        "wires": [["dcn-tcp-validate-rx"]]
+        "wires": [["dcn-tcp-validate-tx"]]
     },
     {
-        "id": "dcn-tcp-validate-rx",
+        "id": "dcn-tcp-validate-tx",
         "type": "function",
-        "name": "Validate DCN Packet",
-        "func": "// Only forward strings that look like DCN packets (start with /)\nvar raw;\nif (Buffer.isBuffer(msg.payload)) {\n    raw = msg.payload.toString('ascii').trim();\n} else {\n    raw = String(msg.payload).trim();\n}\nif (raw.startsWith('/')) {\n    msg.payload = raw + '\\r';\n    return msg;\n}\nreturn null;",
+        "name": "Validate + Attach Session",
+        "func": "// Retrieve the session stored when Python last sent a packet.\n// Drop DCN packets until the TCP session is established.\nvar session = flow.get('tcp_session');\nif (!session) {\n    return null;\n}\n\nvar raw;\nif (Buffer.isBuffer(msg.payload)) {\n    raw = msg.payload.toString('ascii').trim();\n} else {\n    raw = String(msg.payload).trim();\n}\nif (!raw.startsWith('/')) return null;\nif (!raw.endsWith('\\r')) raw = raw + '\\r';\nmsg.payload = Buffer.from(raw, 'ascii');\nmsg._session = session;\nreturn msg;",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
@@ -50,9 +50,7 @@
         "id": "dcn-tcp-out",
         "type": "tcp out",
         "name": "Send to Python",
-        "host": "localhost",
-        "port": "4880",
-        "beserver": "client",
+        "beserver": "reply",
         "base64": false,
         "end": false,
         "tls": "",
@@ -64,7 +62,7 @@
     {
         "id": "dcn-tcp-in",
         "type": "tcp in",
-        "name": "Receive from Python",
+        "name": "Connect to Python",
         "server": "client",
         "host": "localhost",
         "port": "4880",
@@ -75,16 +73,16 @@
         "trim": true,
         "base64": false,
         "tls": "",
-        "x": 150,
+        "x": 140,
         "y": 280,
         "z": "dcn-tcp-tab",
-        "wires": [["dcn-tcp-format-tx"]]
+        "wires": [["dcn-tcp-store-and-route"]]
     },
     {
-        "id": "dcn-tcp-format-tx",
+        "id": "dcn-tcp-store-and-route",
         "type": "function",
-        "name": "Ensure CR Terminator",
-        "func": "// DCN packets must end with carriage return (ASCII 13)\nvar raw;\nif (Buffer.isBuffer(msg.payload)) {\n    raw = msg.payload.toString('ascii');\n} else {\n    raw = String(msg.payload);\n}\nraw = raw.trimEnd();\nif (!raw.endsWith('\\r')) {\n    raw = raw + '\\r';\n}\nmsg.payload = Buffer.from(raw, 'ascii');\nreturn msg;",
+        "name": "Store Session + Route to Serial",
+        "func": "// Always capture the session first — even for the initial CR ping.\n// This makes the serial→Python path ready before Python sends any real command.\nif (msg._session) {\n    flow.set('tcp_session', msg._session);\n}\n\n// Only forward valid DCN packets to serial.\nvar raw;\nif (Buffer.isBuffer(msg.payload)) {\n    raw = msg.payload.toString('ascii').trim();\n} else {\n    raw = String(msg.payload).trim();\n}\nif (!raw.startsWith('/')) return null;\nif (!raw.endsWith('\\r')) raw = raw + '\\r';\nmsg.payload = Buffer.from(raw, 'ascii');\nreturn msg;",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
@@ -100,7 +98,7 @@
         "type": "serial out",
         "name": "DCN Serial Out",
         "serial": "dcn-tcp-serial-config",
-        "x": 620,
+        "x": 640,
         "y": 280,
         "z": "dcn-tcp-tab",
         "wires": []
@@ -108,9 +106,9 @@
     {
         "id": "dcn-tcp-comment-rx",
         "type": "comment",
-        "name": "RX path — DCN serial → TCP to Python server",
+        "name": "RX path — DCN serial → TCP session reply to Python",
         "info": "",
-        "x": 240,
+        "x": 280,
         "y": 80,
         "z": "dcn-tcp-tab",
         "wires": []
@@ -118,9 +116,9 @@
     {
         "id": "dcn-tcp-comment-tx",
         "type": "comment",
-        "name": "TX path — TCP from Python server → DCN serial",
+        "name": "TX path — TCP from Python (single connection) → DCN serial",
         "info": "",
-        "x": 260,
+        "x": 300,
         "y": 220,
         "z": "dcn-tcp-tab",
         "wires": []

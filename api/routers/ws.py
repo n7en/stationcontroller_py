@@ -40,23 +40,25 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
     kind = msg.get("type")
 
     if kind == "relay_cmd":
-        if state.control_network is None:
-            log.warning("WS relay_cmd: no control_network configured")
-            return
         key: str = msg.get("key", "")
         relay_num: int = int(msg.get("relay_num", 0))
         relay_state: int = int(msg.get("state", 0))
         device_addr = key.split("_")[1] if "_" in key else msg.get("device_addr", "01")
-        await state.control_network.send(device_addr, f"RY{relay_num},{relay_state}")
+        network = state.network_for_addr(device_addr)
+        if network is None:
+            log.warning("WS relay_cmd: no network for device addr %s", device_addr)
+            return
+        await network.send(device_addr, f"RY{relay_num},{relay_state}")
         await state.ws_hub.broadcast_relay(key, relay_state)
 
     elif kind == "coax_select":
-        if state.control_network is None:
-            log.warning("WS coax_select: no control_network configured")
-            return
         device_addr: str = msg.get("device_addr", "02")
         port: int = int(msg.get("port", 0))
-        await state.control_network.send(device_addr, f"CX,{port}")
+        network = state.network_for_addr(device_addr)
+        if network is None:
+            log.warning("WS coax_select: no network for device addr %s", device_addr)
+            return
+        await network.send(device_addr, f"CX,{port}")
 
     elif kind == "radio_tune":
         if state.radio_interface is None:

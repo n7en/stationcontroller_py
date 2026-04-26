@@ -95,6 +95,17 @@ class NodeRedTCPTransport(DCNTransport):
                 pass
 
         self._writer = writer
+
+        # Immediately send a single CR so Node-RED's tcp in fires and captures
+        # msg._session.  Without this, the serial→Python path silently drops
+        # packets until Python sends its first real command (which may never
+        # happen for receive-only devices like sensors).
+        try:
+            self._writer.write(b"\r")
+            await self._writer.drain()
+        except Exception:
+            pass
+
         buf = ""
 
         try:

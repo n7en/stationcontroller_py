@@ -38,11 +38,10 @@ async def set_relay(
 ) -> dict:
     if cmd.state not in (0, 1):
         raise HTTPException(status_code=422, detail="state must be 0 or 1")
-    if state.control_network is None:
-        raise HTTPException(status_code=503, detail="Control network not connected")
-    await state.control_network.send(
-        cmd.device_addr, f"RY{cmd.relay_num},{cmd.state}"
-    )
+    network = state.network_for_addr(cmd.device_addr)
+    if network is None:
+        raise HTTPException(status_code=503, detail="No DCN network connected")
+    await network.send(cmd.device_addr, f"RY{cmd.relay_num},{cmd.state}")
     if state.ws_hub:
         await state.ws_hub.broadcast_relay(key, cmd.state)
     return {"ok": True, "key": key, "state": cmd.state}
