@@ -31,52 +31,93 @@ Optional but recommended:
 
 ## Installation
 
-### 1. Clone and set up Python environment
+### Linux / Raspberry Pi / macOS
 
 ```bash
-git clone <repo-url>
+curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.sh | bash
+```
+
+This clones the repository into `~/StationController_Py`, creates a Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for serial ports — prompting you to assign each DCN bus.
+
+To include development tools (pytest, etc.) as well:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.sh | bash -s -- --dev
+```
+
+To clone to a custom location, set `STATIONCONTROLLER_DIR` before running:
+
+```bash
+STATIONCONTROLLER_DIR=/opt/stationcontroller \
+  curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.sh | bash
+```
+
+### Windows
+
+Open **PowerShell** and run:
+
+```powershell
+irm https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.ps1 | iex
+```
+
+This clones the repository into `~\StationController_Py`, sets up the Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for COM ports — prompting you to assign each DCN bus.
+
+To include development tools as well:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.ps1))) -Dev
+```
+
+To clone to a custom location, set `STATIONCONTROLLER_DIR` before running:
+
+```powershell
+$env:STATIONCONTROLLER_DIR = "C:\station"
+irm https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.ps1 | iex
+```
+
+> **Note:** If PowerShell blocks script execution, run this first:
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+
+### Manual install (all platforms)
+
+```bash
+# Linux / macOS
+git clone https://github.com/n7en/stationcontroller_py
 cd StationController_Py
-
-python -m venv .venv
-# Linux/macOS:
-source .venv/bin/activate
-# Windows:
-.venv\Scripts\activate
-
-pip install -r requirements.txt
-# For development (adds pytest, httpx, etc.):
-pip install -r requirements-dev.txt
+chmod +x install.sh
+./install.sh          # production
+./install.sh --dev    # + dev tools
 ```
 
-### 2. Build the frontend
-
-```bash
-cd ui
-npm install
-npm run build
-cd ..
+```powershell
+# Windows
+git clone https://github.com/n7en/stationcontroller_py
+cd StationController_Py
+.\install.ps1         # production
+.\install.ps1 -Dev    # + dev tools
 ```
 
-The build output lands in `ui_dist/` and is served automatically by the Python backend.
+Re-running either script at any time is safe — it skips steps already done and applies any new migrations.
 
 ---
 
 ## Running
 
-### Quick start (recommended)
+### Quick start
 
 ```bash
-# Linux / macOS / Raspberry Pi
-chmod +x start.sh
-./start.sh
-
-# Windows
-start.bat
+# Linux / macOS
+.venv/bin/python main.py
 ```
 
-The startup script activates the virtualenv if one is present, builds the frontend if `ui_dist/` is missing, then launches the backend. The app is available at **http://localhost:8080**.
+```powershell
+# Windows
+.venv\Scripts\python main.py
+```
 
-On first run the `data/` directory is created and Alembic applies the database migrations automatically.
+The app is available at **http://localhost:8080**. On first run the `data/` directory is created and Alembic applies the database migrations automatically.
 
 ### Network access
 
@@ -100,16 +141,7 @@ python main.py
 
 ### Development mode (hot-reload UI)
 
-The `--dev` flag starts both the Python backend and the Vite dev server in one step:
-
-```bash
-./start.sh --dev   # Linux/macOS
-start.bat --dev    # Windows
-```
-
-Open **http://localhost:5173** instead of 8080 — the Vite server proxies `/api` and `/ws` to the backend automatically, so live UI edits reflect instantly without a rebuild.
-
-You can also start them manually in separate terminals:
+Start both servers in separate terminals:
 
 ```bash
 # Terminal 1 — Python backend
@@ -133,26 +165,34 @@ All configuration lives in `config/`. The app runs without any config files (har
 Defines how Python talks to the hardware bus. Three transport types are supported:
 
 ```yaml
-networks:
-  # Direct RS-485 USB serial
+buses:
+  # Standard 9600-baud control bus (GPIO, relays, coax switches)
   - name: control
-    type: rs485
-    port: /dev/ttyUSB0      # Windows: COM3
-    baud_rate: 9600
+    transports:
+      - name: control_serial
+        type: rs485
+        port: /dev/ttyUSB0      # Windows: COM3
+        baud_rate: 9600
 
-  # High-speed RS-485 for power meter (separate port)
+  # High-speed 115200-baud bus for RF watt meter in streaming mode
+  # Keep on a dedicated USB adapter — do not share with control traffic
   - name: power
-    type: rs485
-    port: /dev/ttyUSB1
-    baud_rate: 115200
+    transports:
+      - name: power_serial
+        type: rs485
+        port: /dev/ttyUSB1      # Windows: COM4
+        baud_rate: 115200
 
-  # Alternatively, bridge through a Node-RED flow via MQTT
-  - name: nodered
-    type: nodered_mqtt
-    broker: localhost
-    port: 1883
-    topic_rx: dcn/control/rx
-    topic_tx: dcn/control/tx
+  # Optional: Node-RED MQTT bridge instead of direct serial
+  # Import nodered/dcn_mqtt_bridge_flow.json into Node-RED
+  - name: control
+    transports:
+      - name: control_mqtt
+        type: nodered_mqtt
+        broker: localhost
+        port: 1883
+        topic_rx: dcn/control/rx
+        topic_tx: dcn/control/tx
 ```
 
 If no config file exists or the file is empty, no hardware is connected and the app runs in a read-only/demo mode.
