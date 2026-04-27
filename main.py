@@ -76,7 +76,7 @@ def _read_db_url() -> str:
     default = "sqlite+aiosqlite:///data/station.db"
     if not TELEMETRY_CFG.exists():
         return default
-    with open(TELEMETRY_CFG) as fh:
+    with open(TELEMETRY_CFG, encoding="utf-8") as fh:
         raw = yaml.safe_load(fh) or {}
     return raw.get("telemetry", {}).get("database", {}).get("url", default)
 

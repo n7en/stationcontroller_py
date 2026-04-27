@@ -412,7 +412,7 @@ def main(argv: Optional[list] = None) -> None:
         logger.error("Config not found: %s", cfg_path)
         sys.exit(1)
 
-    with cfg_path.open() as fh:
+    with cfg_path.open(encoding="utf-8") as fh:
         config = yaml.safe_load(fh) or {}
 
     sim = DCNSimulator(config)

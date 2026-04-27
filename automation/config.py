@@ -113,7 +113,7 @@ def load_engine(config_path: str | Path) -> tuple[AutomationEngine, BandRegistry
     Load an AutomationEngine and BandRegistry from a YAML config file.
     Returns (engine, band_registry).
     """
-    with open(config_path) as fh:
+    with open(config_path, encoding="utf-8") as fh:
         cfg = yaml.safe_load(fh) or {}
 
     band_registry = load_band_registry(cfg)

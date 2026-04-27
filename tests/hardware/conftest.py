@@ -35,7 +35,7 @@ def hw_config() -> dict:
             f"Hardware config not found: {CONFIG_PATH}\n"
             "Copy config/hardware_test_config.yaml and fill in your setup."
         )
-    with open(CONFIG_PATH) as fh:
+    with open(CONFIG_PATH, encoding="utf-8") as fh:
         return yaml.safe_load(fh) or {}
 
 
