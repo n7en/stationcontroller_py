@@ -24,13 +24,13 @@ cards:
       critical: 3.0
 
   - type: relay
-    title: "Beam — 20m"
+    title: "Beam - 20m"
     relay_key: gpio_01_relay_1
     device_addr: "01"
     relay_num: 1
 
   - type: relay
-    title: "Vertical — 40m"
+    title: "Vertical - 40m"
     relay_key: gpio_01_relay_2
     device_addr: "01"
     relay_num: 2
@@ -38,7 +38,7 @@ cards:
   - type: sensor
     title: "PA Temperature"
     sensor: temp_pa
-    unit: "°F"
+    unit: "degF"
     warn_above: 140
     critical_above: 160
 

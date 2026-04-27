@@ -2,9 +2,9 @@ name: Version Bump
 
 # Runs when a pull request is merged into main.
 # Add one of these labels to the PR to control the bump type:
-#   bump:major  →  1.0.0  (breaking change)
-#   bump:minor  →  0.2.0  (new feature)
-#   (no label)  →  0.1.1  (default — bug fix / patch)
+#   bump:major  ->  1.0.0  (breaking change)
+#   bump:minor  ->  0.2.0  (new feature)
+#   (no label)  ->  0.1.1  (default - bug fix / patch)
 
 on:
   pull_request:

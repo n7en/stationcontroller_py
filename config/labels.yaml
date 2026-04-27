@@ -14,7 +14,7 @@
 # Keys must be unique; labels must be unique.
 # Labels may contain spaces and special characters.
 #
-# ── HF Coax Switch (#331) ─────────────────────────────────────────────────────
+# -- HF Coax Switch (#331) ----------------------------------------------------
 # Device: CoaxSwitch(name="coax", address="02", ...)
 #
 labels:
@@ -24,14 +24,14 @@ labels:
   coax_port_4: "160m Vertical"
   coax_active_port: "HF Active Port"
 
-# ── VHF Coax Relay (#332) ─────────────────────────────────────────────────────
+# -- VHF Coax Relay (#332) ----------------------------------------------------
 # Device: VHFCoaxRelay(name="vhf", address="05", ...)
 #
   vhf_relay: "2m/70cm Relay"
   vhf_nc: "2m/70cm NC Port"
   vhf_no: "2m/70cm NO Port"
 
-# ── Antenna Relay Module (#361) ───────────────────────────────────────────────
+# -- Antenna Relay Module (#361) ----------------------------------------------
 # Device: AntennaRelayModule(name="ant", address="06", ...)
 #
   ant_relay_1: "Amp Bypass"
@@ -43,7 +43,7 @@ labels:
   ant_relay_7: "Relay 7"
   ant_relay_8: "Relay 8"
 
-# ── GPIO Module (#321) ────────────────────────────────────────────────────────
+# -- GPIO Module (#321) -------------------------------------------------------
 # Device: GPIOModule(name="gpio", address="01", ...)
 # Uncomment and rename to match your wiring.
 #

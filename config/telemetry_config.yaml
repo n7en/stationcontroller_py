@@ -12,7 +12,7 @@ telemetry:
     exclude: []                  # sensor names to never record, e.g. [debug_temp]
 
   dcn_logging:
-    enabled: false   # set true only for debugging — high IO volume
+    enabled: false   # set true only for debugging - high IO volume
 
   retention:
     sensor_readings_days: 90

@@ -1,22 +1,22 @@
-# Station Controller — DCN Communications Configuration
+# Station Controller - DCN Communications Configuration
 #
 # Each entry under 'buses' defines an independent DCN network (separate address
 # space).  Devices on different buses cannot hear each other's packets.
 #
-# Each bus may have one or more 'transports' — simultaneous physical connections
+# Each bus may have one or more 'transports' -- simultaneous physical connections
 # to the same bus (e.g. RS-485 + MQTT fallback on the same wire segment).
 #
 # Transport types:
-#   rs485        — direct RS-485 USB serial connection
-#   nodered_mqtt — bridge through a Node-RED flow via an MQTT broker
-#   nodered_tcp  — bridge through a Node-RED flow via a TCP socket
+#   rs485        - direct RS-485 USB serial connection
+#   nodered_mqtt - bridge through a Node-RED flow via an MQTT broker
+#   nodered_tcp  - bridge through a Node-RED flow via a TCP socket
 #
 # Device-to-bus assignment is configured in main.py.
 # Uncomment/add bus entries to match your hardware layout.
 
 buses:
 
-  # ── Control bus ──────────────────────────────────────────────────────────
+  # -- Control bus ------------------------------------------------------------
   # Carries GPIO module (01), coax switch (02), VHF relay (05),
   # and antenna relay module (06) at standard 9600 baud.
   - name: control
@@ -27,9 +27,9 @@ buses:
         type: rs485
         port: /dev/ttyUSB0      # Linux. Windows example: COM3
         baud_rate: 9600
-        description: "Main control DCN — GPIO, antennas, coax"
+        description: "Main control DCN - GPIO, antennas, coax"
 
-      # ── Optional: Node-RED MQTT bridge for this bus ───────────────────
+      # -- Optional: Node-RED MQTT bridge for this bus -----------------------
       # Use when a Raspberry Pi / Node-RED box sits between the PC and
       # the RS-485 wire.  Import nodered/dcn_mqtt_bridge_flow.json.
       #- name: control_mqtt
@@ -42,7 +42,7 @@ buses:
       #  password: ""
       #  description: "Node-RED MQTT bridge for control bus"
 
-      # ── Optional: Node-RED TCP bridge (no MQTT broker needed) ─────────
+      # -- Optional: Node-RED TCP bridge (no MQTT broker needed) -------------
       # Python listens as TCP server; Node-RED connects as TCP client.
       # Import nodered/dcn_tcp_bridge_flow.json.
       #- name: control_tcp
@@ -51,9 +51,9 @@ buses:
       #  port: 4880
       #  description: "Node-RED TCP bridge for control bus"
 
-  # ── Power meter bus (separate high-speed segment) ─────────────────────
+  # -- Power meter bus (separate high-speed segment) -------------------------
   # The RF watt meter (#351, address 03) runs at 115200 baud for real-time
-  # measurements.  Keep it on its own USB adapter — do NOT mix control
+  # measurements.  Keep it on its own USB adapter -- do NOT mix control
   # traffic on this segment.
   #- name: power
   #  transports:
@@ -63,7 +63,7 @@ buses:
   #      baud_rate: 115200
   #      description: "High-speed power meter DCN"
 
-  # ── Example: second shack controller on a third USB dongle ────────────
+  # -- Example: second shack controller on a third USB dongle ---------------
   #- name: shack2
   #  transports:
   #    - name: shack2_serial
@@ -73,22 +73,22 @@ buses:
   #      description: "Second antenna controller in shack 2"
 
 
-# ── Device instances ──────────────────────────────────────────────────────────
+# -- Device instances ---------------------------------------------------------
 # Each entry defines one physical hardware module, the bus it lives on, and
 # the name prefix used for sensor registry keys.
 #
 # Device types:
-#   gpio          — DCN #321 GPIO module (relays, inputs, voltmeters, temps)
-#   coax_switch   — DCN #331 CX-1 4-port HF coax relay
-#   watt_meter    — DCN #351 RF watt/SWR meter
-#   vhf_relay     — DCN #332 CX-2 VHF/UHF SPDT coax relay
-#   antenna_relay — DCN #361 8-relay antenna relay control module
+#   gpio          - DCN #321 GPIO module (relays, inputs, voltmeters, temps)
+#   coax_switch   - DCN #331 CX-1 4-port HF coax relay
+#   watt_meter    - DCN #351 RF watt/SWR meter
+#   vhf_relay     - DCN #332 CX-2 VHF/UHF SPDT coax relay
+#   antenna_relay - DCN #361 8-relay antenna relay control module
 #
 # 'address' is set by the dip switches on the physical hardware.
 # 'bus' must match a bus name defined above.
-# 'name' becomes the sensor key prefix (e.g. name="wm1" → "wm1_forward_power_w").
+# 'name' becomes the sensor key prefix (e.g. name="wm1" -> "wm1_forward_power_w").
 #
-# Multiple devices of the same type are supported — give each a unique name
+# Multiple devices of the same type are supported -- give each a unique name
 # and bus.  Watt meters in streaming mode typically run on dedicated high-speed
 # buses (see the 'power' bus example above).
 
@@ -119,7 +119,7 @@ devices:
     address: "06"
     bus: control
 
-  # ── Example: second watt meter on its own high-speed bus ─────────────
+  # -- Example: second watt meter on its own high-speed bus ------------------
   #- type: watt_meter
   #  name: watt_meter_2
   #  address: "03"

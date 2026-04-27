@@ -2,11 +2,11 @@
 #
 # Each entry under 'radios' defines one radio.  Two backends are available:
 #
-#   rigctld       — TCP client to a running rigctld daemon.
+#   rigctld       - TCP client to a running rigctld daemon.
 #                   Works for local (localhost) or remote (network) daemons.
 #                   Recommended for most deployments.
 #
-#   hamlib_direct — Python hamlib bindings in-process.
+#   hamlib_direct - Python hamlib bindings in-process.
 #                   Local only (serial port on this machine).
 #                   Requires the hamlib Python bindings (python3-hamlib on Linux).
 

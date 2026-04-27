@@ -1,47 +1,47 @@
 # Automation Engine Configuration
 #
-# Home Assistant style: Trigger → Condition → Action
+# Home Assistant style: Trigger -> Condition -> Action
 #
 # An automation fires when ANY trigger detects its transition event.
 # ALL conditions must pass for the action to execute.
 #
-# ── Trigger types ────────────────────────────────────────────────────────────
-#   sensor_above   (sensor, threshold)      — value crosses above threshold
-#   sensor_below   (sensor, threshold)      — value crosses below threshold
-#   sensor_changed (sensor, [min_delta])    — value changes by >= min_delta
-#   band_entered   (band)                   — frequency enters named band
-#   band_exited    (band)                   — frequency leaves named band
-#   band_changed                            — any band transition
-#   ptt_on                                  — PTT becomes active
-#   ptt_off                                 — PTT becomes inactive
-#   radio_connected                         — radio comes online
-#   radio_disconnected                      — radio goes offline
-#   manual                                  — documents manual-test support
+# -- Trigger types ------------------------------------------------------------
+#   sensor_above   (sensor, threshold)      - value crosses above threshold
+#   sensor_below   (sensor, threshold)      - value crosses below threshold
+#   sensor_changed (sensor, [min_delta])    - value changes by >= min_delta
+#   band_entered   (band)                   - frequency enters named band
+#   band_exited    (band)                   - frequency leaves named band
+#   band_changed                            - any band transition
+#   ptt_on                                  - PTT becomes active
+#   ptt_off                                 - PTT becomes inactive
+#   radio_connected                         - radio comes online
+#   radio_disconnected                      - radio goes offline
+#   manual                                  - documents manual-test support
 #
-# ── Condition types ───────────────────────────────────────────────────────────
-#   (same as before — see condition.py for full list)
+# -- Condition types ----------------------------------------------------------
+#   (same as before -- see condition.py for full list)
 #   ptt_active / radio_connected / mode_is / frequency_in_band
 #   sensor_above / sensor_below / sensor_between / sensor_present
 #   relay_on / relay_off
 #   and / or / not
 #
-# ── Action types ─────────────────────────────────────────────────────────────
+# -- Action types -------------------------------------------------------------
 #   log            (message, [level])
 #   sequence       (actions: list)
 #   conditional    (condition, if_true, [if_false])
-#   set_radio_power (watts)         — requires radio_interface in context
+#   set_radio_power (watts)         - requires radio_interface in context
 #   set_relay      (dcn_address, relay_num, state: 0|1)
 #
-# ── Execution modes ──────────────────────────────────────────────────────────
-#   single   (default) — skip if action is already running
-#   restart            — cancel running action and start fresh
-#   queued             — queue up executions (max 10)
-#   parallel           — run concurrently
+# -- Execution modes ----------------------------------------------------------
+#   single   (default) - skip if action is already running
+#   restart            - cancel running action and start fresh
+#   queued             - queue up executions (max 10)
+#   parallel           - run concurrently
 #
-# ── Manual testing ────────────────────────────────────────────────────────────
+# -- Manual testing -----------------------------------------------------------
 #   engine.trigger("automation_name", ctx)
 #   engine.trigger("automation_name", ctx, bypass_conditions=True)
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 
 # Optional custom band definitions (omit to use built-in amateur HF/VHF/UHF).
 # bands:
@@ -51,7 +51,7 @@
 
 automations:
 
-  # ── Protection ───────────────────────────────────────────────────────────
+  # -- Protection -------------------------------------------------------------
 
   - name: "protect_high_swr"
     tier: protection
@@ -66,13 +66,13 @@ automations:
       - type: ptt_active
     action:
       type: log
-      message: "High SWR detected — check antenna system"
+      message: "High SWR detected - check antenna system"
       level: WARNING
 
   - name: "protect_overheat"
     tier: protection
     priority: 90
-    description: "Critical warning when shack temperature exceeds 150°F"
+    description: "Critical warning when shack temperature exceeds 150 F"
     trigger:
       - type: sensor_above
         sensor: gpio_temp_1_f
@@ -80,10 +80,10 @@ automations:
       - type: manual
     action:
       type: log
-      message: "Shack temperature critical — check cooling"
+      message: "Shack temperature critical - check cooling"
       level: ERROR
 
-  # ── Configuration ────────────────────────────────────────────────────────
+  # -- Configuration ----------------------------------------------------------
 
   - name: "log_entered_20m"
     tier: configuration
@@ -119,7 +119,7 @@ automations:
   #   priority: 60
   #   description: "Set radio drive to 5 W when amp relay closes"
   #   trigger:
-  #     - type: sensor_above   # relay 3 on → value crosses 0.5
+  #     - type: sensor_above   # relay 3 on -> value crosses 0.5
   #       sensor: gpio_relay_3
   #       threshold: 0.5
   #     - type: manual
@@ -127,7 +127,7 @@ automations:
   #     type: set_radio_power
   #     watts: 5.0
 
-  # ── Advisory ─────────────────────────────────────────────────────────────
+  # -- Advisory ---------------------------------------------------------------
 
   - name: "warn_low_voltage"
     tier: advisory
