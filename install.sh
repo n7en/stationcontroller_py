@@ -321,7 +321,7 @@ for line in lines:
 
     result.append(line)
 
-cfg_path.write_text("".join(result), encoding='utf-8')
+cfg_path.write_text("".join(result), encoding='utf-8', newline='\n')
 print(f"  Updated {cfg_path}")
 PYEOF
                 fi
@@ -398,7 +398,7 @@ if comms_devs:
         sim['devices'].append(entry)
         print(f"  device: {entry['type']:15s}  addr={entry['address']}")
 
-sim_path.write_text(yaml.dump(sim, default_flow_style=False, sort_keys=False, allow_unicode=False), encoding='utf-8')
+sim_path.write_text(yaml.dump(sim, default_flow_style=False, sort_keys=False, allow_unicode=False), encoding='utf-8', newline='\n')
 print(f"  Written -> {sim_path}")
 PYEOF
             _SIM_READY=1

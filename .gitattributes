@@ -16,6 +16,7 @@
 *.md        text eol=lf
 *.txt       text eol=lf
 *.sh        text eol=lf
+*.ps1       text eol=lf
 
 # Shell scripts must always be LF — CRLF breaks the shebang on Linux/macOS.
 start.sh    text eol=lf

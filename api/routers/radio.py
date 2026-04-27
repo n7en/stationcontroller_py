@@ -140,7 +140,7 @@ async def save_radio_config(
 
     cleaned_radios = [_clean_radio_entry(r) for r in body.radios]
     RADIO_CFG.parent.mkdir(parents=True, exist_ok=True)
-    with open(RADIO_CFG, "w", encoding="utf-8") as fh:
+    with open(RADIO_CFG, "w", encoding="utf-8", newline="\n") as fh:
         yaml.dump({"radios": cleaned_radios}, fh, default_flow_style=False, allow_unicode=True)
 
     reconnected = await _rebuild_radio(state)

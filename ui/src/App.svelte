@@ -8,18 +8,39 @@
   import SwrBar           from './lib/SwrBar.svelte'
   import DashboardView    from './lib/DashboardView.svelte'
   import RadioConfig      from './lib/RadioConfig.svelte'
-  import UpdateChecker   from './lib/UpdateChecker.svelte'
+  import UpdateChecker    from './lib/UpdateChecker.svelte'
+  import ConfigEditor     from './lib/ConfigEditor.svelte'
 
-  let page = 'dashboard'
+  let page        = 'dashboard'
+  let sidebarOpen = true
+
+  const NAV = [
+    { id: 'dashboard',  label: 'Dashboard',  icon: 'dashboard'  },
+    { id: 'relays',     label: 'Relays',      icon: 'relays'     },
+    { id: 'dashboards', label: 'Dashboards',  icon: 'dashboards' },
+    { id: 'labels',     label: 'Labels',      icon: 'labels'     },
+    { id: 'config',     label: 'Config',      icon: 'config'     },
+    { id: 'settings',   label: 'Settings',    icon: 'settings'   },
+  ]
+
+  const ICONS = {
+    menu:       'M3 12h18M3 6h18M3 18h18',
+    dashboard:  'M10 3H3v7h7V3zm11 0h-7v7h7V3zm0 11h-7v7h7v-7zm-11 0H3v7h7v-7z',
+    relays:     'M18 7a5 5 0 010 10M6 7a5 5 0 000 10M6 12h12',
+    dashboards: 'M18 20V10M12 20V4M6 20v-6',
+    labels:     'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01',
+    config:     'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
+    settings:   'M12 15a3 3 0 100-6 3 3 0 000 6zm6.36-1.5a1.5 1.5 0 00.3 1.66l.05.05a2 2 0 010 2.83 2 2 0 01-2.83 0l-.05-.05a1.5 1.5 0 00-1.66-.3 1.5 1.5 0 00-.91 1.37V19a2 2 0 01-4 0v-.09a1.5 1.5 0 00-.98-1.38 1.5 1.5 0 00-1.66.3l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.5 1.5 0 00.3-1.66 1.5 1.5 0 00-1.37-.91H3a2 2 0 010-4h.09a1.5 1.5 0 001.38-.98 1.5 1.5 0 00-.3-1.66l-.06-.06a2 2 0 012.83-2.83l.06.06a1.5 1.5 0 001.66.3H9a1.5 1.5 0 00.91-1.37V3a2 2 0 014 0v.09a1.5 1.5 0 00.91 1.37 1.5 1.5 0 001.66-.3l.06-.06a2 2 0 012.83 2.83l-.06.06a1.5 1.5 0 00-.3 1.66V9a1.5 1.5 0 001.37.91H21a2 2 0 010 4h-.09a1.5 1.5 0 00-1.37.91z',
+  }
 
   $: antennaRelays = Array.from({length: 8}, (_, i) => {
     const key = `ant_relay_${i + 1}`
     return { key, value: $sensors[key]?.value ?? 0, label: $labels[key] ?? '', relayNum: i + 1 }
   })
 
-  $: vhfRelays = [
-    { key: 'vhf_relay', relayNum: 1 },
-  ].map(r => ({ ...r, value: $sensors[r.key]?.value ?? 0, label: $labels[r.key] ?? '' }))
+  $: vhfRelays = [{ key: 'vhf_relay', relayNum: 1 }].map(r => ({
+    ...r, value: $sensors[r.key]?.value ?? 0, label: $labels[r.key] ?? '',
+  }))
 
   $: wm = {
     fwd: $sensors['watt_meter_forward_power_w']?.value   ?? 0,
@@ -29,24 +50,52 @@
 </script>
 
 <div class="app">
-  <header>
-    <div class="brand">StationController</div>
-    <nav>
-      <button class:active={page==='dashboard'}  on:click={() => page='dashboard'}>Dashboard</button>
-      <button class:active={page==='relays'}     on:click={() => page='relays'}>Relays</button>
-      <button class:active={page==='dashboards'} on:click={() => page='dashboards'}>Dashboards</button>
-      <button class:active={page==='labels'}     on:click={() => page='labels'}>Labels</button>
-      <button class:active={page==='settings'}   on:click={() => page='settings'}>
-        Settings{#if $updateAvailable}<span class="update-dot" title="Update available"></span>{/if}
-      </button>
-    </nav>
-    <div class="ws-status" class:ok={$connected}>
-      <span class="ws-dot"></span>
-      {$connected ? 'Live' : 'Connecting…'}
-    </div>
-  </header>
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar" class:collapsed={!sidebarOpen}>
 
-  <main>
+    <div class="sidebar-top">
+      <button class="toggle-btn" on:click={() => sidebarOpen = !sidebarOpen} title="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+          <path d={ICONS.menu}/>
+        </svg>
+      </button>
+      <span class="brand">StationController</span>
+    </div>
+
+    <nav>
+      {#each NAV as item (item.id)}
+        <button
+          class="nav-btn"
+          class:active={page === item.id}
+          on:click={() => page = item.id}
+          title={!sidebarOpen ? item.label : undefined}
+        >
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               width="18" height="18" aria-hidden="true">
+            <path d={ICONS[item.icon]}/>
+          </svg>
+          <span class="nav-label">{item.label}</span>
+          {#if item.id === 'settings' && $updateAvailable}
+            <span class="update-dot" title="Update available"></span>
+          {/if}
+        </button>
+      {/each}
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="ws-status" class:ok={$connected} title={$connected ? 'Live' : 'Connecting…'}>
+        <span class="ws-dot"></span>
+        <span class="nav-label">{$connected ? 'Live' : 'Connecting…'}</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Main content ── -->
+  <main class="content">
+
     {#if page === 'dashboard'}
 
       <section>
@@ -133,6 +182,13 @@
         <LabelEditor />
       </section>
 
+    {:else if page === 'config'}
+
+      <section>
+        <div class="section-title">Configuration Editor</div>
+        <ConfigEditor />
+      </section>
+
     {:else if page === 'settings'}
 
       <section>
@@ -144,6 +200,7 @@
       </section>
 
     {/if}
+
   </main>
 </div>
 
@@ -158,6 +215,7 @@
     --accent-dim: rgba(78,154,241,0.12);
     --green:      #3ecf8e;
     --red:        #e96262;
+    --sidebar-w:  200px;
   }
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(body) {
@@ -168,64 +226,146 @@
     font-size: 14px;
   }
 
-  .app { display: flex; flex-direction: column; min-height: 100vh; }
+  /* ── Layout ── */
+  .app { display: flex; height: 100vh; overflow: hidden; }
 
-  header {
+  /* ── Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    transition: width 0.2s ease;
+    overflow: hidden;
+  }
+  .sidebar.collapsed { width: 52px; }
+
+  .sidebar-top {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    padding: 0 1.25rem;
+    gap: 0.6rem;
     height: 48px;
+    padding: 0 0.75rem;
     border-bottom: 1px solid var(--border);
-    background: var(--surface);
-    position: sticky; top: 0; z-index: 10;
+    flex-shrink: 0;
   }
-  .brand { font-weight: 700; font-size: 1rem; flex-shrink: 0; }
-  nav { display: flex; gap: 0.25rem; }
-  nav button {
-    padding: 0.3rem 0.75rem;
-    border: none; background: transparent;
-    color: var(--text-muted); cursor: pointer;
-    border-radius: 5px; font-size: 0.85rem;
+
+  .toggle-btn {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: color 0.15s, background 0.15s;
   }
-  nav button:hover  { background: var(--border); color: var(--text); }
-  nav button.active { background: var(--accent-dim); color: var(--accent); }
+  .toggle-btn:hover { color: var(--text); background: var(--border); }
+
+  .brand {
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    opacity: 1;
+    transition: opacity 0.15s ease;
+  }
+  .collapsed .brand { opacity: 0; pointer-events: none; }
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.5rem;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.5rem 0.5rem;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    text-align: left;
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s;
+  }
+  .nav-btn:hover  { background: var(--border); color: var(--text); }
+  .nav-btn.active { background: var(--accent-dim); color: var(--accent); }
+
+  .nav-icon { flex-shrink: 0; }
+
+  .nav-label {
+    flex: 1;
+    opacity: 1;
+    transition: opacity 0.1s ease;
+    overflow: hidden;
+  }
+  .collapsed .nav-label { opacity: 0; width: 0; pointer-events: none; }
+
   .update-dot {
-    display: inline-block;
+    flex-shrink: 0;
     width: 6px; height: 6px; border-radius: 50%;
     background: var(--accent);
-    margin-left: 5px;
-    vertical-align: middle;
     animation: pulse 2s ease-in-out infinite;
   }
   @keyframes pulse {
     0%, 100% { opacity: 1; }
-    50%       { opacity: 0.35; }
+    50%       { opacity: 0.3; }
+  }
+
+  .sidebar-footer {
+    border-top: 1px solid var(--border);
+    padding: 0.6rem 0.5rem;
+    flex-shrink: 0;
   }
 
   .ws-status {
-    margin-left: auto;
-    display: flex; align-items: center; gap: 0.4rem;
-    font-size: 0.75rem; color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding: 0.25rem 0.5rem;
   }
   .ws-dot {
+    flex-shrink: 0;
     width: 7px; height: 7px; border-radius: 50%;
-    background: var(--text-muted); transition: background 0.3s;
+    background: var(--text-muted);
+    transition: background 0.3s;
   }
   .ws-status.ok .ws-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
   .ws-status.ok { color: var(--green); }
 
-  main {
+  /* ── Content ── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
     padding: 1.25rem;
-    max-width: 900px; width: 100%;
-    margin: 0 auto;
-    display: flex; flex-direction: column; gap: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
   }
+
   section { display: flex; flex-direction: column; gap: 0.6rem; }
+
   .section-title {
-    font-size: 0.72rem; text-transform: uppercase;
-    letter-spacing: 0.07em; color: var(--text-muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
   }
   .power-grid {
     display: grid;

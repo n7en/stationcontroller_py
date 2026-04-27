@@ -11,12 +11,10 @@
   $: pct   = Math.min(Math.max(value / max, 0), 1)
   $: endX  = +(R * Math.cos(Math.PI * (1 - pct))).toFixed(3)
   $: endY  = +(-R * Math.sin(Math.PI * (1 - pct))).toFixed(3)
-  $: lg    = pct > 0.5 ? 1 : 0
-
-  // CCW arc (sweep=0) so it curves through the top of the SVG
+  // CW arc (sweep=1) — curves through the top of the SVG; partial arcs always < 180° so large-arc=0
   $: arc   = pct < 0.001 ? ''
-           : pct > 0.999 ? `M ${-R} 0 A ${R} ${R} 0 1 0 ${R} 0`
-           : `M ${-R} 0 A ${R} ${R} 0 ${lg} 0 ${endX} ${endY}`
+           : pct > 0.999 ? `M ${-R} 0 A ${R} ${R} 0 1 1 ${R} 0`
+           : `M ${-R} 0 A ${R} ${R} 0 0 1 ${endX} ${endY}`
 
   $: display = value >= 1000 ? (value / 1000).toFixed(1) + 'k' : Math.round(value)
   $: maxLbl  = max  >= 1000 ? (max  / 1000).toFixed(max % 1000 ? 1 : 0) + 'k' : String(max)
@@ -27,7 +25,7 @@
   <svg viewBox="-64 -56 128 90" aria-label="{title}: {display}{unit}">
     <!-- Background track -->
     <path
-      d="M {-R} 0 A {R} {R} 0 1 0 {R} 0"
+      d="M {-R} 0 A {R} {R} 0 1 1 {R} 0"
       fill="none" stroke="var(--border)" stroke-width={SW} stroke-linecap="round"
     />
     <!-- Value arc -->

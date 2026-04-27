@@ -61,7 +61,7 @@ async def save_automation_config(
     if parsed is not None and not isinstance(parsed, dict):
         raise HTTPException(status_code=422, detail="Automation config must be a YAML mapping")
     AUTOMATION_CONFIG.parent.mkdir(parents=True, exist_ok=True)
-    AUTOMATION_CONFIG.write_text(body.yaml, encoding="utf-8")
+    AUTOMATION_CONFIG.write_text(body.yaml, encoding="utf-8", newline="\n")
 
     # Reload into live engine if available
     if state.engine is not None and parsed:

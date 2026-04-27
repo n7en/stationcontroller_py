@@ -100,7 +100,7 @@ class LabelRegistry:
         """Write the label mapping to a YAML file."""
         path = Path(path)
         payload = {"labels": dict(sorted(self._by_key.items()))}
-        with open(path, "w", encoding="utf-8") as fh:
+        with open(path, "w", encoding="utf-8", newline="\n") as fh:
             yaml.dump(payload, fh, default_flow_style=False, allow_unicode=True)
 
     @classmethod

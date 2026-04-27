@@ -59,6 +59,12 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
             log.warning("WS coax_select: no network for device addr %s", device_addr)
             return
         await network.send(device_addr, f"CX,{port}")
+        # Optimistically update the sensor registry so the UI reflects the
+        # change immediately rather than waiting for the next hardware UPDATE.
+        for dev in state.devices.values():
+            if getattr(dev, "address", None) == device_addr and hasattr(dev, "optimistic_select"):
+                dev.optimistic_select(port)
+                break
 
     elif kind == "radio_tune":
         if state.radio_interface is None:

@@ -29,7 +29,7 @@ def _load() -> list[dict]:
 
 def _save(subs: list[dict]) -> None:
     SUBSCRIPTIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    SUBSCRIPTIONS_FILE.write_text(json.dumps(subs, indent=2), encoding="utf-8")
+    SUBSCRIPTIONS_FILE.write_text(json.dumps(subs, indent=2), encoding="utf-8", newline="\n")
 
 
 class PushSubscription(BaseModel):

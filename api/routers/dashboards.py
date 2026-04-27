@@ -76,7 +76,7 @@ async def save_dashboard(dashboard_id: str, body: DashboardSave) -> dict:
     if not isinstance(parsed, dict):
         raise HTTPException(status_code=422, detail="Dashboard config must be a YAML mapping")
     DASHBOARDS_DIR.mkdir(parents=True, exist_ok=True)
-    path.write_text(body.yaml, encoding="utf-8")
+    path.write_text(body.yaml, encoding="utf-8", newline="\n")
     return {"ok": True, "id": dashboard_id}
 
 
@@ -95,7 +95,7 @@ async def create_dashboard(body: DashboardSave) -> dict:
     if path.exists():
         raise HTTPException(status_code=409, detail=f"Dashboard {dashboard_id!r} already exists")
     DASHBOARDS_DIR.mkdir(parents=True, exist_ok=True)
-    path.write_text(body.yaml, encoding="utf-8")
+    path.write_text(body.yaml, encoding="utf-8", newline="\n")
     return {"ok": True, "id": dashboard_id}
 
 

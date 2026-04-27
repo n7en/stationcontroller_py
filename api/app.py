@@ -22,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .deps import AppState, get_state, _state
 from .ws_hub import WSHub
-from .routers import automations, dashboards, labels, notifications, radio, relays, sensors, update, ws
+from .routers import automations, config, dashboards, labels, notifications, radio, relays, sensors, update, ws
 
 UI_DIST = Path("ui_dist")
 _log    = logging.getLogger(__name__)
@@ -107,6 +107,7 @@ def create_app(app_state: Optional[AppState] = None) -> FastAPI:
     app.include_router(automations.router)
     app.include_router(notifications.router)
     app.include_router(update.router)
+    app.include_router(config.router)
 
     # Serve built frontend — falls back gracefully if not yet built
     if UI_DIST.exists() and any(UI_DIST.iterdir()):

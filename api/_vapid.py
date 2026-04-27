@@ -49,7 +49,7 @@ def generate_keys(sub: str = "mailto:admin@localhost") -> dict:
         "sub": sub,
     }
     KEYS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    KEYS_FILE.write_text(json.dumps(keys, indent=2), encoding="utf-8")
+    KEYS_FILE.write_text(json.dumps(keys, indent=2), encoding="utf-8", newline="\n")
     return keys
 
 

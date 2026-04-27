@@ -39,7 +39,7 @@ def _read_app_cfg() -> dict:
 
 def _write_app_cfg(cfg: dict) -> None:
     _APP_CFG.parent.mkdir(parents=True, exist_ok=True)
-    with open(_APP_CFG, "w", encoding="utf-8") as fh:
+    with open(_APP_CFG, "w", encoding="utf-8", newline="\n") as fh:
         yaml.dump(cfg, fh, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
 

@@ -99,6 +99,10 @@ class CoaxSwitch:
         """Command the switch to select *port* (1–4, 0 = disconnect all)."""
         await network.send(self.address, f"CX,{port}")
 
+    def optimistic_select(self, port: int) -> None:
+        """Immediately publish *port* as active without waiting for hardware confirmation."""
+        self._parse_and_publish(["CX1", str(port)])
+
     async def _handle_packet(self, packet: DCNPacket, transport_name: str) -> None:  # pyright: ignore[reportUnusedParameter]
         if packet.from_addr != self.address:
             return
