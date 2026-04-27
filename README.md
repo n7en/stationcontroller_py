@@ -80,26 +80,73 @@ irm https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.ps1
 > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 > ```
 
-### Manual install (all platforms)
+### Manual install
+
+If you prefer not to use the one-liner, or need to install in a restricted environment, follow these steps.
+
+#### Linux / macOS
 
 ```bash
-# Linux / macOS
 git clone https://github.com/n7en/stationcontroller_py
 cd StationController_Py
-chmod +x install.sh
-./install.sh          # production
-./install.sh --dev    # + dev tools
+
+# Create virtual environment and install Python dependencies
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# Install dev tools (optional)
+.venv/bin/pip install -r requirements-dev.txt
+
+# Build the UI
+cd ui && npm install && npm run build && cd ..
+
+# Run database migrations
+.venv/bin/alembic upgrade head
 ```
+
+Edit `config/comms_config.yaml` to assign your serial ports and MQTT topics, then start the app:
+
+```bash
+.venv/bin/python main.py
+```
+
+#### Windows
+
+Open **PowerShell** in the repo directory.
 
 ```powershell
-# Windows
 git clone https://github.com/n7en/stationcontroller_py
 cd StationController_Py
-.\install.ps1         # production
-.\install.ps1 -Dev    # + dev tools
+
+# Create virtual environment and install Python dependencies
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+
+# Install dev tools (optional)
+.venv\Scripts\pip install -r requirements-dev.txt
+
+# Build the UI
+cd ui; npm install; npm run build; cd ..
+
+# Run database migrations
+.venv\Scripts\alembic upgrade head
 ```
 
-Re-running either script at any time is safe — it skips steps already done and applies any new migrations.
+If your system Python is not on `PATH`, use the full path from `py -3 -c "import sys; print(sys.executable)"`.
+
+If PowerShell blocks script execution:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+Edit `config\comms_config.yaml` to assign your COM ports and MQTT topics, then start the app:
+
+```powershell
+.venv\Scripts\python main.py
+```
+
+Re-running the install scripts at any time is safe — they skip steps already done and apply any new migrations.
 
 ---
 
