@@ -198,7 +198,7 @@ for pattern in globs:
         subsys  = udev_attr(dev, "ID_BUS")
 
         parts = [p for p in [vendor, model] if p]
-        desc  = " — " + " ".join(parts) if parts else ""
+        desc  = " - " + " ".join(parts) if parts else ""
         if serial:
             desc += f" [{serial}]"
 
@@ -352,7 +352,7 @@ sim_path   = pathlib.Path(sys.argv[2])
 sim = yaml.safe_load(sim_path.read_text(encoding='utf-8')) or {}
 
 if not comms_path.exists():
-    print("  comms_config.yaml not found — simulator will use defaults")
+    print("  comms_config.yaml not found - simulator will use defaults")
     sys.exit(0)
 
 comms = yaml.safe_load(comms_path.read_text(encoding='utf-8')) or {}
@@ -380,7 +380,7 @@ if mqtt_t:
     print(f"  RX topic:    {sim['topic_rx']}")
     print(f"  TX topic:    {sim['topic_tx']}")
 else:
-    print("  No nodered_mqtt transport found — using defaults (localhost:1883)")
+    print("  No nodered_mqtt transport found - using defaults (localhost:1883)")
 
 # Sync device list; preserve per-device settings (intervals, initial states)
 TYPE_MAP = {
