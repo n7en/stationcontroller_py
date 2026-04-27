@@ -119,7 +119,7 @@ import pathlib, yaml
 cfg_path = pathlib.Path("config/telemetry_config.yaml")
 default_url = "sqlite+aiosqlite:///data/station.db"
 if cfg_path.exists():
-    raw = yaml.safe_load(cfg_path.read_text()) or {}
+    raw = yaml.safe_load(cfg_path.read_text(encoding='utf-8')) or {}
     url = raw.get("telemetry", {}).get("database", {}).get("url", default_url)
 else:
     url = default_url
@@ -231,7 +231,7 @@ PYEOF
             # Find active rs485 transports in the config
             TRANSPORTS=$("$PYTHON_VENV" - "$COMMS_CFG" <<'PYEOF'
 import sys, yaml, pathlib
-cfg = yaml.safe_load(pathlib.Path(sys.argv[1]).read_text()) or {}
+cfg = yaml.safe_load(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8')) or {}
 for bus in cfg.get("buses", []):
     for t in bus.get("transports", []):
         if t.get("type") == "rs485":
@@ -287,7 +287,7 @@ for arg in sys.argv[2:]:
     name, _, port = arg.partition("=")
     assignments[name] = port
 
-text = cfg_path.read_text()
+text = cfg_path.read_text(encoding='utf-8')
 lines = text.splitlines(keepends=True)
 result = []
 
@@ -321,7 +321,7 @@ for line in lines:
 
     result.append(line)
 
-cfg_path.write_text("".join(result))
+cfg_path.write_text("".join(result), encoding='utf-8')
 print(f"  Updated {cfg_path}")
 PYEOF
                 fi
@@ -349,13 +349,13 @@ import sys, yaml, pathlib
 comms_path = pathlib.Path(sys.argv[1])
 sim_path   = pathlib.Path(sys.argv[2])
 
-sim = yaml.safe_load(sim_path.read_text()) or {}
+sim = yaml.safe_load(sim_path.read_text(encoding='utf-8')) or {}
 
 if not comms_path.exists():
     print("  comms_config.yaml not found — simulator will use defaults")
     sys.exit(0)
 
-comms = yaml.safe_load(comms_path.read_text()) or {}
+comms = yaml.safe_load(comms_path.read_text(encoding='utf-8')) or {}
 
 # Pull settings from the first nodered_mqtt transport found
 mqtt_t = None
@@ -398,7 +398,7 @@ if comms_devs:
         sim['devices'].append(entry)
         print(f"  device: {entry['type']:15s}  addr={entry['address']}")
 
-sim_path.write_text(yaml.dump(sim, default_flow_style=False, sort_keys=False))
+sim_path.write_text(yaml.dump(sim, default_flow_style=False, sort_keys=False, allow_unicode=False), encoding='utf-8')
 print(f"  Written -> {sim_path}")
 PYEOF
             _SIM_READY=1
