@@ -500,6 +500,57 @@ Start the simulator before or after the main app — it reconnects automatically
 
 Voltages and temperatures drift slightly each cycle; RF power has a small envelope ripple — enough that the UI graphs look live rather than static.
 
+### Radio simulation
+
+The simulator includes two ways to simulate a radio transceiver without physical hardware.
+
+#### rigctld TCP server
+
+`SimRigctld` is an async TCP server that speaks the rigctld extended (`\`-prefix) protocol. Point the app's `rigctld` backend at it and it connects as if talking to a real `rigctld` daemon — no changes to your radio config needed beyond host and port.
+
+Enable it in `simulator/sim_config.yaml`:
+
+```yaml
+radio:
+  rigctld:
+    enabled: true
+    host: "127.0.0.1"
+    port: 4532          # must match radio_config.yaml
+    initial:
+      frequency_hz: 14200000
+      mode: USB
+      bandwidth_hz: 2400
+      rf_power: 1.0
+      signal_strength: -10.0   # S-meter dBm, adds small noise each read
+```
+
+Then in `config/radio_config.yaml`:
+
+```yaml
+radios:
+  - name: sim_radio
+    backend: rigctld
+    host: 127.0.0.1
+    port: 4532
+    poll_interval_s: 0.5
+```
+
+#### Hamlib Python shim
+
+`simulator/Hamlib.py` is a drop-in replacement for the real `Hamlib` Python bindings. It exposes the same API surface (`Rig`, `rig_strrmode`, `rig_strvfo`, all constants) so the `hamlib_direct` backend runs without any hardware or native library install.
+
+Activate by prepending `simulator/` to `PYTHONPATH` before starting the app:
+
+```bash
+# Linux / macOS
+PYTHONPATH=simulator .venv/bin/python main.py
+
+# Windows (PowerShell)
+$env:PYTHONPATH = "simulator"; .venv\Scripts\python main.py
+```
+
+The shim is self-contained — it does not require the MQTT broker or any other part of the simulator stack.
+
 ---
 
 ## Project structure

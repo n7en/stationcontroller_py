@@ -282,6 +282,20 @@ class DCNSimulator:
             self._devices[dev.address] = dev
             logger.info("  [%s] %s  (every %.3fs)", dev.address, dev_cfg["type"], dev.interval)
 
+        # Radio simulator (rigctld)
+        self._rigctld: Optional[object] = None
+        rig_cfg = config.get("radio", {}).get("rigctld", {})
+        if rig_cfg.get("enabled", False):
+            from simulator.radio_sim import SimRadioState, SimRigctld
+            state = SimRadioState.from_config(rig_cfg.get("initial", {}))
+            self._rigctld = SimRigctld(
+                state,
+                host=rig_cfg.get("host", "127.0.0.1"),
+                port=int(rig_cfg.get("port", 4532)),
+            )
+            logger.info("  rigctld  %s:%s", rig_cfg.get("host", "127.0.0.1"),
+                        rig_cfg.get("port", 4532))
+
         self._client = mqtt.Client(client_id="dcn-simulator")
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
@@ -341,6 +355,9 @@ class DCNSimulator:
             if hasattr(dev, "attach_loop"):
                 dev.attach_loop(self._loop)
 
+        if self._rigctld:
+            await self._rigctld.start()
+
         self._client.connect_async(self._broker, self._port, keepalive=60)
         self._client.loop_start()
 
@@ -356,6 +373,8 @@ class DCNSimulator:
         finally:
             for t in tasks:
                 t.cancel()
+            if self._rigctld:
+                await self._rigctld.stop()
             self._client.loop_stop()
             self._client.disconnect()
             logger.info("DCN simulator stopped")

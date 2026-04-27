@@ -76,6 +76,48 @@ devices:
     relay_states: "00000000"      # initial relay states
 
 # ---------------------------------------------------------------------------
+# Radio simulator
+# ---------------------------------------------------------------------------
+# rigctld — async TCP server that speaks the rigctld extended protocol.
+# Point the app's rigctld backend at host/port below and it connects as if
+# talking to a real rigctld daemon.
+#
+#   config/radio_config.yaml:
+#     radios:
+#       - name: sim_radio
+#         backend: rigctld
+#         host: 127.0.0.1
+#         port: 4532
+#         poll_interval_s: 0.5
+#
+# hamlib_direct — use the Hamlib.py shim in this directory instead of the
+# real Hamlib Python bindings.  Activate by prepending simulator/ to PYTHONPATH:
+#
+#   Linux / macOS:  PYTHONPATH=simulator .venv/bin/python main.py
+#   Windows:        $env:PYTHONPATH = "simulator"; .venv\Scripts\python main.py
+#
+# The shim is self-contained — it does not require this config section.
+# ---------------------------------------------------------------------------
+
+radio:
+  rigctld:
+    enabled: false            # set to true to start the rigctld server
+    host: "127.0.0.1"
+    port: 4532
+    initial:
+      frequency_hz: 14200000  # 14.200 MHz (20 m USB)
+      mode: USB
+      bandwidth_hz: 2400
+      vfo: VFOA
+      ptt: false
+      split: false
+      split_freq_hz: 14200000
+      rf_power: 1.0           # normalised 0.0–1.0
+      af_gain: 0.5
+      signal_strength: -10.0  # S-meter dBm (approx S3)
+      info: "SimRig"
+
+# ---------------------------------------------------------------------------
 # Multiple buses
 # ---------------------------------------------------------------------------
 # If your hardware uses a separate high-speed bus (115200 baud, watt meter only),
