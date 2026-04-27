@@ -37,7 +37,7 @@ Optional but recommended:
 curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.sh | bash
 ```
 
-This clones the repository into `~/StationController_Py`, creates a Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for serial ports — prompting you to assign each DCN bus. On the `dev` branch the script also offers to configure the [DCN simulator](#dcn-simulator).
+This clones the repository into `~/StationController_Py`, creates a Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, scans for serial ports — prompting you to assign each DCN bus — and optionally installs a systemd service so the app starts at boot. On the `dev` branch the script also offers to configure the [DCN simulator](#dcn-simulator).
 
 To include development tools (pytest, etc.) as well:
 
@@ -183,7 +183,51 @@ Or via the GUI: **Windows Defender Firewall → Advanced Settings → Inbound Ru
 ### Manual start
 
 ```bash
-python main.py
+.venv/bin/python main.py
+```
+
+### Systemd service (Linux)
+
+If you answered **y** to the service prompt during install, the app runs as a systemd service named `stationcontroller` and starts automatically at boot.
+
+```bash
+# Status
+sudo systemctl status stationcontroller
+
+# Stop / start / restart
+sudo systemctl stop stationcontroller
+sudo systemctl start stationcontroller
+sudo systemctl restart stationcontroller
+
+# Follow logs
+journalctl -u stationcontroller -f
+
+# Disable autostart
+sudo systemctl disable stationcontroller
+```
+
+To install the service manually after the fact, run as root (or prefix with `sudo` if available):
+
+```bash
+cat > /etc/systemd/system/stationcontroller.service <<EOF
+[Unit]
+Description=StationController
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$HOME/StationController_Py
+ExecStart=$HOME/StationController_Py/.venv/bin/python main.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now stationcontroller
 ```
 
 ### Development mode (hot-reload UI)

@@ -408,11 +408,79 @@ PYEOF
     fi
 fi
 
+# ── 9. Systemd service (Linux only) ──────────────────────────────────────
+_SERVICE_READY=0
+if [[ "$(uname -s)" == "Linux" ]] && command -v systemctl &>/dev/null; then
+    # Determine how to run privileged commands
+    if [[ "$EUID" -eq 0 ]]; then
+        _PRIV=""                          # already root
+        _SVC_USER="${SUDO_USER:-${USER}}" # real user if invoked via sudo
+    elif command -v sudo &>/dev/null; then
+        _PRIV="sudo"
+        _SVC_USER="$USER"
+    else
+        _PRIV=""
+        _SVC_USER="$USER"
+        warn "Not root and sudo not found — service installation will be skipped."
+    fi
+
+    SERVICE_NAME="stationcontroller"
+    SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
+    echo ""
+    info "Systemd service setup"
+
+    SERVICE_CONTENT="[Unit]
+Description=StationController
+After=network.target
+
+[Service]
+Type=simple
+User=${_SVC_USER}
+WorkingDirectory=${SCRIPT_DIR}
+ExecStart=${SCRIPT_DIR}/.venv/bin/python main.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target"
+
+    prompt "Install and enable a systemd service to start at boot? [y/N]:"
+    read -r _svc_choice
+    if [[ "$_svc_choice" =~ ^[Yy]$ ]]; then
+        if [[ "$EUID" -eq 0 ]] || command -v sudo &>/dev/null; then
+            # Write directly to systemd and enable
+            echo "$SERVICE_CONTENT" | ${_PRIV} tee "$SERVICE_FILE" > /dev/null
+            ${_PRIV} systemctl daemon-reload
+            ${_PRIV} systemctl enable --now "$SERVICE_NAME"
+            echo "  Service enabled: ${SERVICE_NAME}"
+            _SERVICE_READY=1
+        else
+            # No privilege escalation — write the unit file locally for the user to install
+            LOCAL_UNIT="$HOME/${SERVICE_NAME}.service"
+            echo "$SERVICE_CONTENT" > "$LOCAL_UNIT"
+            warn "No root or sudo available. Service file written to:"
+            warn "  $LOCAL_UNIT"
+            warn "To install it, copy it as root and enable:"
+            warn "  cp $LOCAL_UNIT $SERVICE_FILE"
+            warn "  systemctl daemon-reload"
+            warn "  systemctl enable --now ${SERVICE_NAME}"
+        fi
+    else
+        echo "    -> skipped"
+    fi
+fi
+
 # ── Done ───────────────────────────────────────────────────────────────────
 echo ""
 echo "${bold}${green}Installation complete.${reset}"
 echo ""
-echo "  Start the server:  .venv/bin/python main.py"
+if [[ "$_SERVICE_READY" -eq 1 ]]; then
+    echo "  Service status:    sudo systemctl status stationcontroller"
+    echo "  Stop/start:        sudo systemctl stop|start stationcontroller"
+    echo "  View logs:         journalctl -u stationcontroller -f"
+else
+    echo "  Start the server:  .venv/bin/python main.py"
+fi
 [[ -d "$SCRIPT_DIR/ui/dist" ]] && echo "  UI available at:   http://localhost:8080"
 [[ "$_SIM_READY" -eq 1 ]] && echo "  Run simulator:     .venv/bin/python -m simulator"
 echo ""
