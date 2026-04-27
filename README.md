@@ -37,7 +37,7 @@ Optional but recommended:
 curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.sh | bash
 ```
 
-This clones the repository into `~/StationController_Py`, creates a Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for serial ports — prompting you to assign each DCN bus.
+This clones the repository into `~/StationController_Py`, creates a Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for serial ports — prompting you to assign each DCN bus. On the `dev` branch the script also offers to configure the [DCN simulator](#dcn-simulator).
 
 To include development tools (pytest, etc.) as well:
 
@@ -60,7 +60,7 @@ Open **PowerShell** and run:
 irm https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.ps1 | iex
 ```
 
-This clones the repository into `~\StationController_Py`, sets up the Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for COM ports — prompting you to assign each DCN bus.
+This clones the repository into `~\StationController_Py`, sets up the Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for COM ports — prompting you to assign each DCN bus. On the `dev` branch the script also offers to configure the [DCN simulator](#dcn-simulator).
 
 To include development tools as well:
 
@@ -404,6 +404,104 @@ npm run test:watch  # interactive watch mode
 
 ---
 
+## DCN Simulator
+
+The `simulator/` directory contains a software DCN hardware simulator for development and integration testing — no physical RS-485 adapters or hardware required.
+
+The simulator connects to an MQTT broker and publishes realistic device `UPDATE` packets on the same topics used by the Node-RED MQTT bridge transport. It also subscribes for commands from the app (relay set, coax select, position select, etc.) and updates its internal state accordingly, so the app behaves exactly as it would with real hardware.
+
+> **Dev branch only.** `simulator/` is present on `dev` and feature branches. A GitHub Actions workflow automatically removes it from `main` on merge, so production installs are never affected.
+
+### Prerequisites
+
+An MQTT broker reachable from both the app and the simulator. [Mosquitto](https://mosquitto.org/) is the simplest option:
+
+```bash
+# Linux / Raspberry Pi
+sudo apt install mosquitto mosquitto-clients
+sudo systemctl enable --now mosquitto
+
+# macOS
+brew install mosquitto
+brew services start mosquitto
+
+# Windows
+winget install EclipseFoundation.Mosquitto
+```
+
+### Setup
+
+The install script configures the simulator automatically when you answer **y** to the simulator prompt. It reads `config/comms_config.yaml`, copies the `nodered_mqtt` transport settings (broker, port, topics, credentials) into `simulator/sim_config.yaml`, and syncs the device list to match your comms config.
+
+To configure manually, edit `simulator/sim_config.yaml`:
+
+```yaml
+mqtt:
+  broker: localhost       # MQTT broker hostname or IP
+  port: 1883
+  username: ""
+  password: ""
+
+# Must match the nodered_mqtt transport in config/comms_config.yaml
+topic_rx: dcn/control/rx  # simulator publishes here  (app receives)
+topic_tx: dcn/control/tx  # simulator subscribes here (app sends commands)
+
+master_addr: "00"
+
+devices:
+  - type: watt_meter
+    address: "03"
+    name: watt_meter
+    update_interval_s: 0.1   # 10 Hz — matches streaming-mode firmware
+    tx_enabled: false         # set true to simulate a transmitting radio
+    forward_power_w: 100.0
+    reflected_power_w: 2.0
+
+  - type: gpio
+    address: "01"
+    name: gpio
+    update_interval_s: 1.0
+    relay_states: "00000000"
+
+  # coax_switch  address "02"  — selects antenna port 1–4
+  # vhf_relay    address "05"  — single SPDT relay
+  # antenna_relay address "06" — 8-relay bank with POS / pulse support
+```
+
+The app must have a `nodered_mqtt` transport configured in `config/comms_config.yaml` with matching topics — the simulator acts as the hardware side of that bridge.
+
+### Running
+
+```bash
+# Linux / macOS — from repo root
+.venv/bin/python -m simulator
+
+# Windows
+.venv\Scripts\python -m simulator
+
+# Custom config file
+python -m simulator path/to/sim_config.yaml
+
+# Verbose (shows every packet sent and command received)
+python -m simulator -v
+```
+
+Start the simulator before or after the main app — it reconnects automatically if the broker restarts.
+
+### Simulated devices
+
+| Type | DCN module | Default addr | Notes |
+|---|---|---|---|
+| `gpio` | #321 | `01` | 8 relays, 4 digital inputs, 4 voltmeters, 2 temp sensors |
+| `coax_switch` | #331 CX-1 | `02` | Selects one of 4 antenna ports |
+| `watt_meter` | #351 | `03` | Forward/reflected power; runs at 10 Hz in streaming mode |
+| `vhf_relay` | #332 CX-2 | `05` | Single SPDT relay |
+| `antenna_relay` | #361 | `06` | 8-relay bank; supports POS, pulse, mask commands |
+
+Voltages and temperatures drift slightly each cycle; RF power has a small envelope ripple — enough that the UI graphs look live rather than static.
+
+---
+
 ## Project structure
 
 ```
@@ -428,7 +526,10 @@ StationController_Py/
 │       └── main.yaml
 ├── data/                   # Runtime data (SQLite DB created here)
 ├── alembic/                # Database migration scripts
-└── tests/                  # pytest test suite
+├── tests/                  # pytest test suite
+└── simulator/              # DCN hardware simulator (dev branch only)
+    ├── dcn_sim.py          # Simulator logic and device models
+    └── sim_config.yaml     # MQTT and device configuration
 ```
 
 ---
