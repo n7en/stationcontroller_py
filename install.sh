@@ -257,7 +257,7 @@ PYEOF
                     [[ -n "$speed_note" ]] && echo "  ${yellow}${speed_note}${reset}"
                     echo "  Currently: ${current_port}"
                     prompt "Select port number (0 to skip):"
-                    read -r choice
+                    read -r choice </dev/tty
 
                     if [[ "$choice" =~ ^[1-9][0-9]*$ ]] && \
                        [[ "$choice" -ge 1 ]] && \
@@ -341,7 +341,7 @@ if [[ -d "$SCRIPT_DIR/simulator" ]]; then
         echo ""
         info "DCN simulator available (branch: $_BRANCH)"
         prompt "Set up simulator for testing? [y/N]:"
-        read -r _sim_choice
+        read -r _sim_choice </dev/tty
         if [[ "$_sim_choice" =~ ^[Yy]$ ]]; then
             "$PYTHON_VENV" - "$SCRIPT_DIR/config/comms_config.yaml" "$SIM_CFG" <<'PYEOF'
 import sys, yaml, pathlib
@@ -445,7 +445,7 @@ RestartSec=5
 WantedBy=multi-user.target"
 
     prompt "Install and enable a systemd service to start at boot? [y/N]:"
-    read -r _svc_choice
+    read -r _svc_choice </dev/tty
     if [[ "$_svc_choice" =~ ^[Yy]$ ]]; then
         if [[ "$EUID" -eq 0 ]] || command -v sudo &>/dev/null; then
             # Write directly to systemd and enable
