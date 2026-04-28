@@ -25,13 +25,13 @@ cards:
 
   - type: relay
     title: "Beam - 20m"
-    relay_key: gpio_01_relay_1
+    relay_key: gpio_relay_1
     device_addr: "01"
     relay_num: 1
 
   - type: relay
     title: "Vertical - 40m"
-    relay_key: gpio_01_relay_2
+    relay_key: gpio_relay_2
     device_addr: "01"
     relay_num: 2
 

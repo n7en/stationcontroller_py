@@ -95,7 +95,7 @@ buses:
 devices:
 
   - type: gpio
-    name: gpio_01
+    name: gpio
     address: "01"
     bus: control
 
@@ -110,14 +110,17 @@ devices:
     bus: control          # change to 'power' if using a dedicated 115200-baud bus
 
   - type: vhf_relay
-    name: vhf_relay
+    name: vhf
     address: "05"
     bus: control
 
   - type: antenna_relay
-    name: ant_relay
+    name: ant
     address: "06"
     bus: control
+    persona: cc_8a        # options: 1_of_8, dual_vertical, bcd, three_ant_phasing,
+                          #          two_ant_phasing, cc_8a, hi_z_3el, hi_z_4el,
+                          #          hi_z_4_8_pro, hi_z_8el
 
   # -- Example: second watt meter on its own high-speed bus ------------------
   #- type: watt_meter

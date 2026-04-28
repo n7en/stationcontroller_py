@@ -197,12 +197,16 @@ class TestWattMeterRegistryPublishing:
         assert registry.value("hf_forward_power_w") == pytest.approx(100.0)
         assert registry.value("vhf_forward_power_w") == pytest.approx(50.0)
 
-    async def test_zero_forward_does_not_publish_swr(self):
+    async def test_zero_forward_does_not_update_swr(self):
         registry = SensorRegistry()
         meter = WattMeter("main", "03", registry)
+        # Pre-registration seeds swr at 0.0; a zero-forward packet must not
+        # overwrite it with a real SWR value (transmitter is off).
+        pre_ts = registry.get("main_swr").timestamp
         pkt = _wm1_packet("03", forward=0.0, reflected=0.0)
         await meter._handle_packet(pkt, "control")
-        assert registry.get("main_swr") is None
+        assert registry.get("main_swr").value == pytest.approx(0.0)
+        assert registry.get("main_swr").timestamp == pre_ts
 
     async def test_source_is_set_correctly(self):
         registry = SensorRegistry()

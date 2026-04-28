@@ -4,21 +4,21 @@ DCN #361 Antenna Relay Control Module.
 8 dry-contact SPST relays controlled over DCN.  Supports individual relay
 control, bulk mask control, one-hot position selection, toggle, and pulse.
 
-Status packet (device → master, UPDATE,ARC1):
+Status packet (device -> master, UPDATE,ARC1):
     args[0]  ARC1            module type identifier
     args[1]  <relay_states>  8-char string, one char per relay ("0"/"1")
 
-Control commands (master → device):
+Control commands (master -> device):
     RYx,y           Set relay x (1-8) to state y (1=ON, 0=OFF)
     RY              Turn off all 8 relays
-    RY,xxxxxxxx     Set relays by mask — "1" on, "0" off, any other char = no change
+    RY,xxxxxxxx     Set relays by mask -- "1" on, "0" off, any other char = no change
     RYx,T           Toggle relay x
     RYx,P           Pulse relay x on for 500 ms (default)
     RYx,P,y         Pulse relay x on for y seconds
-    POS,x           One-hot position select — turns off all relays then turns on relay x
+    POS,x           One-hot position select -- turns off all relays then turns on relay x
 
-Published sensor names (with name="ant_relay"):
-    ant_relay_relay_1 … relay_8   1.0 = ON, 0.0 = OFF
+Published sensor names (with name="ant"):
+    ant_relay_1 ... relay_N   1.0 = ON, 0.0 = OFF  (N determined by persona)
 """
 from __future__ import annotations
 
@@ -29,6 +29,31 @@ from typing import Optional
 from comms.dcn_network import DCNNetwork
 from comms.dcn_packet import DCNPacket
 from sensors.sensor_registry import SensorRegistry
+
+N_RELAYS = 8  # maximum physical relays on ARC1 hardware
+
+# ---------------------------------------------------------------------------
+# Persona definitions
+# ---------------------------------------------------------------------------
+# Each persona describes a common wiring/application for the #361 board.
+# n_relays: how many of the 8 relays are used by this application.
+# mode:     "individual" = each relay toggled independently
+#           "one_hot"   = exactly one relay active at a time (POS command)
+#           "bcd"       = 4 relays encode a binary position (0-15)
+
+PERSONAS: dict[str, dict] = {
+    "1_of_8":            {"n_relays": 8, "mode": "one_hot",    "label": "1-of-8 Array Switching (DXE-EC-8)"},
+    "dual_vertical":     {"n_relays": 2, "mode": "individual", "label": "Dual Vertical Array Control"},
+    "bcd":               {"n_relays": 4, "mode": "bcd",        "label": "BCD Control Console"},
+    "three_ant_phasing": {"n_relays": 3, "mode": "individual", "label": "Pro-Stack 3-Ant Phasing"},
+    "two_ant_phasing":   {"n_relays": 2, "mode": "individual", "label": "Pro-Stack 2-Ant Phasing"},
+    "cc_8a":             {"n_relays": 8, "mode": "individual", "label": "CC-8A Control Console"},
+    "hi_z_3el":          {"n_relays": 3, "mode": "individual", "label": "Hi-Z 3-Element Array"},
+    "hi_z_4el":          {"n_relays": 4, "mode": "individual", "label": "Hi-Z 4-Element Array"},
+    "hi_z_4_8_pro":      {"n_relays": 8, "mode": "individual", "label": "Hi-Z 4-8 Pro Array"},
+    "hi_z_8el":          {"n_relays": 8, "mode": "individual", "label": "Hi-Z 8-Element Array"},
+}
+DEFAULT_PERSONA = "cc_8a"
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +89,7 @@ class AntennaRelayState:
             return 0
         if len(on_positions) == 1:
             return on_positions[0]
-        return None  # multiple relays on — not a valid one-hot position
+        return None  # multiple relays on -- not a valid one-hot position
 
 
 # ---------------------------------------------------------------------------
@@ -79,10 +104,15 @@ class AntennaRelayModule:
     configured device address, and publishes individual relay states to a
     SensorRegistry.
 
+    The *persona* parameter selects a wiring/application preset that sets
+    n_relays (how many of the 8 physical relays are used) and mode
+    ("individual", "one_hot", or "bcd").  See PERSONAS for options.
+
     Usage::
 
         registry = SensorRegistry()
-        arm = AntennaRelayModule(name="ant_relay", address="06", registry=registry)
+        arm = AntennaRelayModule(name="ant", address="06", registry=registry,
+                                 persona="1_of_8")
         arm.attach(network)
 
         # Set a single relay:
@@ -90,12 +120,6 @@ class AntennaRelayModule:
 
         # One-hot position select (all off, then relay 2 on):
         await arm.select_position(network, 2)
-
-        # Turn everything off:
-        await arm.all_off(network)
-
-        # Pulse relay 5 on for 2 seconds:
-        await arm.pulse_relay(network, 5, seconds=2)
     """
 
     def __init__(
@@ -103,11 +127,23 @@ class AntennaRelayModule:
         name: str,
         address: str,
         registry: SensorRegistry,
+        persona: Optional[str] = None,
     ) -> None:
         self.name = name
         self.address = address
         self._registry = registry
+
+        p = PERSONAS.get(persona or "") or PERSONAS[DEFAULT_PERSONA]
+        self.persona     = persona or DEFAULT_PERSONA
+        self.n_relays    = p["n_relays"]
+        self.mode        = p["mode"]
+        self.persona_label = p["label"]
+
         self.state = AntennaRelayState(name=name, address=address)
+
+        src = f"antenna_relay:{name}"
+        for _i in range(1, self.n_relays + 1):
+            registry.publish(f"{name}_relay_{_i}", 0.0, "", src)
 
     def attach(self, network: DCNNetwork) -> None:
         """Register the packet handler with a DCN network."""
@@ -148,7 +184,7 @@ class AntennaRelayModule:
         Pulse relay *relay_num* on then off.
 
         *seconds* sets the pulse duration; omit for the firmware default (500 ms).
-        The pulse is handled entirely by the device — this method returns
+        The pulse is handled entirely by the device -- this method returns
         immediately after sending the command.
         """
         if seconds is None:
@@ -165,6 +201,11 @@ class AntennaRelayModule:
         all_off() instead.
         """
         await network.send(self.address, f"POS,{position}")
+
+    def optimistic_select_position(self, position: int) -> None:
+        """Immediately publish one-hot position without waiting for hardware confirmation."""
+        states = "".join("1" if i == position else "0" for i in range(1, N_RELAYS + 1))
+        self._parse_and_publish(["ARC1", states])
 
     # ------------------------------------------------------------------
     # Packet handling
@@ -192,7 +233,8 @@ class AntennaRelayModule:
         pfx = self.name
 
         for i, ch in enumerate(relay_states, start=1):
-            self._registry.publish(f"{pfx}_relay_{i}", float(ch == "1"), "", src)
+            if i <= self.n_relays:
+                self._registry.publish(f"{pfx}_relay_{i}", float(ch == "1"), "", src)
 
 
 # ---------------------------------------------------------------------------

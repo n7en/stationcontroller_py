@@ -31,20 +31,20 @@ class TestLoadDevicesHappyPath:
         path = _yaml(
             "devices:\n"
             "  - type: gpio\n"
-            "    name: gpio_01\n"
+            "    name: gpio\n"
             "    address: '01'\n"
             "    bus: control\n",
             tmp_path,
         )
         networks = {"control": DCNNetwork()}
         devices, _ = load_devices(path, registry, networks)
-        assert "gpio_01" in devices
+        assert "gpio" in devices
 
     def test_addr_bus_map_populated(self, tmp_path, registry):
         path = _yaml(
             "devices:\n"
             "  - type: gpio\n"
-            "    name: gpio_01\n"
+            "    name: gpio\n"
             "    address: '01'\n"
             "    bus: control\n",
             tmp_path,
@@ -57,7 +57,7 @@ class TestLoadDevicesHappyPath:
         path = _yaml(
             "devices:\n"
             "  - type: gpio\n"
-            "    name: gpio_01\n"
+            "    name: gpio\n"
             "    address: '01'\n"
             "    bus: control\n"
             "  - type: watt_meter\n"
@@ -76,7 +76,7 @@ class TestLoadDevicesHappyPath:
         path = _yaml(
             "devices:\n"
             "  - type: gpio\n"
-            "    name: gpio_01\n"
+            "    name: gpio\n"
             "    address: '01'\n"
             "    bus: control\n"
             "  - type: watt_meter\n"
@@ -150,25 +150,25 @@ class TestLoadDevicesEdgeCases:
         path = _yaml(
             "devices:\n"
             "  - type: gpio\n"
-            "    name: gpio_01\n"
+            "    name: gpio\n"
             "    address: '01'\n"
             "    bus: nonexistent\n",
             tmp_path,
         )
         networks = {}
         devices, addr_bus = load_devices(path, registry, networks)
-        assert "gpio_01" in devices
+        assert "gpio" in devices
         assert addr_bus["01"] == "nonexistent"
 
     def test_duplicate_device_name_second_skipped(self, tmp_path, registry):
         path = _yaml(
             "devices:\n"
             "  - type: gpio\n"
-            "    name: gpio_01\n"
+            "    name: gpio\n"
             "    address: '01'\n"
             "    bus: control\n"
             "  - type: gpio\n"
-            "    name: gpio_01\n"
+            "    name: gpio\n"
             "    address: '02'\n"
             "    bus: control\n",
             tmp_path,
@@ -182,7 +182,7 @@ class TestLoadDevicesEdgeCases:
         path = _yaml(
             "devices:\n"
             "  - type: gpio\n"
-            "    name: gpio_01\n"
+            "    name: gpio\n"
             "    address: '01'\n"
             "    bus: control\n"
             "  - type: unknown_device\n"
@@ -193,5 +193,5 @@ class TestLoadDevicesEdgeCases:
         )
         networks = {"control": DCNNetwork()}
         devices, addr_bus = load_devices(path, registry, networks)
-        assert "gpio_01" in devices
+        assert "gpio" in devices
         assert "bad" not in devices

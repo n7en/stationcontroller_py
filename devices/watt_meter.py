@@ -127,6 +127,13 @@ class WattMeter:
         self.address = address
         self._registry = registry
         self.state = WattMeterState(name=name, address=address)
+        src = f"watt_meter:{name}"
+        registry.publish(f"{name}_forward_power_w",        0.0, "W",  src)
+        registry.publish(f"{name}_reflected_power_w",      0.0, "W",  src)
+        registry.publish(f"{name}_swr",                    0.0, "",   src)
+        registry.publish(f"{name}_reflection_coefficient", 0.0, "",   src)
+        registry.publish(f"{name}_return_loss_db",         0.0, "dB", src)
+        registry.publish(f"{name}_mismatch_loss_db",       0.0, "dB", src)
 
     def attach(self, network: DCNNetwork) -> None:
         """Register the packet handler with a DCN network."""

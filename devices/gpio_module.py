@@ -106,6 +106,14 @@ class GPIOModule:
         self.address = address
         self._registry = registry
         self.state = GPIOState(name=name, address=address)
+        src = f"gpio_module:{name}"
+        for _i in range(1, 9):
+            registry.publish(f"{name}_relay_{_i}", 0.0, "", src)
+        for _i in range(1, 5):
+            registry.publish(f"{name}_input_{_i}", 0.0, "", src)
+            registry.publish(f"{name}_voltmeter_{_i}", 0.0, "V", src)
+        registry.publish(f"{name}_temp_1_f", 0.0, "°F", src)
+        registry.publish(f"{name}_temp_2_f", 0.0, "°F", src)
 
     def attach(self, network: DCNNetwork) -> None:
         """Register the packet handler with a DCN network."""
@@ -152,21 +160,21 @@ class GPIOModule:
         pfx = self.name
 
         if relay_states is not None:
-            for i, ch in enumerate(relay_states, start=1):
+            for i, ch in enumerate(relay_states):
                 self._registry.publish(f"{pfx}_relay_{i}", float(ch == "1"), "", src)
 
         if digital_inputs is not None:
-            for i, ch in enumerate(digital_inputs, start=1):
+            for i, ch in enumerate(digital_inputs):
                 self._registry.publish(f"{pfx}_input_{i}", float(ch == "1"), "", src)
 
-        for idx, (key, val, unit) in enumerate([
-            ("voltmeter_1", v1, "V"),
-            ("voltmeter_2", v2, "V"),
-            ("voltmeter_3", v3, "V"),
-            ("voltmeter_4", v4, "V"),
-            ("temp_1_f",    t1, "°F"),
-            ("temp_2_f",    t2, "°F"),
-        ]):
+        for key, val, unit in [
+            ("voltmeter_0", v1, "V"),
+            ("voltmeter_1", v2, "V"),
+            ("voltmeter_2", v3, "V"),
+            ("voltmeter_3", v4, "V"),
+            ("temp_0_f",    t1, "°F"),
+            ("temp_1_f",    t2, "°F"),
+        ]:
             if val is not None:
                 self._registry.publish(f"{pfx}_{key}", val, unit, src)
 

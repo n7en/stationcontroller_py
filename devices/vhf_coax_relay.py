@@ -96,6 +96,10 @@ class VHFCoaxRelay:
         self.address = address
         self._registry = registry
         self.state = VHFCoaxRelayState(name=name, address=address)
+        src = f"vhf_coax_relay:{name}"
+        registry.publish(f"{name}_relay", 0.0, "", src)
+        registry.publish(f"{name}_nc",    1.0, "", src)
+        registry.publish(f"{name}_no",    0.0, "", src)
 
     def attach(self, network: DCNNetwork) -> None:
         """Register the packet handler with a DCN network."""

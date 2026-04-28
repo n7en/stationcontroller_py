@@ -19,7 +19,7 @@ def app_state():
     reg = SensorRegistry()
     reg.publish("watt_meter_fwd_w", 125.3, unit="W", source="watt_meter")
     reg.publish("watt_meter_swr", 1.8, unit="ratio", source="watt_meter")
-    reg.publish("gpio_01_relay_1", 0.0, unit="", source="gpio")
+    reg.publish("gpio_relay_1", 0.0, unit="", source="gpio")
 
     rs = RadioState(name="test", frequency_hz=14_225_000, ptt=False, connected=True)
 
@@ -118,16 +118,16 @@ class TestRelaysRouter:
         r = await client.get("/api/relays")
         assert r.status_code == 200
         data = r.json()
-        assert "gpio_01_relay_1" in data
+        assert "gpio_relay_1" in data
 
     async def test_set_relay_without_network_returns_503(self, client):
-        r = await client.post("/api/relays/gpio_01_relay_1", json={
+        r = await client.post("/api/relays/gpio_relay_1", json={
             "state": 1, "device_addr": "01", "relay_num": 1
         })
         assert r.status_code == 503
 
     async def test_set_relay_invalid_state(self, client):
-        r = await client.post("/api/relays/gpio_01_relay_1", json={
+        r = await client.post("/api/relays/gpio_relay_1", json={
             "state": 2, "device_addr": "01", "relay_num": 1
         })
         assert r.status_code == 422

@@ -1,18 +1,27 @@
 <script>
+  import { onMount } from 'svelte'
   import { connected, sensors, labels, radio, updateAvailable } from './stores/ws.js'
   import RadioStatus      from './lib/RadioStatus.svelte'
   import CoaxPortSelector from './lib/CoaxPortSelector.svelte'
   import RelayButton      from './lib/RelayButton.svelte'
   import LabelEditor      from './lib/LabelEditor.svelte'
-  import PowerMeterGauge  from './lib/PowerMeterGauge.svelte'
-  import SwrBar           from './lib/SwrBar.svelte'
   import DashboardView    from './lib/DashboardView.svelte'
   import RadioConfig      from './lib/RadioConfig.svelte'
   import UpdateChecker    from './lib/UpdateChecker.svelte'
   import ConfigEditor     from './lib/ConfigEditor.svelte'
+  import DeviceCard       from './lib/DeviceCard.svelte'
 
   let page        = 'dashboard'
   let sidebarOpen = true
+  let devices     = []
+
+  onMount(async () => {
+    const res = await fetch('/api/devices')
+    if (res.ok) {
+      const data = await res.json()
+      devices = data.devices ?? []
+    }
+  })
 
   const NAV = [
     { id: 'dashboard',  label: 'Dashboard',  icon: 'dashboard'  },
@@ -42,11 +51,6 @@
     ...r, value: $sensors[r.key]?.value ?? 0, label: $labels[r.key] ?? '',
   }))
 
-  $: wm = {
-    fwd: $sensors['watt_meter_forward_power_w']?.value   ?? 0,
-    ref: $sensors['watt_meter_reflected_power_w']?.value ?? 0,
-    swr: $sensors['watt_meter_swr']?.value               ?? 0,
-  }
 </script>
 
 <div class="app">
@@ -102,43 +106,11 @@
         <RadioStatus radioState={$radio} />
       </section>
 
-      <section>
-        <div class="section-title">HF Antenna</div>
-        <CoaxPortSelector
-          deviceName="coax"
-          deviceAddr="02"
-          labelsMap={$labels}
-          sensorsMap={$sensors}
-        />
-      </section>
-
-      <section>
-        <div class="section-title">RF Power</div>
-        <div class="power-grid">
-          <PowerMeterGauge
-            value={wm.fwd} max={1500} color="var(--accent)"
-            title={$labels['watt_meter_forward_power_w'] || 'Forward Power'}
-          />
-          <PowerMeterGauge
-            value={wm.ref} max={1500} color="var(--red)"
-            title={$labels['watt_meter_reflected_power_w'] || 'Reflected Power'}
-          />
-          <SwrBar
-            value={wm.swr}
-            title={$labels['watt_meter_swr'] || 'SWR'}
-            thresholds={{ good: 1.5, warning: 2.0, critical: 3.0 }}
-          />
-        </div>
-      </section>
-
-      <section>
-        <div class="section-title">Antenna Relays</div>
-        <div class="relay-grid">
-          {#each antennaRelays as r (r.key)}
-            <RelayButton hardwareKey={r.key} label={r.label} value={r.value} deviceAddr="06" relayNum={r.relayNum} />
-          {/each}
-        </div>
-      </section>
+      <div class="device-grid">
+        {#each devices as dev (dev.name)}
+          <DeviceCard device={dev} />
+        {/each}
+      </div>
 
     {:else if page === 'relays'}
 
@@ -367,10 +339,10 @@
     letter-spacing: 0.07em;
     color: var(--text-muted);
   }
-  .power-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 0.5rem;
+  .device-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
   .relay-grid {
     display: grid;

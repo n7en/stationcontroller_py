@@ -65,7 +65,7 @@ class TestDeviceEvents:
     async def test_record_and_retrieve(self, store):
         await store.record_device_event(
             event_type="relay_toggle",
-            device_key="gpio_01_relay_3",
+            device_key="gpio_relay_3",
             old_value="0",
             new_value="1",
             source="automation",
@@ -76,15 +76,15 @@ class TestDeviceEvents:
         assert rows[0].new_value == "1"
 
     async def test_filter_by_device_key(self, store):
-        await store.record_device_event("relay_toggle", "gpio_01_relay_1")
-        await store.record_device_event("relay_toggle", "gpio_01_relay_2")
-        rows = await store.get_device_events(device_key="gpio_01_relay_1")
+        await store.record_device_event("relay_toggle", "gpio_relay_1")
+        await store.record_device_event("relay_toggle", "gpio_relay_2")
+        rows = await store.get_device_events(device_key="gpio_relay_1")
         assert len(rows) == 1
-        assert rows[0].device_key == "gpio_01_relay_1"
+        assert rows[0].device_key == "gpio_relay_1"
 
     async def test_details_json_round_trip(self, store):
         await store.record_device_event(
-            "relay_toggle", "gpio_01_relay_1",
+            "relay_toggle", "gpio_relay_1",
             details={"reason": "swr_protection", "swr": 3.2},
         )
         rows = await store.get_device_events()

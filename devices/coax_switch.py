@@ -90,6 +90,10 @@ class CoaxSwitch:
         self.address = address
         self._registry = registry
         self.state = CoaxSwitchState(name=name, address=address)
+        src = f"coax_switch:{name}"
+        registry.publish(f"{name}_active_port", 0.0, "", src)
+        for _p in range(1, N_PORTS + 1):
+            registry.publish(f"{name}_port_{_p}", 0.0, "", src)
 
     def attach(self, network: DCNNetwork) -> None:
         """Register the packet handler with a DCN network."""

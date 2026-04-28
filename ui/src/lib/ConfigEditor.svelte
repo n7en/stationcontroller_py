@@ -8,11 +8,12 @@
     { key: 'telemetry',  label: 'Telemetry',       restart: true  },
   ]
 
-  let activeTab = 'comms'
-  let contents  = {}   // key → string
-  let dirty     = {}   // key → bool
-  let loading   = {}   // key → bool
-  let saveStatus = {}  // key → { ok: bool, msg: string } | null
+  let activeTab  = $state('comms')
+  let contents   = $state({})   // key → string | null
+  let dirty      = $state({})   // key → bool
+  let loading    = $state({})   // key → bool
+  let saveStatus = $state({})   // key → { ok: bool, msg: string } | null
+  let errors     = $state({})   // key → string | null
 
   onMount(loadAll)
 
@@ -21,22 +22,29 @@
   }
 
   async function load(key) {
-    loading = { ...loading, [key]: true }
+    loading[key]    = true
+    errors[key]     = null
+    saveStatus[key] = null
     try {
       const res = await fetch(`/api/config/${key}`)
-      contents  = { ...contents,  [key]: res.ok ? await res.text() : '' }
-      dirty     = { ...dirty,     [key]: false }
-      saveStatus = { ...saveStatus, [key]: null }
-    } catch {
-      contents = { ...contents, [key]: '' }
+      if (res.ok) {
+        contents[key] = await res.text()
+        dirty[key]    = false
+      } else {
+        errors[key]   = `Server returned ${res.status}`
+        contents[key] = ''
+      }
+    } catch (e) {
+      errors[key]   = `Fetch failed: ${e.message ?? e}`
+      contents[key] = ''
     } finally {
-      loading = { ...loading, [key]: false }
+      loading[key] = false
     }
   }
 
   async function save(key) {
-    loading    = { ...loading,    [key]: true  }
-    saveStatus = { ...saveStatus, [key]: null  }
+    loading[key]    = true
+    saveStatus[key] = null
     try {
       const res = await fetch(`/api/config/${key}`, {
         method:  'PUT',
@@ -44,28 +52,28 @@
         body:    JSON.stringify({ content: contents[key] }),
       })
       if (res.ok) {
-        dirty = { ...dirty, [key]: false }
-        const cfg = CONFIGS.find(c => c.key === key)
-        saveStatus = { ...saveStatus, [key]: {
+        dirty[key] = false
+        const cfg  = CONFIGS.find(c => c.key === key)
+        saveStatus[key] = {
           ok:  true,
-          msg: cfg?.restart ? 'Saved — restart the app for changes to take effect.'
+          msg: cfg?.restart ? 'Saved. Restart the app for changes to take effect.'
                             : 'Saved.',
-        }}
+        }
       } else {
         const data = await res.json().catch(() => ({}))
-        saveStatus = { ...saveStatus, [key]: { ok: false, msg: data.detail ?? 'Save failed.' } }
+        saveStatus[key] = { ok: false, msg: data.detail ?? 'Save failed.' }
       }
     } catch (e) {
-      saveStatus = { ...saveStatus, [key]: { ok: false, msg: String(e) } }
+      saveStatus[key] = { ok: false, msg: String(e) }
     } finally {
-      loading = { ...loading, [key]: false }
+      loading[key] = false
     }
   }
 
   function onInput(key, value) {
-    contents   = { ...contents,   [key]: value }
-    dirty      = { ...dirty,      [key]: true  }
-    saveStatus = { ...saveStatus, [key]: null  }
+    contents[key]   = value
+    dirty[key]      = true
+    saveStatus[key] = null
   }
 </script>
 
@@ -75,7 +83,7 @@
       <button
         class="tab"
         class:active={activeTab === cfg.key}
-        on:click={() => activeTab = cfg.key}
+        onclick={() => activeTab = cfg.key}
       >
         {cfg.label}
         {#if dirty[cfg.key]}<span class="unsaved-dot" title="Unsaved changes"></span>{/if}
@@ -91,12 +99,21 @@
         {/if}
 
         {#if loading[cfg.key] && contents[cfg.key] == null}
-          <div class="loading">Loading…</div>
+          <div class="loading">Loading...</div>
+        {:else if errors[cfg.key]}
+          <div class="error-msg">{errors[cfg.key]}</div>
+          <textarea
+            class="yaml-area"
+            value={contents[cfg.key] ?? ''}
+            oninput={(e) => onInput(cfg.key, e.currentTarget.value)}
+            spellcheck="false"
+            autocomplete="off"
+          ></textarea>
         {:else}
           <textarea
             class="yaml-area"
             value={contents[cfg.key] ?? ''}
-            on:input={(e) => onInput(cfg.key, e.currentTarget.value)}
+            oninput={(e) => onInput(cfg.key, e.currentTarget.value)}
             spellcheck="false"
             autocomplete="off"
           ></textarea>
@@ -111,15 +128,15 @@
             <span></span>
           {/if}
           <div class="footer-actions">
-            <button class="reload-btn" on:click={() => load(cfg.key)} disabled={loading[cfg.key]}>
+            <button class="reload-btn" onclick={() => load(cfg.key)} disabled={loading[cfg.key]}>
               Reload
             </button>
             <button
               class="save-btn"
               disabled={!dirty[cfg.key] || loading[cfg.key]}
-              on:click={() => save(cfg.key)}
+              onclick={() => save(cfg.key)}
             >
-              {loading[cfg.key] ? 'Saving…' : 'Save'}
+              {loading[cfg.key] ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
@@ -188,6 +205,15 @@
     color: var(--text-muted);
     font-size: 0.85rem;
     padding: 1rem 0;
+  }
+
+  .error-msg {
+    font-size: 0.8rem;
+    color: var(--red);
+    padding: 0.35rem 0.6rem;
+    background: rgba(233,98,98,0.08);
+    border: 1px solid var(--red);
+    border-radius: 5px;
   }
 
   .yaml-area {

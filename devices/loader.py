@@ -81,7 +81,12 @@ def load_devices(
             continue
 
         try:
-            device = device_cls(name=name, address=address, registry=registry)
+            kwargs: dict = {}
+            if device_type == "antenna_relay":
+                persona = dev_cfg.get("persona")
+                if persona:
+                    kwargs["persona"] = persona
+            device = device_cls(name=name, address=address, registry=registry, **kwargs)
         except Exception:
             log.exception("Failed to create device '%s' (type=%s)", name, device_type)
             continue

@@ -43,7 +43,7 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
         key: str = msg.get("key", "")
         relay_num: int = int(msg.get("relay_num", 0))
         relay_state: int = int(msg.get("state", 0))
-        device_addr = key.split("_")[1] if "_" in key else msg.get("device_addr", "01")
+        device_addr = msg.get("device_addr", "01")
         network = state.network_for_addr(device_addr)
         if network is None:
             log.warning("WS relay_cmd: no network for device addr %s", device_addr)
@@ -54,17 +54,29 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
     elif kind == "coax_select":
         device_addr: str = msg.get("device_addr", "02")
         port: int = int(msg.get("port", 0))
+        # Optimistic update first so the UI responds even without hardware.
+        for dev in state.devices.values():
+            if getattr(dev, "address", None) == device_addr and hasattr(dev, "optimistic_select"):
+                dev.optimistic_select(port)
+                break
         network = state.network_for_addr(device_addr)
         if network is None:
             log.warning("WS coax_select: no network for device addr %s", device_addr)
             return
         await network.send(device_addr, f"CX,{port}")
-        # Optimistically update the sensor registry so the UI reflects the
-        # change immediately rather than waiting for the next hardware UPDATE.
+
+    elif kind == "pos_select":
+        device_addr: str = msg.get("device_addr", "06")
+        position: int = int(msg.get("position", 0))
         for dev in state.devices.values():
-            if getattr(dev, "address", None) == device_addr and hasattr(dev, "optimistic_select"):
-                dev.optimistic_select(port)
+            if getattr(dev, "address", None) == device_addr and hasattr(dev, "optimistic_select_position"):
+                dev.optimistic_select_position(position)
                 break
+        network = state.network_for_addr(device_addr)
+        if network is None:
+            log.warning("WS pos_select: no network for device addr %s", device_addr)
+            return
+        await network.send(device_addr, f"POS,{position}")
 
     elif kind == "radio_tune":
         if state.radio_interface is None:
