@@ -244,6 +244,7 @@ PYEOF
             else
                 # Collect (transport, chosen_port) pairs then patch the file once
                 declare -A PORT_CHOICES
+                PORT_CHOICE_COUNT=0
 
                 while IFS='|' read -r t_name current_port bus_name baud_rate; do
                     if [[ "$baud_rate" -eq 115200 ]]; then
@@ -263,6 +264,7 @@ PYEOF
                        [[ "$choice" -ge 1 ]] && \
                        [[ "$choice" -le "${#PORTS[@]}" ]]; then
                         PORT_CHOICES["$t_name"]="${PORTS[$((choice-1))]}"
+                        PORT_CHOICE_COUNT=$((PORT_CHOICE_COUNT + 1))
                         echo "    → ${PORTS[$((choice-1))]}"
                     else
                         echo "    → skipped"
@@ -271,7 +273,7 @@ PYEOF
                 done <<< "$TRANSPORTS"
 
                 # Apply all choices with a single Python patch pass
-                if [[ "${#PORT_CHOICES[@]:-0}" -gt 0 ]]; then
+                if [[ "$PORT_CHOICE_COUNT" -gt 0 ]]; then
                     PATCH_ARGS=()
                     for t_name in "${!PORT_CHOICES[@]}"; do
                         PATCH_ARGS+=("${t_name}=${PORT_CHOICES[$t_name]}")
