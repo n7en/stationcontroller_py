@@ -3,8 +3,8 @@
 # Format:  hardware_key: "Friendly Name"
 #
 # Hardware keys follow the pattern:  <device_name>_<sensor>
-# where device_name matches the 'name' parameter used when constructing
-# the device module in code.
+# where device_name matches the 'name' parameter in config/comms_config.yaml.
+# All component indices are 0-based.
 #
 # Both the hardware key and the friendly name are accepted in:
 #   - automation trigger / condition sensor references
@@ -18,10 +18,10 @@
 # Device: CoaxSwitch(name="coax", address="02", ...)
 #
 labels:
-  coax_port_1: "20m Yagi"
-  coax_port_2: "40m Dipole"
-  coax_port_3: "80m Inverted-V"
-  coax_port_4: "160m Vertical"
+  coax_port_0: "20m Yagi"
+  coax_port_1: "40m Dipole"
+  coax_port_2: "80m Inverted-V"
+  coax_port_3: "160m Vertical"
   coax_active_port: "HF Active Port"
 
 # -- VHF Coax Relay (#332) ----------------------------------------------------
@@ -34,21 +34,21 @@ labels:
 # -- Antenna Relay Module (#361) ----------------------------------------------
 # Device: AntennaRelayModule(name="ant", address="06", ...)
 #
-  ant_relay_1: "Amp Bypass"
-  ant_relay_2: "Low Pass Filter"
-  ant_relay_3: "Antenna Tuner"
-  ant_relay_4: "Transverter"
+  ant_relay_0: "Amp Bypass"
+  ant_relay_1: "Low Pass Filter"
+  ant_relay_2: "Antenna Tuner"
+  ant_relay_3: "Transverter"
+  ant_relay_4: "Relay 4"
   ant_relay_5: "Relay 5"
   ant_relay_6: "Relay 6"
   ant_relay_7: "Relay 7"
-  ant_relay_8: "Relay 8"
 
 # -- GPIO Module (#321) -------------------------------------------------------
 # Device: GPIOModule(name="gpio", address="01", ...)
 # Uncomment and rename to match your wiring.
 #
-#  gpio_relay_1: "Band Decoder A"
-#  gpio_relay_2: "Band Decoder B"
-#  gpio_in_1: "PTT Sense"
-#  gpio_voltmeter_1: "Supply Voltage"
-#  gpio_temp_1_f: "Shack Temp (F)"
+#  gpio_relay_0: "Band Decoder A"
+#  gpio_relay_1: "Band Decoder B"
+#  gpio_input_0: "PTT Sense"
+#  gpio_voltmeter_0: "Supply Voltage"
+#  gpio_temp_0_f: "Shack Temp (F)"

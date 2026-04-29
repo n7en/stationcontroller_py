@@ -18,7 +18,7 @@ Control commands (master -> device):
     POS,x           One-hot position select -- turns off all relays then turns on relay x
 
 Published sensor names (with name="ant"):
-    ant_relay_1 ... relay_N   1.0 = ON, 0.0 = OFF  (N determined by persona)
+    ant_relay_0 ... relay_{N-1}   1.0 = ON, 0.0 = OFF  (N determined by persona)
 """
 from __future__ import annotations
 
@@ -142,7 +142,7 @@ class AntennaRelayModule:
         self.state = AntennaRelayState(name=name, address=address)
 
         src = f"antenna_relay:{name}"
-        for _i in range(1, self.n_relays + 1):
+        for _i in range(self.n_relays):
             registry.publish(f"{name}_relay_{_i}", 0.0, "", src)
 
     def attach(self, network: DCNNetwork) -> None:
@@ -203,8 +203,8 @@ class AntennaRelayModule:
         await network.send(self.address, f"POS,{position}")
 
     def optimistic_select_position(self, position: int) -> None:
-        """Immediately publish one-hot position without waiting for hardware confirmation."""
-        states = "".join("1" if i == position else "0" for i in range(1, N_RELAYS + 1))
+        """Immediately publish one-hot position (0-based) without waiting for hardware confirmation."""
+        states = "".join("1" if i == position else "0" for i in range(N_RELAYS))
         self._parse_and_publish(["ARC1", states])
 
     # ------------------------------------------------------------------
@@ -232,8 +232,8 @@ class AntennaRelayModule:
         src = f"antenna_relay:{self.name}"
         pfx = self.name
 
-        for i, ch in enumerate(relay_states, start=1):
-            if i <= self.n_relays:
+        for i, ch in enumerate(relay_states):
+            if i < self.n_relays:
                 self._registry.publish(f"{pfx}_relay_{i}", float(ch == "1"), "", src)
 
 

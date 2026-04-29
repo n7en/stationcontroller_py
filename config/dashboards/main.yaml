@@ -5,19 +5,19 @@ icon: radio
 cards:
   - type: power_meter
     title: "Forward Power"
-    sensor: watt_meter_forward_power_w
+    sensor: watt_meter_port_0_forward_power_w
     max_w: 1500
     color: "#4ade80"
 
   - type: power_meter
     title: "Reflected Power"
-    sensor: watt_meter_reflected_power_w
+    sensor: watt_meter_port_0_reflected_power_w
     max_w: 1500
     color: "#f87171"
 
   - type: swr_bar
     title: "SWR"
-    sensor: watt_meter_swr
+    sensor: watt_meter_port_0_swr
     thresholds:
       good: 1.5
       warning: 2.0
@@ -25,15 +25,15 @@ cards:
 
   - type: relay
     title: "Beam - 20m"
-    relay_key: gpio_relay_1
+    relay_key: gpio_relay_0
     device_addr: "01"
-    relay_num: 1
+    relay_num: 0
 
   - type: relay
     title: "Vertical - 40m"
-    relay_key: gpio_relay_2
+    relay_key: gpio_relay_1
     device_addr: "01"
-    relay_num: 2
+    relay_num: 1
 
   - type: sensor
     title: "PA Temperature"

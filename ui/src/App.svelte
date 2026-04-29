@@ -43,8 +43,8 @@
   }
 
   $: antennaRelays = Array.from({length: 8}, (_, i) => {
-    const key = `ant_relay_${i + 1}`
-    return { key, value: $sensors[key]?.value ?? 0, label: $labels[key] ?? '', relayNum: i + 1 }
+    const key = `ant_relay_${i}`
+    return { key, value: $sensors[key]?.value ?? 0, label: $labels[key] ?? '', relayNum: i }
   })
 
   $: vhfRelays = [{ key: 'vhf_relay', relayNum: 1 }].map(r => ({

@@ -122,18 +122,22 @@ class WattMeter:
         name: str,
         address: str,
         registry: SensorRegistry,
+        n_ports: int = 2,
     ) -> None:
         self.name = name
         self.address = address
         self._registry = registry
+        self.n_ports = n_ports
         self.state = WattMeterState(name=name, address=address)
         src = f"watt_meter:{name}"
-        registry.publish(f"{name}_forward_power_w",        0.0, "W",  src)
-        registry.publish(f"{name}_reflected_power_w",      0.0, "W",  src)
-        registry.publish(f"{name}_swr",                    0.0, "",   src)
-        registry.publish(f"{name}_reflection_coefficient", 0.0, "",   src)
-        registry.publish(f"{name}_return_loss_db",         0.0, "dB", src)
-        registry.publish(f"{name}_mismatch_loss_db",       0.0, "dB", src)
+        for _port in range(n_ports):
+            _pfx = f"{name}_port_{_port}"
+            registry.publish(f"{_pfx}_forward_power_w",        0.0, "W",  src)
+            registry.publish(f"{_pfx}_reflected_power_w",      0.0, "W",  src)
+            registry.publish(f"{_pfx}_swr",                    0.0, "",   src)
+            registry.publish(f"{_pfx}_reflection_coefficient", 0.0, "",   src)
+            registry.publish(f"{_pfx}_return_loss_db",         0.0, "dB", src)
+            registry.publish(f"{_pfx}_mismatch_loss_db",       0.0, "dB", src)
 
     def attach(self, network: DCNNetwork) -> None:
         """Register the packet handler with a DCN network."""
@@ -151,25 +155,27 @@ class WattMeter:
 
     def _parse_and_publish(self, args: list[str]) -> None:
         try:
-            port = args[1] if len(args) > 1 else None
-            forward_w = float(args[2]) if len(args) > 2 else 0.0
+            port_str   = args[1] if len(args) > 1 else "0"
+            port       = int(port_str) if port_str.strip().isdigit() else 0
+            forward_w  = float(args[2]) if len(args) > 2 else 0.0
             reflected_w = float(args[3]) if len(args) > 3 else 0.0
         except (ValueError, IndexError):
             return
 
         metrics = compute_rf_metrics(forward_w, reflected_w)
 
-        self.state.port = port
-        self.state.forward_power_w = forward_w
+        # Keep backward-compat state attributes for the most-recent reading
+        self.state.port              = port_str
+        self.state.forward_power_w   = forward_w
         self.state.reflected_power_w = reflected_w
-        self.state.swr = metrics["swr"]
+        self.state.swr               = metrics["swr"]
         self.state.reflection_coefficient = metrics["reflection_coefficient"]
-        self.state.return_loss_db = metrics["return_loss_db"]
-        self.state.mismatch_loss_db = metrics["mismatch_loss_db"]
-        self.state.updated_at = time.time()
+        self.state.return_loss_db    = metrics["return_loss_db"]
+        self.state.mismatch_loss_db  = metrics["mismatch_loss_db"]
+        self.state.updated_at        = time.time()
 
-        src = f"watt_meter:{self.name}"
-        pfx = self.name
+        src  = f"watt_meter:{self.name}"
+        pfx  = f"{self.name}_port_{port}"
         self._registry.publish(f"{pfx}_forward_power_w",   forward_w,   "W",  src)
         self._registry.publish(f"{pfx}_reflected_power_w", reflected_w, "W",  src)
 

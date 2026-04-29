@@ -150,35 +150,35 @@ class TestGPIORegistryPublishing:
         gpio = GPIOModule("gpio", "01", registry)
         pkt = _gpio_packet("01", relay_states="01000000")
         await gpio._handle_packet(pkt, "control")
-        assert registry.value("gpio_relay_1") == 0.0
-        assert registry.value("gpio_relay_2") == 1.0
-        assert registry.value("gpio_relay_3") == 0.0
+        assert registry.value("gpio_relay_0") == 0.0
+        assert registry.value("gpio_relay_1") == 1.0
+        assert registry.value("gpio_relay_2") == 0.0
 
     async def test_publishes_individual_inputs(self):
         registry = SensorRegistry()
         gpio = GPIOModule("gpio", "01", registry)
         pkt = _gpio_packet("01", digital_inputs="1010")
         await gpio._handle_packet(pkt, "control")
-        assert registry.value("gpio_input_1") == 1.0
-        assert registry.value("gpio_input_2") == 0.0
-        assert registry.value("gpio_input_3") == 1.0
-        assert registry.value("gpio_input_4") == 0.0
+        assert registry.value("gpio_input_0") == 1.0
+        assert registry.value("gpio_input_1") == 0.0
+        assert registry.value("gpio_input_2") == 1.0
+        assert registry.value("gpio_input_3") == 0.0
 
     async def test_publishes_voltmeters(self):
         registry = SensorRegistry()
         gpio = GPIOModule("gpio", "01", registry)
         pkt = _gpio_packet("01", voltmeters=(13.8, 13.7, 13.6, 5.1))
         await gpio._handle_packet(pkt, "control")
-        assert registry.value("gpio_voltmeter_1") == pytest.approx(13.8)
-        assert registry.value("gpio_voltmeter_4") == pytest.approx(5.1)
+        assert registry.value("gpio_voltmeter_0") == pytest.approx(13.8)
+        assert registry.value("gpio_voltmeter_3") == pytest.approx(5.1)
 
     async def test_publishes_temperatures(self):
         registry = SensorRegistry()
         gpio = GPIOModule("gpio", "01", registry)
         pkt = _gpio_packet("01", temps=(68.0, 77.5))
         await gpio._handle_packet(pkt, "control")
-        assert registry.value("gpio_temp_1_f") == pytest.approx(68.0)
-        assert registry.value("gpio_temp_2_f") == pytest.approx(77.5)
+        assert registry.value("gpio_temp_0_f") == pytest.approx(68.0)
+        assert registry.value("gpio_temp_1_f") == pytest.approx(77.5)
 
     async def test_name_prefix_isolates_multiple_modules(self):
         registry = SensorRegistry()
@@ -186,27 +186,27 @@ class TestGPIORegistryPublishing:
         g2 = GPIOModule("tower", "02", registry)
         await g1._handle_packet(_gpio_packet("01", voltmeters=(13.8, 0, 0, 0)), "control")
         await g2._handle_packet(_gpio_packet("02", voltmeters=(12.5, 0, 0, 0)), "control")
-        assert registry.value("shack_voltmeter_1") == pytest.approx(13.8)
-        assert registry.value("tower_voltmeter_1") == pytest.approx(12.5)
+        assert registry.value("shack_voltmeter_0") == pytest.approx(13.8)
+        assert registry.value("tower_voltmeter_0") == pytest.approx(12.5)
 
     async def test_source_is_set_correctly(self):
         registry = SensorRegistry()
         gpio = GPIOModule("gpio", "01", registry)
         await gpio._handle_packet(_gpio_packet("01"), "control")
-        m = registry.get("gpio_voltmeter_1")
+        m = registry.get("gpio_voltmeter_0")
         assert m.source == "gpio_module:gpio"
 
     async def test_voltmeter_unit_is_volts(self):
         registry = SensorRegistry()
         gpio = GPIOModule("gpio", "01", registry)
         await gpio._handle_packet(_gpio_packet("01"), "control")
-        assert registry.get("gpio_voltmeter_1").unit == "V"
+        assert registry.get("gpio_voltmeter_0").unit == "V"
 
     async def test_temperature_unit_is_fahrenheit(self):
         registry = SensorRegistry()
         gpio = GPIOModule("gpio", "01", registry)
         await gpio._handle_packet(_gpio_packet("01"), "control")
-        assert registry.get("gpio_temp_1_f").unit == "°F"
+        assert registry.get("gpio_temp_0_f").unit == "°F"
 
 
 # ---------------------------------------------------------------------------

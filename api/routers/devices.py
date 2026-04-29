@@ -25,11 +25,11 @@ def _device_schema(dev: Any) -> dict:
         return {
             "name": name, "type": "gpio", "address": addr,
             "sensors": (
-                [{"key": f"{pfx}_relay_{i}",     "role": "relay",         "relay_num":     i} for i in range(1, 9)] +
-                [{"key": f"{pfx}_input_{i}",     "role": "digital_input", "input_num":     i} for i in range(1, 5)] +
-                [{"key": f"{pfx}_voltmeter_{i}", "role": "voltmeter",     "voltmeter_num": i} for i in range(1, 5)] +
-                [{"key": f"{pfx}_temp_1_f",      "role": "temperature",   "probe_num":     1},
-                 {"key": f"{pfx}_temp_2_f",      "role": "temperature",   "probe_num":     2}]
+                [{"key": f"{pfx}_relay_{i}",     "role": "relay",         "relay_num":     i} for i in range(8)] +
+                [{"key": f"{pfx}_input_{i}",     "role": "digital_input", "input_num":     i} for i in range(4)] +
+                [{"key": f"{pfx}_voltmeter_{i}", "role": "voltmeter",     "voltmeter_num": i} for i in range(4)] +
+                [{"key": f"{pfx}_temp_0_f",      "role": "temperature",   "probe_num":     0},
+                 {"key": f"{pfx}_temp_1_f",      "role": "temperature",   "probe_num":     1}]
             ),
         }
 
@@ -38,28 +38,30 @@ def _device_schema(dev: Any) -> dict:
             "name": name, "type": "coax_switch", "address": addr, "n_ports": 4,
             "sensors": (
                 [{"key": f"{pfx}_active_port", "role": "active_port"}] +
-                [{"key": f"{pfx}_port_{i}",    "role": "port", "port": i} for i in range(1, 5)]
+                [{"key": f"{pfx}_port_{i}",    "role": "port", "port": i} for i in range(4)]
             ),
         }
 
     if isinstance(dev, WattMeter):
-        return {
-            "name": name, "type": "watt_meter", "address": addr,
-            "sensors": [
-                {"key": f"{pfx}_forward_power_w",        "role": "forward_power"},
-                {"key": f"{pfx}_reflected_power_w",      "role": "reflected_power"},
-                {"key": f"{pfx}_swr",                    "role": "swr"},
-                {"key": f"{pfx}_reflection_coefficient", "role": "reflection_coefficient"},
-                {"key": f"{pfx}_return_loss_db",         "role": "return_loss"},
-                {"key": f"{pfx}_mismatch_loss_db",       "role": "mismatch_loss"},
-            ],
-        }
+        n_ports = getattr(dev, "n_ports", 2)
+        sensors = []
+        for port in range(n_ports):
+            pp = f"{pfx}_port_{port}"
+            sensors += [
+                {"key": f"{pp}_forward_power_w",        "role": "forward_power",        "port": port},
+                {"key": f"{pp}_reflected_power_w",      "role": "reflected_power",       "port": port},
+                {"key": f"{pp}_swr",                    "role": "swr",                   "port": port},
+                {"key": f"{pp}_reflection_coefficient", "role": "reflection_coefficient", "port": port},
+                {"key": f"{pp}_return_loss_db",         "role": "return_loss",           "port": port},
+                {"key": f"{pp}_mismatch_loss_db",       "role": "mismatch_loss",         "port": port},
+            ]
+        return {"name": name, "type": "watt_meter", "address": addr, "n_ports": n_ports, "sensors": sensors}
 
     if isinstance(dev, VHFCoaxRelay):
         return {
             "name": name, "type": "vhf_relay", "address": addr,
             "sensors": [
-                {"key": f"{pfx}_relay", "role": "relay",   "relay_num": 1},
+                {"key": f"{pfx}_relay", "role": "relay",   "relay_num": 0},
                 {"key": f"{pfx}_nc",    "role": "nc_port"},
                 {"key": f"{pfx}_no",    "role": "no_port"},
             ],
@@ -68,16 +70,16 @@ def _device_schema(dev: Any) -> dict:
     if isinstance(dev, AntennaRelayModule):
         n = dev.n_relays
         return {
-            "name":         name,
-            "type":         "antenna_relay",
-            "address":      addr,
-            "persona":      dev.persona,
+            "name":          name,
+            "type":          "antenna_relay",
+            "address":       addr,
+            "persona":       dev.persona,
             "persona_label": dev.persona_label,
-            "n_relays":     n,
-            "mode":         dev.mode,
+            "n_relays":      n,
+            "mode":          dev.mode,
             "sensors": [
                 {"key": f"{pfx}_relay_{i}", "role": "relay", "relay_num": i}
-                for i in range(1, n + 1)
+                for i in range(n)
             ],
         }
 

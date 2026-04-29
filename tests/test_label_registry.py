@@ -164,7 +164,7 @@ class TestLabelRegistryYaml:
         config_path = Path(__file__).parent.parent / "config" / "labels.yaml"
         lr = LabelRegistry.from_yaml(config_path)
         assert len(lr) > 0
-        assert lr.resolve("20m Yagi") == "coax_port_1"
+        assert lr.resolve("20m Yagi") == "coax_port_0"
 
 
 # ---------------------------------------------------------------------------

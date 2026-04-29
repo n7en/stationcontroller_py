@@ -6,14 +6,14 @@ The currently selected port is retained even when power is removed.
 
 DCN status packet (device → master, UPDATE,CX1):
     args[0]  CX1           module type identifier
-    args[1]  <active_port> currently selected port, 1-indexed (0 = none selected)
+    args[1]  <active_port> currently selected port, 0-indexed
 
 Control command (master → device):
     CX,<port>              select port 1–4; port 0 = disconnect all
 
 Published sensor names (with name="coax"):
-    coax_active_port       — selected port as float (0.0 = none)
-    coax_port_1 … port_4   — 1.0 if active, 0.0 otherwise
+    coax_active_port       — selected port as float (-1.0 = unknown/pre-connect)
+    coax_port_0 … port_3   — 1.0 if active, 0.0 otherwise
 """
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ class CoaxSwitchState:
     address: str
 
     n_ports: int = N_PORTS              # fixed hardware — always 4
-    active_port: Optional[int] = None   # 1-indexed; 0 = none selected
+    active_port: Optional[int] = None   # 0-indexed; None = unknown
 
     updated_at: float = field(default_factory=time.time)
 
@@ -91,8 +91,8 @@ class CoaxSwitch:
         self._registry = registry
         self.state = CoaxSwitchState(name=name, address=address)
         src = f"coax_switch:{name}"
-        registry.publish(f"{name}_active_port", 0.0, "", src)
-        for _p in range(1, N_PORTS + 1):
+        registry.publish(f"{name}_active_port", -1.0, "", src)  # -1 = none selected
+        for _p in range(N_PORTS):
             registry.publish(f"{name}_port_{_p}", 0.0, "", src)
 
     def attach(self, network: DCNNetwork) -> None:
@@ -100,11 +100,11 @@ class CoaxSwitch:
         network.on_packet(self._handle_packet)
 
     async def select_port(self, network: DCNNetwork, port: int) -> None:
-        """Command the switch to select *port* (1–4, 0 = disconnect all)."""
+        """Command the switch to select *port* (0–3)."""
         await network.send(self.address, f"CX,{port}")
 
     def optimistic_select(self, port: int) -> None:
-        """Immediately publish *port* as active without waiting for hardware confirmation."""
+        """Immediately publish *port* (0-based) as active without waiting for hardware confirmation."""
         self._parse_and_publish(["CX1", str(port)])
 
     async def _handle_packet(self, packet: DCNPacket, transport_name: str) -> None:  # pyright: ignore[reportUnusedParameter]
@@ -133,10 +133,10 @@ class CoaxSwitch:
 
         self._registry.publish(f"{pfx}_active_port", float(active_port), "", src)
 
-        for port in range(1, N_PORTS + 1):
+        for port_i in range(N_PORTS):
             self._registry.publish(
-                f"{pfx}_port_{port}",
-                1.0 if active_port == port else 0.0,
+                f"{pfx}_port_{port_i}",
+                1.0 if active_port == port_i else 0.0,
                 "",
                 src,
             )

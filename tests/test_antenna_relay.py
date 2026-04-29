@@ -93,24 +93,24 @@ class TestAntennaRelayRegistryPublishing:
         reg = SensorRegistry()
         arm = AntennaRelayModule("ant", "06", reg)
         await arm._handle_packet(_arc1_packet("06", "01000000"), "control")
-        assert reg.value("ant_relay_1") == pytest.approx(0.0)
-        assert reg.value("ant_relay_2") == pytest.approx(1.0)
-        assert reg.value("ant_relay_3") == pytest.approx(0.0)
+        assert reg.value("ant_relay_0") == pytest.approx(0.0)
+        assert reg.value("ant_relay_1") == pytest.approx(1.0)
+        assert reg.value("ant_relay_2") == pytest.approx(0.0)
 
     async def test_updates_on_state_change(self):
         reg = SensorRegistry()
         arm = AntennaRelayModule("ant", "06", reg)
         await arm._handle_packet(_arc1_packet("06", "01000000"), "control")
         await arm._handle_packet(_arc1_packet("06", "00100000"), "control")
-        assert reg.value("ant_relay_2") == pytest.approx(0.0)
-        assert reg.value("ant_relay_3") == pytest.approx(1.0)
+        assert reg.value("ant_relay_1") == pytest.approx(0.0)
+        assert reg.value("ant_relay_2") == pytest.approx(1.0)
 
     async def test_all_relays_published(self):
         reg = SensorRegistry()
         arm = AntennaRelayModule("ant", "06", reg)
         await arm._handle_packet(_arc1_packet("06", "10101010"), "control")
         expected = [1, 0, 1, 0, 1, 0, 1, 0]
-        for i, v in enumerate(expected, start=1):
+        for i, v in enumerate(expected, start=0):
             assert reg.value(f"ant_relay_{i}") == pytest.approx(float(v))
 
     async def test_name_prefix_isolates_modules(self):
@@ -119,15 +119,15 @@ class TestAntennaRelayRegistryPublishing:
         arm2 = AntennaRelayModule("west", "07", reg)
         await arm1._handle_packet(_arc1_packet("06", "10000000"), "control")
         await arm2._handle_packet(_arc1_packet("07", "00000001"), "control")
-        assert reg.value("east_relay_1") == pytest.approx(1.0)
-        assert reg.value("west_relay_8") == pytest.approx(1.0)
-        assert reg.value("east_relay_8") == pytest.approx(0.0)
+        assert reg.value("east_relay_0") == pytest.approx(1.0)
+        assert reg.value("west_relay_7") == pytest.approx(1.0)
+        assert reg.value("east_relay_7") == pytest.approx(0.0)
 
     async def test_source_tag(self):
         reg = SensorRegistry()
         arm = AntennaRelayModule("ant", "06", reg)
-        await arm._handle_packet(_arc1_packet("06", "00000001"), "control")
-        assert reg.get("ant_relay_1").source == "antenna_relay:ant"
+        await arm._handle_packet(_arc1_packet("06", "10000000"), "control")
+        assert reg.get("ant_relay_0").source == "antenna_relay:ant"
 
 
 # ---------------------------------------------------------------------------

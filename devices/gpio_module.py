@@ -8,12 +8,12 @@ DCN packet format (UPDATE,GPIO1):
     args[0]  GPIO1            module type identifier
     args[1]  <relay_states>   8-char string, one char per relay ('0'/'1')
     args[2]  <digital_inputs> 4-char string, one char per input  ('0'/'1')
-    args[3]  <voltmeter_1>    voltmeter 1 reading (V, float)
-    args[4]  <voltmeter_2>    voltmeter 2 reading (V, float)
-    args[5]  <voltmeter_3>    voltmeter 3 reading (V, float)
-    args[6]  <voltmeter_4>    voltmeter 4 reading (V, float)
-    args[7]  <temp_1_f>       temperature probe 1 (°F, float)
-    args[8]  <temp_2_f>       temperature probe 2 (°F, float)
+    args[3]  <voltmeter_0>    voltmeter 0 reading (V, float)
+    args[4]  <voltmeter_1>    voltmeter 1 reading (V, float)
+    args[5]  <voltmeter_2>    voltmeter 2 reading (V, float)
+    args[6]  <voltmeter_3>    voltmeter 3 reading (V, float)
+    args[7]  <temp_0_f>       temperature probe 0 (°F, float)
+    args[8]  <temp_1_f>       temperature probe 1 (°F, float)
 """
 from __future__ import annotations
 
@@ -78,12 +78,10 @@ class GPIOModule:
     under keys prefixed with the instance name.
 
     Published sensor names (with name="gpio"):
-        gpio_relay_states     — raw relay state string, e.g. "01000000"
-        gpio_digital_inputs   — raw digital input string, e.g. "0110"
-        gpio_relay_1 … _8    — individual relay states (0.0 or 1.0)
-        gpio_input_1 … _4    — individual digital inputs (0.0 or 1.0)
-        gpio_voltmeter_1 … _4 — voltmeter readings in volts
-        gpio_temp_1_f, _2_f   — temperature in Fahrenheit
+        gpio_relay_0 … _7    — individual relay states (0.0 or 1.0)
+        gpio_input_0 … _3    — individual digital inputs (0.0 or 1.0)
+        gpio_voltmeter_0 … _3 — voltmeter readings in volts
+        gpio_temp_0_f, _1_f   — temperature in Fahrenheit
 
     Usage::
 
@@ -107,13 +105,13 @@ class GPIOModule:
         self._registry = registry
         self.state = GPIOState(name=name, address=address)
         src = f"gpio_module:{name}"
-        for _i in range(1, 9):
+        for _i in range(8):
             registry.publish(f"{name}_relay_{_i}", 0.0, "", src)
-        for _i in range(1, 5):
+        for _i in range(4):
             registry.publish(f"{name}_input_{_i}", 0.0, "", src)
             registry.publish(f"{name}_voltmeter_{_i}", 0.0, "V", src)
+        registry.publish(f"{name}_temp_0_f", 0.0, "°F", src)
         registry.publish(f"{name}_temp_1_f", 0.0, "°F", src)
-        registry.publish(f"{name}_temp_2_f", 0.0, "°F", src)
 
     def attach(self, network: DCNNetwork) -> None:
         """Register the packet handler with a DCN network."""

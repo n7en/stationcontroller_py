@@ -162,31 +162,31 @@ class TestWattMeterRegistryPublishing:
         meter = WattMeter("main", "03", registry)
         pkt = _wm1_packet("03", forward=143.5, reflected=3.0)
         await meter._handle_packet(pkt, "control")
-        assert registry.value("main_forward_power_w") == pytest.approx(143.5)
+        assert registry.value("main_port_0_forward_power_w") == pytest.approx(143.5)
 
     async def test_publishes_reflected_power(self):
         registry = SensorRegistry()
         meter = WattMeter("main", "03", registry)
         pkt = _wm1_packet("03", forward=100.0, reflected=8.0)
         await meter._handle_packet(pkt, "control")
-        assert registry.value("main_reflected_power_w") == pytest.approx(8.0)
+        assert registry.value("main_port_0_reflected_power_w") == pytest.approx(8.0)
 
     async def test_publishes_swr(self):
         registry = SensorRegistry()
         meter = WattMeter("main", "03", registry)
         pkt = _wm1_packet("03", forward=100.0, reflected=25.0)
         await meter._handle_packet(pkt, "control")
-        assert registry.value("main_swr") == pytest.approx(3.0, abs=0.01)
+        assert registry.value("main_port_0_swr") == pytest.approx(3.0, abs=0.01)
 
     async def test_publishes_all_rf_metrics(self):
         registry = SensorRegistry()
         meter = WattMeter("main", "03", registry)
         pkt = _wm1_packet("03", forward=100.0, reflected=10.0)
         await meter._handle_packet(pkt, "control")
-        assert registry.get("main_swr") is not None
-        assert registry.get("main_reflection_coefficient") is not None
-        assert registry.get("main_return_loss_db") is not None
-        assert registry.get("main_mismatch_loss_db") is not None
+        assert registry.get("main_port_0_swr") is not None
+        assert registry.get("main_port_0_reflection_coefficient") is not None
+        assert registry.get("main_port_0_return_loss_db") is not None
+        assert registry.get("main_port_0_mismatch_loss_db") is not None
 
     async def test_name_prefix_isolates_multiple_meters(self):
         registry = SensorRegistry()
@@ -194,26 +194,26 @@ class TestWattMeterRegistryPublishing:
         m2 = WattMeter("vhf", "04", registry)
         await m1._handle_packet(_wm1_packet("03", 100.0, 10.0), "power")
         await m2._handle_packet(_wm1_packet("04", 50.0, 2.0), "power")
-        assert registry.value("hf_forward_power_w") == pytest.approx(100.0)
-        assert registry.value("vhf_forward_power_w") == pytest.approx(50.0)
+        assert registry.value("hf_port_0_forward_power_w") == pytest.approx(100.0)
+        assert registry.value("vhf_port_0_forward_power_w") == pytest.approx(50.0)
 
     async def test_zero_forward_does_not_update_swr(self):
         registry = SensorRegistry()
         meter = WattMeter("main", "03", registry)
         # Pre-registration seeds swr at 0.0; a zero-forward packet must not
         # overwrite it with a real SWR value (transmitter is off).
-        pre_ts = registry.get("main_swr").timestamp
+        pre_ts = registry.get("main_port_0_swr").timestamp
         pkt = _wm1_packet("03", forward=0.0, reflected=0.0)
         await meter._handle_packet(pkt, "control")
-        assert registry.get("main_swr").value == pytest.approx(0.0)
-        assert registry.get("main_swr").timestamp == pre_ts
+        assert registry.get("main_port_0_swr").value == pytest.approx(0.0)
+        assert registry.get("main_port_0_swr").timestamp == pre_ts
 
     async def test_source_is_set_correctly(self):
         registry = SensorRegistry()
         meter = WattMeter("main", "03", registry)
         pkt = _wm1_packet("03", forward=100.0, reflected=5.0)
         await meter._handle_packet(pkt, "control")
-        m = registry.get("main_forward_power_w")
+        m = registry.get("main_port_0_forward_power_w")
         assert m.source == "watt_meter:main"
 
 

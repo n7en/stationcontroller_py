@@ -21,18 +21,19 @@
       : (TYPE_LABELS[device.type] ?? device.type)
 
   $: relaySensors  = (device.sensors ?? []).filter(s => s.role === 'relay')
-  $: fwdKey        = (device.sensors ?? []).find(s => s.role === 'forward_power')?.key
-  $: refKey        = (device.sensors ?? []).find(s => s.role === 'reflected_power')?.key
-  $: swrKey        = (device.sensors ?? []).find(s => s.role === 'swr')?.key
+  $: portGroups    = (() => {
+    const ports = new Set((device.sensors ?? []).map(s => s.port).filter(p => p != null))
+    return [...ports].sort()
+  })()
   $: voltSensors   = (device.sensors ?? []).filter(s => s.role === 'voltmeter')
   $: tempSensors   = (device.sensors ?? []).filter(s => s.role === 'temperature')
   $: inputSensors  = (device.sensors ?? []).filter(s => s.role === 'digital_input')
 
-  // one_hot mode: active position derived from relay states
+  // one_hot mode: active position is the relay_num of the active relay (0-based)
   $: activePosition = (() => {
-    if (device.mode !== 'one_hot') return null
-    const on = relaySensors.findIndex(s => ($sensors[s.key]?.value ?? 0) >= 0.5)
-    return on >= 0 ? on + 1 : 0
+    if (device.mode !== 'one_hot') return -1
+    const active = relaySensors.find(s => ($sensors[s.key]?.value ?? 0) >= 0.5)
+    return active != null ? active.relay_num : -1
   })()
 
   function selectPosition(pos) {
@@ -62,29 +63,34 @@
       />
 
     {:else if device.type === 'watt_meter'}
-      <div class="power-grid">
-        {#if fwdKey}
-          <PowerMeterGauge
-            value={$sensors[fwdKey]?.value ?? 0}
-            max={1500} color="var(--accent)"
-            title={$labels[fwdKey] || 'Forward Power'}
-          />
+      {#each portGroups as portNum}
+        {#if portGroups.length > 1}
+          <div class="block-label">Port {portNum}</div>
         {/if}
-        {#if refKey}
-          <PowerMeterGauge
-            value={$sensors[refKey]?.value ?? 0}
-            max={1500} color="var(--red)"
-            title={$labels[refKey] || 'Reflected Power'}
-          />
-        {/if}
-        {#if swrKey}
-          <SwrBar
-            value={$sensors[swrKey]?.value ?? 0}
-            title={$labels[swrKey] || 'SWR'}
-            thresholds={{ good: 1.5, warning: 2.0, critical: 3.0 }}
-          />
-        {/if}
-      </div>
+        <div class="power-grid">
+          {#each (device.sensors ?? []).filter(s => s.port === portNum) as s (s.key)}
+            {#if s.role === 'forward_power'}
+              <PowerMeterGauge
+                value={$sensors[s.key]?.value ?? 0}
+                max={1500} color="var(--accent)"
+                title={$labels[s.key] || 'Forward Power'}
+              />
+            {:else if s.role === 'reflected_power'}
+              <PowerMeterGauge
+                value={$sensors[s.key]?.value ?? 0}
+                max={1500} color="var(--red)"
+                title={$labels[s.key] || 'Reflected Power'}
+              />
+            {:else if s.role === 'swr'}
+              <SwrBar
+                value={$sensors[s.key]?.value ?? 0}
+                title={$labels[s.key] || 'SWR'}
+                thresholds={{ good: 1.5, warning: 2.0, critical: 3.0 }}
+              />
+            {/if}
+          {/each}
+        </div>
+      {/each}
 
     {:else if device.type === 'gpio'}
       {#if relaySensors.length}

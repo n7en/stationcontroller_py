@@ -38,7 +38,7 @@ class TestCoaxSwitchState:
         s = CoaxSwitchState(name="coax", address="02")
         assert s.is_port_active(1) is None
 
-    def test_active_port_zero_means_none_selected(self):
+    def test_active_port_zero_means_first_port_selected(self):
         s = CoaxSwitchState(name="coax", address="02", active_port=0)
         assert s.is_port_active(1) is False
         assert s.is_port_active(0) is True
@@ -102,10 +102,10 @@ class TestCoaxSwitchRegistryPublishing:
         reg = SensorRegistry()
         sw = CoaxSwitch("coax", "02", reg)
         await sw._handle_packet(_cx1_packet("02", 2), "control")
+        assert reg.value("coax_port_0") == pytest.approx(0.0)
         assert reg.value("coax_port_1") == pytest.approx(0.0)
         assert reg.value("coax_port_2") == pytest.approx(1.0)
         assert reg.value("coax_port_3") == pytest.approx(0.0)
-        assert reg.value("coax_port_4") == pytest.approx(0.0)
 
     async def test_updates_port_sensors_when_port_changes(self):
         reg = SensorRegistry()
@@ -115,22 +115,23 @@ class TestCoaxSwitchRegistryPublishing:
         assert reg.value("coax_port_2") == pytest.approx(0.0)
         assert reg.value("coax_port_3") == pytest.approx(1.0)
 
-    async def test_publishes_active_port_zero_when_disconnected(self):
+    async def test_publishes_first_port_when_port_zero_selected(self):
         reg = SensorRegistry()
         sw = CoaxSwitch("coax", "02", reg)
         await sw._handle_packet(_cx1_packet("02", 0), "control")
         assert reg.value("coax_active_port") == pytest.approx(0.0)
-        for p in range(1, 5):
+        assert reg.value("coax_port_0") == pytest.approx(1.0)
+        for p in range(1, 4):
             assert reg.value(f"coax_port_{p}") == pytest.approx(0.0)
 
     async def test_all_four_ports_published(self):
         reg = SensorRegistry()
         sw = CoaxSwitch("coax", "02", reg)
-        await sw._handle_packet(_cx1_packet("02", 4), "control")
+        await sw._handle_packet(_cx1_packet("02", 3), "control")
+        assert reg.value("coax_port_0") == pytest.approx(0.0)
         assert reg.value("coax_port_1") == pytest.approx(0.0)
         assert reg.value("coax_port_2") == pytest.approx(0.0)
-        assert reg.value("coax_port_3") == pytest.approx(0.0)
-        assert reg.value("coax_port_4") == pytest.approx(1.0)
+        assert reg.value("coax_port_3") == pytest.approx(1.0)
 
     async def test_name_prefix_isolates_multiple_switches(self):
         reg = SensorRegistry()
@@ -161,7 +162,7 @@ class TestCoaxSwitchSelectPort:
         await sw.select_port(net, 3)
         net.send.assert_called_once_with("02", "CX,3")
 
-    async def test_select_port_zero_disconnects(self):
+    async def test_select_port_zero_selects_first_port(self):
         sw = CoaxSwitch("coax", "02", SensorRegistry())
         net = MagicMock()
         net.send = AsyncMock()

@@ -12,9 +12,10 @@
 
   const N = 4
 
+  // active_port sensor stores -1 (none) or 0..3 (0-based port index)
   $: activePort = (() => {
     const ap = sensorsMap[`${deviceName}_active_port`]
-    return ap != null ? Math.round(ap.value) : null
+    return ap != null ? Math.round(ap.value) : -1
   })()
 
   function portLabel(i) {
@@ -31,12 +32,12 @@
 <div class="coax-switch">
   <div class="device-title">
     {labelsMap[`${deviceName}_active_port`] ? '' : ''}{deviceName.toUpperCase()} Coax Switch
-    {#if activePort != null}
+    {#if activePort >= 0}
       <span class="active-badge">Port {activePort} active</span>
     {/if}
   </div>
   <div class="port-grid">
-    {#each Array.from({length: N}, (_, i) => i + 1) as port}
+    {#each Array.from({length: N}, (_, i) => i) as port}
       <button
         class="port-btn"
         class:active={activePort === port}
