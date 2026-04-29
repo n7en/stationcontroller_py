@@ -5,8 +5,24 @@
   export let title  = ''
   export let unit   = 'W'
 
-  const R  = 50
-  const SW = 10
+  const R       = 50
+  const SW      = 10
+  const TICK_R  = R - SW / 2 - 2   // 43 — just inside the arc inner edge
+
+  const arcTicks = Array.from({ length: 21 }, (_, i) => {
+    const p     = i / 20
+    const isMaj = i % 5 === 0
+    const angle = Math.PI * (1 - p)
+    const ca    = Math.cos(angle)
+    const sa    = Math.sin(angle)
+    const ro    = TICK_R
+    const ri    = isMaj ? ro - 5 : ro - 2.5
+    return {
+      x1: +(ro * ca).toFixed(2), y1: +(-ro * sa).toFixed(2),
+      x2: +(ri * ca).toFixed(2), y2: +(-ri * sa).toFixed(2),
+      isMaj,
+    }
+  })
 
   $: pct   = Math.min(Math.max(value / max, 0), 1)
   $: endX  = +(R * Math.cos(Math.PI * (1 - pct))).toFixed(3)
@@ -32,6 +48,14 @@
     {#if arc}
       <path d={arc} fill="none" stroke={color} stroke-width={SW} stroke-linecap="round" />
     {/if}
+    <!-- Tick marks -->
+    {#each arcTicks as t}
+      <line x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+        stroke="var(--text-muted)"
+        stroke-width={t.isMaj ? 1.5 : 0.75}
+        opacity={t.isMaj ? 0.65 : 0.35}
+      />
+    {/each}
     <!-- Numeric readout -->
     <text x="0" y="10" text-anchor="middle" class="val"  fill={color}>{display}</text>
     <text x="0" y="24" text-anchor="middle" class="unit" fill="var(--text-muted)">{unit}</text>

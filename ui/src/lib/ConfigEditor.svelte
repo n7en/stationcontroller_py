@@ -334,7 +334,8 @@
     padding: 0.75rem;
     tab-size: 2;
     white-space: pre-wrap;
-    word-break: break-all;
+    word-wrap: break-word;
+    text-align: left;
   }
 
   /* Highlight layer — sits behind the textarea */
