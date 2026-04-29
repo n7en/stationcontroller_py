@@ -12,6 +12,7 @@ router = APIRouter(prefix="/api/config", tags=["config"])
 
 _CONFIG_FILES: dict[str, Path] = {
     "comms":      Path("config/comms_config.yaml"),
+    "labels":     Path("config/labels.yaml"),
     "radio":      Path("config/radio_config.yaml"),
     "automation": Path("config/automation_config.yaml"),
     "telemetry":  Path("config/telemetry_config.yaml"),

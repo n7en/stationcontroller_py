@@ -271,7 +271,7 @@ PYEOF
                 done <<< "$TRANSPORTS"
 
                 # Apply all choices with a single Python patch pass
-                if [[ "${#PORT_CHOICES[@]}" -gt 0 ]]; then
+                if [[ "${#PORT_CHOICES[@]:-0}" -gt 0 ]]; then
                     PATCH_ARGS=()
                     for t_name in "${!PORT_CHOICES[@]}"; do
                         PATCH_ARGS+=("${t_name}=${PORT_CHOICES[$t_name]}")

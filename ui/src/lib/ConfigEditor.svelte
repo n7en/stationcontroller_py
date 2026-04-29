@@ -2,18 +2,22 @@
   import { onMount } from 'svelte'
 
   const CONFIGS = [
-    { key: 'comms',      label: 'Communications', restart: true  },
-    { key: 'radio',      label: 'Radio',          restart: true  },
-    { key: 'automation', label: 'Automation',      restart: false },
-    { key: 'telemetry',  label: 'Telemetry',       restart: true  },
+    { key: 'comms',      label: 'Comms / Serial', restart: true  },
+    { key: 'labels',     label: 'Labels',          restart: false },
+    { key: 'radio',      label: 'Radio',           restart: true  },
+    { key: 'automation', label: 'Automation',       restart: false },
+    { key: 'telemetry',  label: 'Telemetry',        restart: true  },
   ]
 
   let activeTab  = $state('comms')
-  let contents   = $state({})   // key → string | null
-  let dirty      = $state({})   // key → bool
-  let loading    = $state({})   // key → bool
-  let saveStatus = $state({})   // key → { ok: bool, msg: string } | null
-  let errors     = $state({})   // key → string | null
+  let contents   = $state({})
+  let dirty      = $state({})
+  let loading    = $state({})
+  let saveStatus = $state({})
+  let errors     = $state({})
+
+  // DOM refs to the highlight <pre> elements (keyed by config key)
+  let hlEls = {}
 
   onMount(loadAll)
 
@@ -75,6 +79,94 @@
     dirty[key]      = true
     saveStatus[key] = null
   }
+
+  function syncScroll(key, e) {
+    const el = hlEls[key]
+    if (el) {
+      el.scrollTop  = e.target.scrollTop
+      el.scrollLeft = e.target.scrollLeft
+    }
+  }
+
+  // Tab key → insert 2 spaces instead of moving focus
+  function onKeydown(key, e) {
+    if (e.key !== 'Tab') return
+    e.preventDefault()
+    const ta    = e.currentTarget
+    const start = ta.selectionStart
+    const end   = ta.selectionEnd
+    ta.value    = ta.value.slice(0, start) + '  ' + ta.value.slice(end)
+    ta.selectionStart = ta.selectionEnd = start + 2
+    onInput(key, ta.value)
+  }
+
+  // ── YAML syntax highlighter ──────────────────────────────────────────────
+
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
+
+  function colorVal(v) {
+    if (!v) return ''
+    const trimmed = v.trimStart()
+    const quoted  = trimmed.startsWith('"') || trimmed.startsWith("'")
+
+    // Split off trailing inline comment (only when not inside a quoted string)
+    let val = v, cmt = ''
+    if (!quoted) {
+      const ci = v.search(/ #/)
+      if (ci > 0) { val = v.slice(0, ci); cmt = v.slice(ci) }
+    }
+
+    const t = val.trim()
+    let colored
+    if (t.startsWith('"') || t.startsWith("'")) {
+      colored = `<span class="yc-str">${esc(val)}</span>`
+    } else if (t && /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(t)) {
+      colored = `<span class="yc-num">${esc(val)}</span>`
+    } else if (t && /^(true|false|yes|no|null|~)$/i.test(t)) {
+      colored = `<span class="yc-bool">${esc(val)}</span>`
+    } else if (/^[|>]/.test(t)) {
+      colored = `<span class="yc-str">${esc(val)}</span>`
+    } else {
+      colored = esc(val)
+    }
+
+    return colored + (cmt ? `<span class="yc-cmt">${esc(cmt)}</span>` : '')
+  }
+
+  function highlightLine(line) {
+    if (!line.trim()) return ''
+
+    // Full comment line
+    if (/^\s*#/.test(line)) return `<span class="yc-cmt">${esc(line)}</span>`
+
+    // Key: value  (handles optional indent + optional list bullet)
+    // Match: indent  [- ]  key  [:space or :EOL]  value
+    const km = line.match(/^(\s*)((?:-\s+)?)([^#:'"|\s][^:#]*)(\s*:\s+|\s*:\s*$)(.*)$/)
+    if (km) {
+      const [, indent, bullet, key, sep, rest] = km
+      return esc(indent)
+           + (bullet ? `<span class="yc-bull">${esc(bullet)}</span>` : '')
+           + `<span class="yc-key">${esc(key)}</span>`
+           + `<span class="yc-sep">${esc(sep)}</span>`
+           + colorVal(rest)
+    }
+
+    // List item without a key
+    const lm = line.match(/^(\s*)(- )(.*)$/)
+    if (lm) {
+      return esc(lm[1]) + `<span class="yc-bull">${esc(lm[2])}</span>` + colorVal(lm[3])
+    }
+
+    return esc(line)
+  }
+
+  function highlightYaml(text) {
+    if (!text) return ''
+    // Trailing \n keeps the pre tall enough to match the textarea's last blank line
+    return text.split('\n').map(highlightLine).join('\n') + '\n'
+  }
 </script>
 
 <div class="config-editor">
@@ -100,23 +192,27 @@
 
         {#if loading[cfg.key] && contents[cfg.key] == null}
           <div class="loading">Loading...</div>
-        {:else if errors[cfg.key]}
-          <div class="error-msg">{errors[cfg.key]}</div>
-          <textarea
-            class="yaml-area"
-            value={contents[cfg.key] ?? ''}
-            oninput={(e) => onInput(cfg.key, e.currentTarget.value)}
-            spellcheck="false"
-            autocomplete="off"
-          ></textarea>
         {:else}
-          <textarea
-            class="yaml-area"
-            value={contents[cfg.key] ?? ''}
-            oninput={(e) => onInput(cfg.key, e.currentTarget.value)}
-            spellcheck="false"
-            autocomplete="off"
-          ></textarea>
+          {#if errors[cfg.key]}
+            <div class="error-msg">{errors[cfg.key]}</div>
+          {/if}
+
+          <div class="editor-wrap" class:focused={false}>
+            <pre
+              class="yaml-hl"
+              bind:this={hlEls[cfg.key]}
+              aria-hidden="true"
+            >{@html highlightYaml(contents[cfg.key] ?? '')}</pre>
+            <textarea
+              class="yaml-area"
+              value={contents[cfg.key] ?? ''}
+              oninput={(e) => onInput(cfg.key, e.currentTarget.value)}
+              onscroll={(e) => syncScroll(cfg.key, e)}
+              onkeydown={(e) => onKeydown(cfg.key, e)}
+              spellcheck="false"
+              autocomplete="off"
+            ></textarea>
+          </div>
         {/if}
 
         <div class="pane-footer">
@@ -216,24 +312,67 @@
     border-radius: 5px;
   }
 
-  .yaml-area {
+  /* ── Overlay editor ── */
+  .editor-wrap {
+    position: relative;
     flex: 1;
     min-height: 480px;
-    width: 100%;
-    background: var(--bg);
-    color: var(--text);
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 0.75rem;
+    background: var(--bg);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .editor-wrap:focus-within { border-color: var(--accent); }
+
+  /* Shared font metrics — must be identical on both layers */
+  .yaml-hl,
+  .yaml-area {
     font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
     font-size: 0.82rem;
     line-height: 1.55;
-    resize: vertical;
-    outline: none;
-    transition: border-color 0.15s;
+    padding: 0.75rem;
+    tab-size: 2;
+    white-space: pre-wrap;
+    word-break: break-all;
   }
-  .yaml-area:focus { border-color: var(--accent); }
 
+  /* Highlight layer — sits behind the textarea */
+  .yaml-hl {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    overflow: hidden;       /* scroll is driven by the textarea */
+    pointer-events: none;
+    color: var(--text);
+    background: transparent;
+  }
+
+  /* Edit layer — transparent text so the highlight shows through */
+  .yaml-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--text);
+    overflow: auto;
+  }
+
+  /* ── YAML token colours ── */
+  :global(.yc-key)  { color: var(--accent); }
+  :global(.yc-str)  { color: var(--green);  }
+  :global(.yc-num)  { color: #f0b860;       }
+  :global(.yc-bool) { color: #c792ea;       }
+  :global(.yc-cmt)  { color: var(--text-muted); font-style: italic; }
+  :global(.yc-bull) { color: var(--accent); opacity: 0.7; }
+  :global(.yc-sep)  { color: var(--text-muted); }
+
+  /* ── Footer ── */
   .pane-footer {
     display: flex;
     align-items: center;
