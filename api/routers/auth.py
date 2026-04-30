@@ -15,6 +15,7 @@ from ..auth import (
     auth_enabled,
     check_rate_limit,
     create_token,
+    reload_if_changed,
     record_attempt,
     revoke_token,
     validate_request,
@@ -46,6 +47,7 @@ async def login(body: LoginBody, request: Request, response: Response) -> dict:
     check_rate_limit(ip)
     record_attempt(ip)
 
+    reload_if_changed()  # pick up user/config changes without a restart
     users  = _users()
     user   = users.get(body.username)
     # Always call verify_password — even for unknown users — to prevent

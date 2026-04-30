@@ -29,16 +29,36 @@ _DUMMY_HASH: str = _bcrypt.hashpw(b"__dummy_sentinel__", _bcrypt.gensalt()).deco
 # Runtime config
 # ---------------------------------------------------------------------------
 
-_cfg: dict = {}
+_cfg:      dict  = {}
+_cfg_mtime: float = 0.0  # mtime of the last successful load
 
 
 def load_auth_config(path: Optional[Path] = None) -> None:
-    global _cfg
+    global _cfg, _cfg_mtime
     p = path or Path("config/auth_config.yaml")
     _cfg = {}
+    _cfg_mtime = 0.0
     if p.exists():
+        _cfg_mtime = p.stat().st_mtime
         with open(p, encoding="utf-8") as fh:
             _cfg = yaml.safe_load(fh) or {}
+
+
+def reload_if_changed(path: Optional[Path] = None) -> None:
+    """Re-read config from disk only when the file has been modified since last load."""
+    global _cfg, _cfg_mtime
+    p = path or Path("config/auth_config.yaml")
+    if not p.exists():
+        return
+    try:
+        mtime = p.stat().st_mtime
+    except OSError:
+        return
+    if mtime <= _cfg_mtime:
+        return
+    _cfg_mtime = mtime
+    with open(p, encoding="utf-8") as fh:
+        _cfg = yaml.safe_load(fh) or {}
 
 
 def _auth() -> dict:

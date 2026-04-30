@@ -49,6 +49,7 @@ def _auth_cfg(
 ):
     """Temporarily override auth module state for the duration of a test."""
     old_cfg      = auth_mod._cfg
+    old_mtime    = auth_mod._cfg_mtime
     old_attempts = dict(auth_mod._attempts)
     old_revoked  = dict(auth_mod._revoked)
     auth_mod._cfg = {
@@ -60,12 +61,15 @@ def _auth_cfg(
             "users":             users,
         }
     }
+    # Prevent reload_if_changed() from overwriting _cfg during the test.
+    auth_mod._cfg_mtime = float("inf")
     auth_mod._attempts.clear()
     auth_mod._revoked.clear()
     try:
         yield
     finally:
-        auth_mod._cfg = old_cfg
+        auth_mod._cfg      = old_cfg
+        auth_mod._cfg_mtime = old_mtime
         auth_mod._attempts.clear()
         auth_mod._attempts.update(old_attempts)
         auth_mod._revoked.clear()

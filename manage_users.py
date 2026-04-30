@@ -146,7 +146,7 @@ def main() -> None:
         print(__doc__)
         sys.exit(0)
 
-    cmd = args[0].lower()
+    cmd = args[0].lower().lstrip("-")
 
     if cmd == "init":
         cmd_init()
