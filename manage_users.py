@@ -2,10 +2,10 @@
 User management CLI for StationController authentication.
 
 Usage:
-    python manage_users.py add <username>     — add or update a user
-    python manage_users.py remove <username>  — remove a user
-    python manage_users.py list               — list all users
-    python manage_users.py init               — create config/auth_config.yaml with defaults
+    python manage_users.py add <username>     - add or update a user
+    python manage_users.py remove <username>  - remove a user
+    python manage_users.py list               - list all users
+    python manage_users.py init               - create config/auth_config.yaml with defaults
 
 The config is stored at config/auth_config.yaml.  Run `init` once to create it,
 then `add` to create your first user, then set auth.enabled: true to activate.
