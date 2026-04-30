@@ -12,7 +12,7 @@ import time
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, distinct, select
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -168,6 +168,14 @@ class TelemetryStore:
     # ------------------------------------------------------------------
     # Queries
     # ------------------------------------------------------------------
+
+    async def get_sensor_names(self) -> list[str]:
+        async with self._session() as s:
+            result = await s.execute(
+                select(distinct(SensorReading.sensor_name))
+                .order_by(SensorReading.sensor_name)
+            )
+            return list(result.scalars())
 
     async def get_sensor_history(
         self,

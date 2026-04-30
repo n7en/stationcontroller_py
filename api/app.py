@@ -17,12 +17,15 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from .auth import COOKIE_NAME, auth_enabled, decode_token, _is_revoked, load_auth_config
+import jwt as _jwt
 from .deps import AppState, get_state, _state
 from .ws_hub import WSHub
-from .routers import automations, config, dashboards, devices, labels, notifications, radio, relays, sensors, update, ws
+from .routers import automations, auth, config, dashboards, devices, history, labels, notifications, radio, relays, sensors, update, ws
 
 UI_DIST = Path("ui_dist")
 _log    = logging.getLogger(__name__)
@@ -54,6 +57,9 @@ async def _update_check_loop(ws_hub: WSHub) -> None:
             _log.debug("Update check failed", exc_info=True)
 
         await asyncio.sleep(interval_h * 3600)
+
+
+_UNPROTECTED_PREFIXES = ("/api/auth/", "/ws")
 
 
 def create_app(app_state: Optional[AppState] = None) -> FastAPI:
@@ -97,7 +103,28 @@ def create_app(app_state: Optional[AppState] = None) -> FastAPI:
         lifespan=lifespan,
     )
 
+    @app.middleware("http")
+    async def _auth_guard(request: Request, call_next):
+        path = request.url.path
+        if not auth_enabled() or not path.startswith("/api/"):
+            return await call_next(request)
+        if any(path.startswith(p) for p in _UNPROTECTED_PREFIXES):
+            return await call_next(request)
+        token = request.cookies.get(COOKIE_NAME)
+        if not token:
+            return JSONResponse({"detail": "Not authenticated"}, status_code=401)
+        try:
+            payload = decode_token(token)
+            if _is_revoked(payload):
+                return JSONResponse({"detail": "Token revoked"}, status_code=401)
+        except _jwt.ExpiredSignatureError:
+            return JSONResponse({"detail": "Token expired"}, status_code=401)
+        except _jwt.InvalidTokenError:
+            return JSONResponse({"detail": "Invalid token"}, status_code=401)
+        return await call_next(request)
+
     # API routers
+    app.include_router(auth.router)
     app.include_router(ws.router)
     app.include_router(devices.router)
     app.include_router(sensors.router)
@@ -109,6 +136,7 @@ def create_app(app_state: Optional[AppState] = None) -> FastAPI:
     app.include_router(notifications.router)
     app.include_router(update.router)
     app.include_router(config.router)
+    app.include_router(history.router)
 
     # Serve built frontend — falls back gracefully if not yet built
     if UI_DIST.exists() and any(UI_DIST.iterdir()):

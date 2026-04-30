@@ -38,6 +38,9 @@ AUTOMATION_CFG = CFG / "automation_config.yaml"
 TELEMETRY_CFG  = CFG / "telemetry_config.yaml"
 LABELS_CFG     = CFG / "labels.yaml"
 
+TLS_CERT = CFG / "certs" / "cert.pem"
+TLS_KEY  = CFG / "certs" / "key.pem"
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
@@ -82,10 +85,66 @@ def _read_db_url() -> str:
 
 
 # ---------------------------------------------------------------------------
+# TLS — self-signed certificate
+# ---------------------------------------------------------------------------
+
+def _ensure_tls_cert(cert_path: Path, key_path: Path) -> None:
+    """Generate a self-signed TLS cert+key if they do not already exist."""
+    if cert_path.exists() and key_path.exists():
+        return
+
+    import datetime
+    import ipaddress
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import NameOID
+
+    cert_path.parent.mkdir(parents=True, exist_ok=True)
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    subject = issuer = x509.Name([
+        x509.NameAttribute(NameOID.COMMON_NAME, "StationController"),
+    ])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(now + datetime.timedelta(days=3650))
+        .add_extension(
+            x509.SubjectAlternativeName([
+                x509.DNSName("localhost"),
+                x509.IPAddress(ipaddress.ip_address("127.0.0.1")),
+            ]),
+            critical=False,
+        )
+        .sign(key, hashes.SHA256())
+    )
+
+    cert_path.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
+    key_path.write_bytes(
+        key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.TraditionalOpenSSL,
+            serialization.NoEncryption(),
+        )
+    )
+    log.info("Generated self-signed TLS certificate -> %s", cert_path)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 async def main() -> None:
+
+    # ── 0. TLS certificate ───────────────────────────────────────────────
+    _ensure_tls_cert(TLS_CERT, TLS_KEY)
 
     # ── 1. Migrations ────────────────────────────────────────────────────
     db_url = _read_db_url()
@@ -178,7 +237,10 @@ async def main() -> None:
 
     # ── 7. AppState + FastAPI app ─────────────────────────────────────────
     from api.app  import create_app
+    from api.auth import load_auth_config
     from api.deps import AppState
+
+    load_auth_config()
 
     state                  = AppState()
     state.sensor_registry  = sensor_registry
@@ -258,11 +320,13 @@ async def main() -> None:
         port=8080,
         log_level="warning",
         access_log=False,
+        ssl_certfile=str(TLS_CERT),
+        ssl_keyfile=str(TLS_KEY),
     )
     server = uvicorn.Server(config)
 
     log.info("=" * 55)
-    log.info("  Station Controller  →  http://localhost:8080")
+    log.info("  Station Controller  →  https://localhost:8080")
     log.info("=" * 55)
 
     try:

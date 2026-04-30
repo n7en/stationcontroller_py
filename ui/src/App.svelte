@@ -10,30 +10,62 @@
   import UpdateChecker    from './lib/UpdateChecker.svelte'
   import ConfigEditor     from './lib/ConfigEditor.svelte'
   import DeviceCard       from './lib/DeviceCard.svelte'
+  import HistoryView      from './lib/HistoryView.svelte'
+  import LoginPage        from './lib/LoginPage.svelte'
 
   let page        = 'dashboard'
   let sidebarOpen = true
   let devices     = []
 
+  // null = checking auth; {auth_enabled, username} once resolved
+  let authState = null
+
+  $: authRequired = authState?.auth_enabled === true && !authState?.username
+
   onMount(async () => {
-    const res = await fetch('/api/devices')
-    if (res.ok) {
-      const data = await res.json()
-      devices = data.devices ?? []
+    // Resolve auth state before loading anything else
+    try {
+      const r = await fetch('/api/auth/me')
+      authState = r.ok ? await r.json() : { auth_enabled: false, username: 'anonymous' }
+    } catch {
+      authState = { auth_enabled: false, username: 'anonymous' }
+    }
+
+    if (!authRequired) {
+      const res = await fetch('/api/devices')
+      if (res.ok) {
+        const data = await res.json()
+        devices = data.devices ?? []
+      }
     }
   })
+
+  async function handleLogin({ detail }) {
+    authState = { ...authState, username: detail.username }
+    // Load devices now that we're authenticated
+    const res = await fetch('/api/devices')
+    if (res.ok) devices = (await res.json()).devices ?? []
+  }
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    authState = { ...authState, username: null }
+    devices   = []
+  }
 
   const NAV = [
     { id: 'dashboard',  label: 'Dashboard',  icon: 'dashboard'  },
     { id: 'relays',     label: 'Relays',      icon: 'relays'     },
     { id: 'dashboards', label: 'Dashboards',  icon: 'dashboards' },
     { id: 'labels',     label: 'Labels',      icon: 'labels'     },
+    { id: 'history',    label: 'History',     icon: 'history'    },
     { id: 'config',     label: 'Config',      icon: 'config'     },
     { id: 'settings',   label: 'Settings',    icon: 'settings'   },
   ]
 
   const ICONS = {
     menu:       'M3 12h18M3 6h18M3 18h18',
+    history:    'M3 3v18h18M9 17V9M13 17V5M17 17v-3',
     dashboard:  'M10 3H3v7h7V3zm11 0h-7v7h7V3zm0 11h-7v7h7v-7zm-11 0H3v7h7v-7z',
     relays:     'M18 7a5 5 0 010 10M6 7a5 5 0 000 10M6 12h12',
     dashboards: 'M18 20V10M12 20V4M6 20v-6',
@@ -52,6 +84,12 @@
   }))
 
 </script>
+
+{#if authState === null}
+  <!-- Auth state loading — render nothing to avoid flash -->
+{:else if authRequired}
+  <LoginPage on:login={handleLogin} />
+{:else}
 
 <div class="app">
   <!-- ── Sidebar ── -->
@@ -93,6 +131,15 @@
         <span class="ws-dot"></span>
         <span class="nav-label">{$connected ? 'Live' : 'Connecting…'}</span>
       </div>
+      {#if authState?.auth_enabled}
+        <button class="logout-btn" on:click={handleLogout} title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+          </svg>
+          <span class="nav-label">{authState.username}</span>
+        </button>
+      {/if}
     </div>
 
   </aside>
@@ -154,6 +201,13 @@
         <LabelEditor />
       </section>
 
+    {:else if page === 'history'}
+
+      <section>
+        <div class="section-title">Sensor History</div>
+        <HistoryView />
+      </section>
+
     {:else if page === 'config'}
 
       <section>
@@ -175,6 +229,8 @@
 
   </main>
 </div>
+
+{/if}
 
 <style>
   :global(:root) {
@@ -320,6 +376,26 @@
   }
   .ws-status.ok .ws-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
   .ws-status.ok { color: var(--green); }
+
+  .logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    margin-top: 0.25rem;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    text-align: left;
+    transition: color 0.15s, background 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .logout-btn:hover { background: var(--border); color: var(--red); }
 
   /* ── Content ── */
   .content {

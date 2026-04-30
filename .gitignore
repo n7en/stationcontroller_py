@@ -50,6 +50,9 @@ logs/
 .env.*
 !.env.example
 
+# TLS — private key must not be committed; cert is safe to share
+config/certs/key.pem
+
 # ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db

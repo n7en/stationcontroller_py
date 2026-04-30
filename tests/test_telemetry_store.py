@@ -21,6 +21,41 @@ async def store():
 
 
 # ---------------------------------------------------------------------------
+# TelemetryStore — sensor names
+# ---------------------------------------------------------------------------
+
+class TestSensorNames:
+
+    async def test_returns_empty_when_no_readings(self, store):
+        assert await store.get_sensor_names() == []
+
+    async def test_returns_name_of_recorded_sensor(self, store):
+        await store.record_sensor("swr", 1.8)
+        assert await store.get_sensor_names() == ["swr"]
+
+    async def test_deduplicates_multiple_readings_same_name(self, store):
+        await store.record_sensor("swr", 1.8)
+        await store.record_sensor("swr", 2.0)
+        names = await store.get_sensor_names()
+        assert names.count("swr") == 1
+
+    async def test_returns_all_distinct_names(self, store):
+        for name in ["voltage", "temp_f", "swr"]:
+            await store.record_sensor(name, 1.0)
+        assert set(await store.get_sensor_names()) == {"voltage", "temp_f", "swr"}
+
+    async def test_names_are_sorted_alphabetically(self, store):
+        for name in ["temp_f", "ant_relay_0", "swr", "voltage"]:
+            await store.record_sensor(name, 1.0)
+        names = await store.get_sensor_names()
+        assert names == sorted(names)
+
+    async def test_does_not_include_sensors_from_other_tables(self, store):
+        await store.record_device_event("relay_toggle", "coax_switch")
+        assert await store.get_sensor_names() == []
+
+
+# ---------------------------------------------------------------------------
 # TelemetryStore — sensor readings
 # ---------------------------------------------------------------------------
 
