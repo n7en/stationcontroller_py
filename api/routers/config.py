@@ -16,6 +16,7 @@ _CONFIG_FILES: dict[str, Path] = {
     "radio":      Path("config/radio_config.yaml"),
     "automation": Path("config/automation_config.yaml"),
     "telemetry":  Path("config/telemetry_config.yaml"),
+    "auth":       Path("config/auth_config.yaml"),
 }
 
 

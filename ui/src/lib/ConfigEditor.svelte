@@ -7,6 +7,7 @@
     { key: 'radio',      label: 'Radio',           restart: true  },
     { key: 'automation', label: 'Automation',       restart: false },
     { key: 'telemetry',  label: 'Telemetry',        restart: true  },
+    { key: 'auth',       label: 'Auth',             restart: true  },
   ]
 
   let activeTab  = $state('comms')
