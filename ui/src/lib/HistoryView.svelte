@@ -89,8 +89,7 @@
   $: colorFor = name => LINE_COLORS[selected.indexOf(name) % LINE_COLORS.length]
 
   // Auto-detect chart type: timeline if all values are integers and ≤10 distinct values
-  function chartType(name) {
-    const data = histData[name]
+  function chartType(data) {
     if (!data?.length) return 'line'
     const vals   = data.map(r => r.value)
     const allInt = vals.every(v => v % 1 === 0)
@@ -148,7 +147,7 @@
   {:else}
     <div class="charts">
       {#each selected as name}
-        {@const type = chartType(name)}
+        {@const type = chartType(histData[name])}
         <div class="chart-card">
           <div class="chart-header">
             <span class="chart-name">{name}</span>

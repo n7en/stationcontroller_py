@@ -143,7 +143,14 @@ def _ensure_tls_cert(cert_path: Path, key_path: Path) -> None:
 
 async def main() -> None:
 
-    # ── 0. TLS certificate ───────────────────────────────────────────────
+    # ── 0a. Log buffer (captures all startup logs for WS replay) ────────
+    import time as _time
+    from api.log_buffer import LogBuffer
+
+    log_buffer = LogBuffer(maxlen=500)
+    logging.getLogger().addHandler(log_buffer.make_handler())
+
+    # ── 0b. TLS certificate ──────────────────────────────────────────────
     _ensure_tls_cert(TLS_CERT, TLS_KEY)
 
     # ── 1. Migrations ────────────────────────────────────────────────────
@@ -253,9 +260,11 @@ async def main() -> None:
     state.engine           = engine
     state.band_registry    = band_registry
     state.telemetry        = store
+    state.log_buffer       = log_buffer
 
     app    = create_app(state)
     ws_hub = state.ws_hub  # populated by create_app()
+    log_buffer.attach_ws_hub(ws_hub)
 
     # ── 8. Cross-wiring ───────────────────────────────────────────────────
 
@@ -298,6 +307,31 @@ async def main() -> None:
                 pass
 
         sensor_registry.on_any(_on_sensor)
+
+    # DCN packets → live log stream
+    def _make_dcn_hooks(buf, bus_name):
+        async def _rx(packet, transport):
+            buf.append_dcn({
+                "type": "dcn_message", "ts": _time.time(), "direction": "rx",
+                "bus": bus_name, "from_addr": packet.from_addr,
+                "to_addr": packet.to_addr, "payload": packet.payload,
+                "raw": packet.raw or str(packet), "broadcast": packet.broadcast,
+                "transport": transport,
+            })
+        async def _tx(packet, transport):
+            buf.append_dcn({
+                "type": "dcn_message", "ts": _time.time(), "direction": "tx",
+                "bus": bus_name, "from_addr": packet.from_addr,
+                "to_addr": packet.to_addr, "payload": packet.payload,
+                "raw": packet.raw or str(packet), "broadcast": packet.broadcast,
+                "transport": transport,
+            })
+        return _rx, _tx
+
+    for bus_name, net in networks.items():
+        _rx, _tx = _make_dcn_hooks(log_buffer, bus_name)
+        net.on_packet(_rx)
+        net.on_transmit(_tx)
 
     # ── 9. Connect hardware ──────────────────────────────────────────────
     for bus_name, net in networks.items():

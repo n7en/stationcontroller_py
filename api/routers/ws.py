@@ -22,6 +22,13 @@ async def websocket_endpoint(ws: WebSocket, state: AppState = Depends(get_state)
             ws, state.sensor_registry, state.radio_state, state.label_registry,
             update_result=_update_mod._cached_result,
         )
+        if state.log_buffer is not None:
+            logs = state.log_buffer.recent_general()
+            if logs:
+                await hub.send(ws, {"type": "log_history", "entries": logs})
+            dcns = state.log_buffer.recent_dcn()
+            if dcns:
+                await hub.send(ws, {"type": "dcn_history", "entries": dcns})
         async for raw in ws.iter_text():
             await _handle_client_message(raw, state)
     except WebSocketDisconnect:

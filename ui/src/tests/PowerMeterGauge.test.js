@@ -60,22 +60,27 @@ describe('PowerMeterGauge', () => {
     const paths = container.querySelectorAll('path')
     expect(paths.length).toBe(2)
     const arcD = paths[1].getAttribute('d')
-    // Full arc special case: "M -50 0 A 50 50 0 1 0 50 0"
-    expect(arcD).toContain('1 0')
+    // Full arc special case: "M -50 0 A 50 50 0 1 1 50 0" (large-arc=1, sweep=1)
+    expect(arcD).toMatch(/A 50 50 0 1 1/)
+    expect(arcD).toContain('50 0')
   })
 
-  test('value arc uses large-arc flag when pct > 0.5', () => {
+  test('value arc endpoint is in right half when pct > 0.5', () => {
     const { container } = render(PowerMeterGauge, { props: { value: 900, max: 1500 } })
-    // pct = 0.6 > 0.5 → large-arc = 1
-    const arcPath = container.querySelectorAll('path')[1].getAttribute('d')
-    expect(arcPath).toMatch(/A 50 50 0 1 0/)
+    // pct = 0.6 → endX = 50*cos(0.4π) ≈ +15.45 (right side of semicircle)
+    const arcPath = container.querySelectorAll('path')[1].getAttribute('d') ?? ''
+    expect(arcPath).toMatch(/A 50 50 0 0 1/)
+    const match = arcPath.match(/A 50 50 0 0 1 ([-\d.]+)/) ?? []
+    expect(parseFloat(match[1])).toBeGreaterThan(0)
   })
 
-  test('value arc uses small-arc flag when pct <= 0.5', () => {
+  test('value arc endpoint is in left half when pct <= 0.5', () => {
     const { container } = render(PowerMeterGauge, { props: { value: 600, max: 1500 } })
-    // pct = 0.4 <= 0.5 → large-arc = 0
-    const arcPath = container.querySelectorAll('path')[1].getAttribute('d')
-    expect(arcPath).toMatch(/A 50 50 0 0 0/)
+    // pct = 0.4 → endX = 50*cos(0.6π) ≈ -15.45 (left side of semicircle)
+    const arcPath = container.querySelectorAll('path')[1].getAttribute('d') ?? ''
+    expect(arcPath).toMatch(/A 50 50 0 0 1/)
+    const match = arcPath.match(/A 50 50 0 0 1 ([-\d.]+)/) ?? []
+    expect(parseFloat(match[1])).toBeLessThan(0)
   })
 
   test('clamps overflow value to max', () => {

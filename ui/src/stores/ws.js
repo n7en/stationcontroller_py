@@ -14,6 +14,10 @@ export const sensors         = writable({})
 export const labels          = writable({})
 export const radio           = writable(null)
 export const updateAvailable = writable(null)  // { latest_version, release_url, published_at } | null
+/** @type {import('svelte/store').Writable<object[]>} */
+export const logEntries = writable([])   // { ts, level, logger, msg }
+/** @type {import('svelte/store').Writable<object[]>} */
+export const dcnEntries = writable([])   // { ts, direction, bus, from_addr, to_addr, payload, raw }
 
 let _ws = null
 let _connectedSet = () => {}
@@ -76,6 +80,22 @@ function connect() {
         release_url:    msg.release_url,
         published_at:   msg.published_at,
       })
+    }
+
+    else if (msg.type === 'log_history') {
+      logEntries.set(msg.entries ?? [])
+    }
+
+    else if (msg.type === 'log_entry') {
+      logEntries.update(a => { const n = [...a, msg]; return n.length > 500 ? n.slice(-500) : n })
+    }
+
+    else if (msg.type === 'dcn_history') {
+      dcnEntries.set(msg.entries ?? [])
+    }
+
+    else if (msg.type === 'dcn_message') {
+      dcnEntries.update(a => { const n = [...a, msg]; return n.length > 500 ? n.slice(-500) : n })
     }
   }
 }

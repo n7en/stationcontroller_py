@@ -3,6 +3,9 @@
 
   const dispatch = createEventDispatcher()
 
+  /** @type {((detail: { username: string }) => void) | undefined} */
+  export let onlogin = undefined
+
   let username = ''
   let password = ''
   let error    = ''
@@ -20,6 +23,7 @@
       })
       if (res.ok) {
         dispatch('login', { username: username.trim() })
+        onlogin?.({ username: username.trim() })
       } else if (res.status === 429) {
         error = 'Too many attempts — please wait a moment.'
       } else {

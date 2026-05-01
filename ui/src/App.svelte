@@ -11,6 +11,7 @@
   import ConfigEditor     from './lib/ConfigEditor.svelte'
   import DeviceCard       from './lib/DeviceCard.svelte'
   import HistoryView      from './lib/HistoryView.svelte'
+  import LogView          from './lib/LogView.svelte'
   import LoginPage        from './lib/LoginPage.svelte'
 
   let page        = 'dashboard'
@@ -59,6 +60,7 @@
     { id: 'dashboards', label: 'Dashboards',  icon: 'dashboards' },
     { id: 'labels',     label: 'Labels',      icon: 'labels'     },
     { id: 'history',    label: 'History',     icon: 'history'    },
+    { id: 'logs',       label: 'Logs',        icon: 'logs'       },
     { id: 'config',     label: 'Config',      icon: 'config'     },
     { id: 'settings',   label: 'Settings',    icon: 'settings'   },
   ]
@@ -70,6 +72,7 @@
     relays:     'M18 7a5 5 0 010 10M6 7a5 5 0 000 10M6 12h12',
     dashboards: 'M18 20V10M12 20V4M6 20v-6',
     labels:     'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01',
+    logs:       'M4 6h16M4 10h16M4 14h10',
     config:     'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
     settings:   'M12 15a3 3 0 100-6 3 3 0 000 6zm6.36-1.5a1.5 1.5 0 00.3 1.66l.05.05a2 2 0 010 2.83 2 2 0 01-2.83 0l-.05-.05a1.5 1.5 0 00-1.66-.3 1.5 1.5 0 00-.91 1.37V19a2 2 0 01-4 0v-.09a1.5 1.5 0 00-.98-1.38 1.5 1.5 0 00-1.66.3l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.5 1.5 0 00.3-1.66 1.5 1.5 0 00-1.37-.91H3a2 2 0 010-4h.09a1.5 1.5 0 001.38-.98 1.5 1.5 0 00-.3-1.66l-.06-.06a2 2 0 012.83-2.83l.06.06a1.5 1.5 0 001.66.3H9a1.5 1.5 0 00.91-1.37V3a2 2 0 014 0v.09a1.5 1.5 0 00.91 1.37 1.5 1.5 0 001.66-.3l.06-.06a2 2 0 012.83 2.83l-.06.06a1.5 1.5 0 00-.3 1.66V9a1.5 1.5 0 001.37.91H21a2 2 0 010 4h-.09a1.5 1.5 0 00-1.37.91z',
   }
@@ -206,6 +209,13 @@
       <section>
         <div class="section-title">Sensor History</div>
         <HistoryView />
+      </section>
+
+    {:else if page === 'logs'}
+
+      <section style="flex:1;min-height:0;height:100%;">
+        <div class="section-title">Live Logs</div>
+        <LogView />
       </section>
 
     {:else if page === 'config'}

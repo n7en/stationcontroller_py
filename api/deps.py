@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from sensors.sensor_registry import SensorRegistry
     from sensors.label_registry import LabelRegistry
     from telemetry.store import TelemetryStore
+    from .log_buffer import LogBuffer
     from .ws_hub import WSHub
 
 
@@ -36,8 +37,9 @@ class AppState:
         self.radio_interface: Optional[Any] = None
         self.engine: Optional["AutomationEngine"] = None
         self.band_registry: Optional["BandRegistry"] = None
-        self.telemetry: Optional["TelemetryStore"] = None
-        self.ws_hub: Optional["WSHub"] = None
+        self.telemetry:   Optional["TelemetryStore"] = None
+        self.ws_hub:      Optional["WSHub"]          = None
+        self.log_buffer:  Optional["LogBuffer"]      = None
 
     # ------------------------------------------------------------------
     # Convenience helpers
