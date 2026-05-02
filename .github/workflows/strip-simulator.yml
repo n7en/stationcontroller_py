@@ -4,7 +4,7 @@ name: Strip simulator from main
 # If the simulator/ directory was included in the merge, this job removes it
 # and pushes a cleanup commit so main stays free of dev-only tooling.
 
-on:
+'on':
   pull_request:
     types: [closed]
     branches: [main]
