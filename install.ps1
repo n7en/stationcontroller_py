@@ -174,7 +174,53 @@ alembic_cmd.upgrade(cfg, "head")
 print(f"  DB: {sync_url}")
 '@ | & $PYTHON_VENV -
 
-# -- 7. COM port configuration ----------------------------------------------
+# -- 7. Initial account setup -----------------------------------------------
+$AUTH_CFG = Join-Path $SCRIPT_DIR "config" "auth_config.yaml"
+Write-Host ""
+Info "Authentication setup"
+Prompt "Create an admin account to secure the web interface? [y/N]:"
+$authChoice = Read-Host
+if ($authChoice -match '^[Yy]$') {
+    Prompt "Username:"
+    $authUser = Read-Host
+    $authPassSS  = Read-Host "  ? Password" -AsSecureString
+    $authPass2SS = Read-Host "  ? Confirm password" -AsSecureString
+
+    $authPass  = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+                     [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($authPassSS))
+    $authPass2 = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+                     [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($authPass2SS))
+
+    if ($authPass -ne $authPass2) {
+        Warn "Passwords do not match - skipping account creation."
+    } elseif (-not $authUser -or -not $authPass) {
+        Warn "Username and password cannot be empty - skipping."
+    } else {
+        @'
+import sys, pathlib, secrets, yaml, bcrypt
+cfg_path = pathlib.Path(sys.argv[1])
+username = sys.argv[2]
+password = sys.argv[3]
+cfg = yaml.safe_load(cfg_path.read_text(encoding='utf-8')) if cfg_path.exists() else {}
+a = cfg.setdefault('auth', {})
+if not a.get('secret'):
+    a['secret'] = secrets.token_hex(32)
+a['enabled'] = True
+a.setdefault('secure_cookie', False)
+a.setdefault('token_expiry_hours', 24)
+a.setdefault('users', {})[username] = {
+    'password_hash': bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+}
+cfg_path.parent.mkdir(parents=True, exist_ok=True)
+cfg_path.write_text(yaml.dump(cfg, default_flow_style=False, allow_unicode=True), encoding='utf-8', newline='\n')
+print(f"  Account '{username}' created - authentication enabled.")
+'@ | & $PYTHON_VENV - $AUTH_CFG $authUser $authPass
+    }
+} else {
+    Write-Host "    -> skipped (use the Setup wizard in the UI to configure later)"
+}
+
+# -- 8. COM port configuration ----------------------------------------------
 $COMMS_CFG = Join-Path $SCRIPT_DIR "config" "comms_config.yaml"
 
 if (Test-Path $COMMS_CFG) {
@@ -312,7 +358,7 @@ print(f"  Updated {cfg_path}")
     }
 }
 
-# -- 8. Simulator setup (dev branches only) ---------------------------------
+# -- 9. Simulator setup (dev branches only) ---------------------------------
 $SimReady = $false
 $simDir = Join-Path $SCRIPT_DIR "simulator"
 if (Test-Path $simDir) {

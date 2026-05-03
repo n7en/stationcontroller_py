@@ -133,7 +133,51 @@ alembic_cmd.upgrade(cfg, "head")
 print(f"  DB: {sync_url}")
 PYEOF
 
-# ── 7. Serial port configuration (Linux only) ─────────────────────────────
+# ── 7. Initial account setup ──────────────────────────────────────────────
+AUTH_CFG="$SCRIPT_DIR/config/auth_config.yaml"
+echo ""
+info "Authentication setup"
+prompt "Create an admin account to secure the web interface? [y/N]:"
+read -r _auth_choice </dev/tty
+if [[ "$_auth_choice" =~ ^[Yy]$ ]]; then
+    prompt "Username:"
+    read -r _auth_user </dev/tty
+    prompt "Password:"
+    read -rs _auth_pass </dev/tty
+    echo ""
+    prompt "Confirm password:"
+    read -rs _auth_pass2 </dev/tty
+    echo ""
+    if [[ "$_auth_pass" != "$_auth_pass2" ]]; then
+        warn "Passwords do not match — skipping account creation."
+    elif [[ -z "$_auth_user" || -z "$_auth_pass" ]]; then
+        warn "Username and password cannot be empty — skipping."
+    else
+        "$PYTHON_VENV" - "$AUTH_CFG" "$_auth_user" "$_auth_pass" <<'PYEOF'
+import sys, pathlib, secrets, yaml, bcrypt
+cfg_path = pathlib.Path(sys.argv[1])
+username = sys.argv[2]
+password = sys.argv[3]
+cfg = yaml.safe_load(cfg_path.read_text(encoding='utf-8')) if cfg_path.exists() else {}
+a = cfg.setdefault('auth', {})
+if not a.get('secret'):
+    a['secret'] = secrets.token_hex(32)
+a['enabled'] = True
+a.setdefault('secure_cookie', False)
+a.setdefault('token_expiry_hours', 24)
+a.setdefault('users', {})[username] = {
+    'password_hash': bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+}
+cfg_path.parent.mkdir(parents=True, exist_ok=True)
+cfg_path.write_text(yaml.dump(cfg, default_flow_style=False, allow_unicode=True), encoding='utf-8', newline='\n')
+print(f"  Account '{username}' created — authentication enabled.")
+PYEOF
+    fi
+else
+    echo "    -> skipped (use the Setup wizard in the UI to configure later)"
+fi
+
+# ── 8. Serial port configuration (Linux only) ─────────────────────────────
 if [[ "$(uname -s)" == "Linux" ]]; then
 
     # Check dialout membership
@@ -332,7 +376,7 @@ PYEOF
     fi
 fi
 
-# ── 8. Simulator setup (dev branches only) ────────────────────────────────
+# ── 9. Simulator setup (dev branches only) ────────────────────────────────
 _SIM_READY=0
 if [[ -d "$SCRIPT_DIR/simulator" ]]; then
     _BRANCH=$(git -C "$SCRIPT_DIR" branch --show-current 2>/dev/null || \
@@ -410,7 +454,7 @@ PYEOF
     fi
 fi
 
-# ── 9. Systemd service (Linux only) ──────────────────────────────────────
+# ── 10. Systemd service (Linux only) ──────────────────────────────────────
 _SERVICE_READY=0
 if [[ "$(uname -s)" == "Linux" ]] && command -v systemctl &>/dev/null; then
     # Determine how to run privileged commands
