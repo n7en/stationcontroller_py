@@ -343,9 +343,9 @@ async def main() -> None:
     if radio_interface:
         try:
             await radio_interface.connect()
-            await radio_interface.start()
         except Exception:
-            log.warning("Radio connect failed — will retry in background")
+            log.warning("Radio connect failed — poll loop will retry in background")
+        await radio_interface.start()   # always start; poll loop handles reconnection
 
     # ── 10. Serve ─────────────────────────────────────────────────────────
     config = uvicorn.Config(

@@ -58,7 +58,11 @@ class NodeRedMQTTTransport(DCNTransport):
         username = self._config.get("username", "")
         password = self._config.get("password", "")
 
-        self._client = mqtt.Client(client_id=f"dcn-{self.name}", clean_session=True)
+        self._client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION1,
+            client_id=f"dcn-{self.name}",
+            clean_session=True,
+        )
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
         self._client.on_message = self._on_message

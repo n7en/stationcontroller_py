@@ -60,6 +60,17 @@ class RigctldBackend(RadioBackend):
     # Low-level command exchange
     # ------------------------------------------------------------------
 
+    def _drop_connection(self) -> None:
+        """Mark disconnected and close the underlying socket so rigctld frees the slot."""
+        self._connected = False
+        self._reader = None
+        if self._writer is not None:
+            try:
+                self._writer.close()
+            except OSError:
+                pass
+            self._writer = None
+
     async def _cmd(self, command: str) -> list[str]:
         """
         Send one extended-mode command, return response lines excluding RPRT.
@@ -76,14 +87,10 @@ class RigctldBackend(RadioBackend):
                     self._read_response(), timeout=self._timeout
                 )
             except (OSError, ConnectionResetError) as exc:
-                self._connected = False
-                self._writer = None
-                self._reader = None
+                self._drop_connection()
                 raise RadioBackendError(f"rigctld connection lost: {exc}") from exc
             except asyncio.TimeoutError as exc:
-                self._connected = False
-                self._writer = None
-                self._reader = None
+                self._drop_connection()
                 raise RadioBackendError("rigctld response timed out") from exc
 
     async def _read_response(self) -> list[str]:
