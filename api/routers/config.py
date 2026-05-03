@@ -34,6 +34,18 @@ class ConfigBody(BaseModel):
     content: str
 
 
+@router.get("/{name}/json")
+async def get_config_json(name: str) -> dict:
+    """Return the named config file parsed as JSON (used by the setup wizard)."""
+    path = _CONFIG_FILES.get(name)
+    if path is None:
+        raise HTTPException(status_code=404, detail=f"Unknown config: {name}")
+    if not path.exists():
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        return yaml.safe_load(fh) or {}
+
+
 @router.put("/{name}")
 async def put_config(name: str, body: ConfigBody) -> dict:
     path = _CONFIG_FILES.get(name)

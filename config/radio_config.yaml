@@ -20,8 +20,9 @@ radios:
     backend: rigctld
     host: localhost
     port: 4532
-    poll_interval_s: 0.5
+    poll_interval_s: 1.0      # seconds between state polls; increase if rigctld is slow
     reconnect_delay_s: 5.0
+    timeout_s: 15.0           # per-command TCP timeout; increase for slow serial ports
 
   # --------------------------------------------------------------------------
   # Example: Remote radio (rigctld running on another machine on the network)

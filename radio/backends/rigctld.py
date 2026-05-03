@@ -18,7 +18,7 @@ class RigctldBackend(RadioBackend):
         self,
         host: str = "127.0.0.1",
         port: int = 4532,
-        timeout_s: float = 5.0,
+        timeout_s: float = 15.0,
     ) -> None:
         self._host = host
         self._port = port
@@ -113,7 +113,10 @@ class RigctldBackend(RadioBackend):
 
     async def get_frequency(self) -> float:
         lines = await self._cmd(r"\get_freq")
-        return float(lines[0])
+        try:
+            return float(lines[0])
+        except (IndexError, ValueError) as exc:
+            raise RadioBackendError(f"Unexpected get_freq response: {lines}") from exc
 
     async def set_frequency(self, hz: float) -> None:
         await self._cmd(rf"\set_freq {int(hz)}")
@@ -124,9 +127,12 @@ class RigctldBackend(RadioBackend):
 
     async def get_mode(self) -> tuple[str, float]:
         lines = await self._cmd(r"\get_mode")
-        mode = lines[0]
-        bw = float(lines[1]) if len(lines) > 1 else 0.0
-        return mode, bw
+        try:
+            mode = lines[0]
+            bw = float(lines[1]) if len(lines) > 1 else 0.0
+            return mode, bw
+        except (IndexError, ValueError) as exc:
+            raise RadioBackendError(f"Unexpected get_mode response: {lines}") from exc
 
     async def set_mode(self, mode: str, bandwidth_hz: float = 0) -> None:
         await self._cmd(rf"\set_mode {mode} {int(bandwidth_hz)}")
@@ -137,7 +143,10 @@ class RigctldBackend(RadioBackend):
 
     async def get_vfo(self) -> str:
         lines = await self._cmd(r"\get_vfo")
-        return lines[0]
+        try:
+            return lines[0]
+        except IndexError as exc:
+            raise RadioBackendError(f"Unexpected get_vfo response: {lines}") from exc
 
     async def set_vfo(self, vfo: str) -> None:
         await self._cmd(rf"\set_vfo {vfo}")
@@ -148,7 +157,10 @@ class RigctldBackend(RadioBackend):
 
     async def get_ptt(self) -> bool:
         lines = await self._cmd(r"\get_ptt")
-        return lines[0].strip() != "0"
+        try:
+            return lines[0].strip() != "0"
+        except IndexError as exc:
+            raise RadioBackendError(f"Unexpected get_ptt response: {lines}") from exc
 
     async def set_ptt(self, transmit: bool) -> None:
         await self._cmd(rf"\set_ptt {1 if transmit else 0}")
@@ -159,13 +171,16 @@ class RigctldBackend(RadioBackend):
 
     async def get_split(self) -> tuple[bool, Optional[float]]:
         vfo_lines = await self._cmd(r"\get_split_vfo")
-        active = vfo_lines[0].strip() != "0"
+        try:
+            active = vfo_lines[0].strip() != "0"
+        except IndexError as exc:
+            raise RadioBackendError(f"Unexpected get_split_vfo response: {vfo_lines}") from exc
         tx_hz: Optional[float] = None
         if active:
             try:
                 freq_lines = await self._cmd(r"\get_split_freq")
                 tx_hz = float(freq_lines[0])
-            except RadioBackendError:
+            except (RadioBackendError, IndexError, ValueError):
                 pass
         return active, tx_hz
 
@@ -180,7 +195,10 @@ class RigctldBackend(RadioBackend):
 
     async def get_level(self, level_name: str) -> float:
         lines = await self._cmd(rf"\get_level {level_name}")
-        return float(lines[0])
+        try:
+            return float(lines[0])
+        except (IndexError, ValueError) as exc:
+            raise RadioBackendError(f"Unexpected get_level response for {level_name}: {lines}") from exc
 
     async def set_level(self, level_name: str, value: float) -> None:
         await self._cmd(rf"\set_level {level_name} {value}")
@@ -191,4 +209,7 @@ class RigctldBackend(RadioBackend):
 
     async def get_info(self) -> str:
         lines = await self._cmd(r"\get_info")
-        return lines[0] if lines else ""
+        try:
+            return lines[0] if lines else ""
+        except IndexError:
+            return ""

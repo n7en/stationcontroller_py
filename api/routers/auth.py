@@ -4,6 +4,9 @@ GET  /api/auth/me     — return current auth state (safe to call unauthenticate
 """
 from __future__ import annotations
 
+from pathlib import Path
+
+import yaml as _yaml
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from pydantic import BaseModel, field_validator
 
@@ -15,12 +18,16 @@ from ..auth import (
     auth_enabled,
     check_rate_limit,
     create_token,
+    hash_password,
+    load_auth_config,
     reload_if_changed,
     record_attempt,
     revoke_token,
     validate_request,
     verify_password,
 )
+
+_AUTH_CFG = Path("config/auth_config.yaml")
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -91,3 +98,65 @@ async def me(request: Request) -> dict:
         return {"username": username, "auth_enabled": True}
     except HTTPException:
         return {"username": None, "auth_enabled": True}
+
+
+# ---------------------------------------------------------------------------
+# User management (used by the setup wizard)
+# ---------------------------------------------------------------------------
+
+def _load_auth_yaml() -> dict:
+    if not _AUTH_CFG.exists():
+        return {}
+    with open(_AUTH_CFG, encoding="utf-8") as fh:
+        return _yaml.safe_load(fh) or {}
+
+
+def _save_auth_yaml(cfg: dict) -> None:
+    _AUTH_CFG.parent.mkdir(parents=True, exist_ok=True)
+    with open(_AUTH_CFG, "w", encoding="utf-8", newline="\n") as fh:
+        _yaml.dump(cfg, fh, default_flow_style=False, allow_unicode=True)
+    load_auth_config(_AUTH_CFG)
+
+
+@router.get("/users")
+async def list_users() -> dict:
+    """Return the list of configured usernames (no hashes)."""
+    reload_if_changed()
+    return {"users": sorted(_users().keys())}
+
+
+class UserBody(BaseModel):
+    username: str
+    password: str
+
+    @field_validator("username", "password")
+    @classmethod
+    def _check(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("must not be empty")
+        if len(v) > _MAX_FIELD:
+            raise ValueError(f"must not exceed {_MAX_FIELD} characters")
+        return v
+
+
+@router.post("/users")
+async def create_or_update_user(body: UserBody) -> dict:
+    """Create or update a user with a bcrypt-hashed password."""
+    cfg = _load_auth_yaml()
+    cfg.setdefault("auth", {}).setdefault("users", {})[body.username] = {
+        "password_hash": hash_password(body.password)
+    }
+    _save_auth_yaml(cfg)
+    return {"ok": True, "username": body.username}
+
+
+@router.delete("/users/{username}")
+async def delete_user(username: str) -> dict:
+    """Remove a user from the auth config."""
+    cfg = _load_auth_yaml()
+    users = cfg.get("auth", {}).get("users", {})
+    if username not in users:
+        raise HTTPException(status_code=404, detail=f"User '{username}' not found")
+    del users[username]
+    _save_auth_yaml(cfg)
+    return {"ok": True}

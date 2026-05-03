@@ -13,6 +13,7 @@
   import HistoryView      from './lib/HistoryView.svelte'
   import LogView          from './lib/LogView.svelte'
   import LoginPage        from './lib/LoginPage.svelte'
+  import ConfigWizard    from './lib/ConfigWizard.svelte'
 
   let page        = 'dashboard'
   let sidebarOpen = true
@@ -63,10 +64,12 @@
     { id: 'logs',       label: 'Logs',        icon: 'logs'       },
     { id: 'config',     label: 'Config',      icon: 'config'     },
     { id: 'settings',   label: 'Settings',    icon: 'settings'   },
+    { id: 'wizard',     label: 'Setup',       icon: 'wizard'     },
   ]
 
   const ICONS = {
     menu:       'M3 12h18M3 6h18M3 18h18',
+    wizard:     'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12l2 2 4-4',
     history:    'M3 3v18h18M9 17V9M13 17V5M17 17v-3',
     dashboard:  'M10 3H3v7h7V3zm11 0h-7v7h7V3zm0 11h-7v7h7v-7zm-11 0H3v7h7v-7z',
     relays:     'M18 7a5 5 0 010 10M6 7a5 5 0 000 10M6 12h12',
@@ -233,6 +236,12 @@
 
       <section>
         <UpdateChecker />
+      </section>
+
+    {:else if page === 'wizard'}
+
+      <section>
+        <ConfigWizard ondone={() => page = 'dashboard'} />
       </section>
 
     {/if}

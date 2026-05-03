@@ -296,7 +296,10 @@ class DCNSimulator:
             logger.info("  rigctld  %s:%s", rig_cfg.get("host", "127.0.0.1"),
                         rig_cfg.get("port", 4532))
 
-        self._client = mqtt.Client(client_id="dcn-simulator")
+        self._client = mqtt.Client(
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION1,
+            client_id="dcn-simulator",
+        )
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         if self._username:
