@@ -150,9 +150,10 @@ class RadioInterface:
         await asyncio.sleep(self._reconnect_delay)
         try:
             await self._backend.connect()
-            self.state.connected = True
-            await self._fire({"connected": True})
-            logger.info("Reconnected %s", self.name)
+            # Don't broadcast "connected" here — wait for the first successful
+            # poll to confirm the radio is actually responding before the UI
+            # flips back to "online".
+            logger.info("Reconnected %s — awaiting first poll", self.name)
         except RadioBackendError as exc:
             logger.warning("Reconnect failed for %s: %s", self.name, exc)
 

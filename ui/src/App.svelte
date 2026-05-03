@@ -14,8 +14,10 @@
   import LogView          from './lib/LogView.svelte'
   import LoginPage        from './lib/LoginPage.svelte'
   import ConfigWizard    from './lib/ConfigWizard.svelte'
+  import CommsEditor     from './lib/CommsEditor.svelte'
 
   let page        = 'dashboard'
+  let configTab   = 'comms'
   let sidebarOpen = true
   let devices     = []
 
@@ -224,8 +226,18 @@
     {:else if page === 'config'}
 
       <section>
-        <div class="section-title">Configuration Editor</div>
-        <ConfigEditor />
+        <div class="config-tabs">
+          <button class="tab-btn" class:active={configTab === 'comms'}
+            on:click={() => configTab = 'comms'}>Comms &amp; Devices</button>
+          <button class="tab-btn" class:active={configTab === 'yaml'}
+            on:click={() => configTab = 'yaml'}>YAML Editor</button>
+        </div>
+        {#if configTab === 'comms'}
+          <CommsEditor />
+        {:else}
+          <div class="section-title">Configuration Editor</div>
+          <ConfigEditor />
+        {/if}
       </section>
 
     {:else if page === 'settings'}
@@ -444,4 +456,25 @@
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 0.4rem;
   }
+
+  /* ── Config tabs ── */
+  .config-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.75rem;
+  }
+  .tab-btn {
+    padding: 0.4rem 1rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 </style>

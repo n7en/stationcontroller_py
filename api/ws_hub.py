@@ -96,12 +96,19 @@ class WSHub:
         })
 
     async def broadcast_radio(self, rs: "RadioState") -> None:
+        mode = rs.mode
+        mode_str = mode.value if mode is not None else None
         await self.broadcast({
-            "type": "radio_state",
-            "frequency_hz": rs.frequency_hz,
-            "mode": getattr(rs, "mode", None),
-            "ptt": rs.ptt,
-            "connected": rs.connected,
+            "type":            "radio_state",
+            "frequency_hz":    rs.frequency_hz,
+            "mode":            mode_str,
+            "bandwidth_hz":    rs.bandwidth_hz,
+            "vfo":             rs.vfo,
+            "ptt":             rs.ptt,
+            "signal_strength": rs.signal_strength,
+            "rf_power":        rs.rf_power,
+            "connected":       rs.connected,
+            "info":            rs.info,
         })
 
     async def broadcast_automation(self, name: str, tier: str = "") -> None:
@@ -147,11 +154,17 @@ class WSHub:
 
         radio = None
         if radio_state is not None:
+            mode = radio_state.mode
             radio = {
-                "frequency_hz": radio_state.frequency_hz,
-                "mode": getattr(radio_state, "mode", None),
-                "ptt": radio_state.ptt,
-                "connected": radio_state.connected,
+                "frequency_hz":    radio_state.frequency_hz,
+                "mode":            mode.value if mode is not None else None,
+                "bandwidth_hz":    radio_state.bandwidth_hz,
+                "vfo":             radio_state.vfo,
+                "ptt":             radio_state.ptt,
+                "signal_strength": radio_state.signal_strength,
+                "rf_power":        radio_state.rf_power,
+                "connected":       radio_state.connected,
+                "info":            radio_state.info,
             }
 
         labels = label_registry.all() if label_registry is not None else {}

@@ -213,3 +213,46 @@ class RigctldBackend(RadioBackend):
             return lines[0] if lines else ""
         except IndexError:
             return ""
+
+    # ------------------------------------------------------------------
+    # Full-state override — polls only stable commands
+    # ------------------------------------------------------------------
+
+    async def get_full_state(self) -> dict:
+        """
+        Poll freq, mode, PTT, and levels.  Skips get_vfo and get_split because
+        both issue additional sub-commands that cause some radios (e.g. TS-2000
+        in MEM mode) to drop the CAT connection.  If a connection drop is detected
+        mid-poll, raise immediately so the caller can handle the reconnect.
+        """
+        state: dict = {}
+
+        try:
+            state["frequency_hz"] = await self.get_frequency()
+        except RadioBackendError:
+            if not self._connected:
+                raise
+        try:
+            mode, bw = await self.get_mode()
+            state["mode"] = mode
+            state["bandwidth_hz"] = bw
+        except RadioBackendError:
+            if not self._connected:
+                raise
+        try:
+            state["ptt"] = await self.get_ptt()
+        except RadioBackendError:
+            if not self._connected:
+                raise
+        try:
+            state["signal_strength"] = await self.get_level("STRENGTH")
+        except RadioBackendError:
+            if not self._connected:
+                raise
+        try:
+            state["rf_power"] = await self.get_level("RFPOWER")
+        except RadioBackendError:
+            if not self._connected:
+                raise
+
+        return state
