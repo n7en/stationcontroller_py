@@ -1,7 +1,6 @@
 <script>
   import { onMount } from 'svelte'
   import { connected, sensors, labels, radio, updateAvailable } from './stores/ws.js'
-  import RadioStatus      from './lib/RadioStatus.svelte'
   import CoaxPortSelector from './lib/CoaxPortSelector.svelte'
   import RelayButton      from './lib/RelayButton.svelte'
   import LabelEditor      from './lib/LabelEditor.svelte'
@@ -9,7 +8,6 @@
   import RadioConfig      from './lib/RadioConfig.svelte'
   import UpdateChecker    from './lib/UpdateChecker.svelte'
   import ConfigEditor     from './lib/ConfigEditor.svelte'
-  import DeviceCard       from './lib/DeviceCard.svelte'
   import HistoryView      from './lib/HistoryView.svelte'
   import LogView          from './lib/LogView.svelte'
   import LoginPage        from './lib/LoginPage.svelte'
@@ -19,7 +17,6 @@
   let page        = 'dashboard'
   let configTab   = 'comms'
   let sidebarOpen = true
-  let devices     = []
 
   // null = checking auth; {auth_enabled, username} once resolved
   let authState = null
@@ -34,39 +31,26 @@
     } catch {
       authState = { auth_enabled: false, username: 'anonymous' }
     }
-
-    if (!authRequired) {
-      const res = await fetch('/api/devices')
-      if (res.ok) {
-        const data = await res.json()
-        devices = data.devices ?? []
-      }
-    }
   })
 
   async function handleLogin({ detail }) {
     authState = { ...authState, username: detail.username }
-    // Load devices now that we're authenticated
-    const res = await fetch('/api/devices')
-    if (res.ok) devices = (await res.json()).devices ?? []
   }
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
     authState = { ...authState, username: null }
-    devices   = []
   }
 
   const NAV = [
-    { id: 'dashboard',  label: 'Dashboard',  icon: 'dashboard'  },
-    { id: 'relays',     label: 'Relays',      icon: 'relays'     },
-    { id: 'dashboards', label: 'Dashboards',  icon: 'dashboards' },
-    { id: 'labels',     label: 'Labels',      icon: 'labels'     },
-    { id: 'history',    label: 'History',     icon: 'history'    },
-    { id: 'logs',       label: 'Logs',        icon: 'logs'       },
-    { id: 'config',     label: 'Config',      icon: 'config'     },
-    { id: 'settings',   label: 'Settings',    icon: 'settings'   },
-    { id: 'wizard',     label: 'Setup',       icon: 'wizard'     },
+    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+    { id: 'relays',    label: 'Relays',    icon: 'relays'    },
+    { id: 'labels',    label: 'Labels',    icon: 'labels'    },
+    { id: 'history',   label: 'History',   icon: 'history'   },
+    { id: 'logs',      label: 'Logs',      icon: 'logs'      },
+    { id: 'config',    label: 'Config',    icon: 'config'    },
+    { id: 'settings',  label: 'Settings',  icon: 'settings'  },
+    { id: 'wizard',    label: 'Setup',     icon: 'wizard'    },
   ]
 
   const ICONS = {
@@ -157,15 +141,7 @@
 
     {#if page === 'dashboard'}
 
-      <section>
-        <RadioStatus radioState={$radio} />
-      </section>
-
-      <div class="device-grid">
-        {#each devices as dev (dev.name)}
-          <DeviceCard device={dev} />
-        {/each}
-      </div>
+      <DashboardView dashboardId="main" />
 
     {:else if page === 'relays'}
 
@@ -195,12 +171,6 @@
           labelsMap={$labels}
           sensorsMap={$sensors}
         />
-      </section>
-
-    {:else if page === 'dashboards'}
-
-      <section>
-        <DashboardView dashboardId="main" />
       </section>
 
     {:else if page === 'labels'}
@@ -445,11 +415,6 @@
     text-transform: uppercase;
     letter-spacing: 0.07em;
     color: var(--text-muted);
-  }
-  .device-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
   }
   .relay-grid {
     display: grid;

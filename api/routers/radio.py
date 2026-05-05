@@ -21,32 +21,48 @@ RADIO_CFG = Path("config/radio_config.yaml")
 # Helpers
 # ---------------------------------------------------------------------------
 
-_RIGCTLD_KEYS      = {"name", "backend", "host", "port", "poll_interval_s", "reconnect_delay_s"}
-_HAMLIB_KEYS       = {"name", "backend", "model_id", "port", "baud_rate",
-                      "data_bits", "stop_bits", "parity", "poll_interval_s", "reconnect_delay_s"}
-_COMMON_DEFAULTS   = {"poll_interval_s": 0.5, "reconnect_delay_s": 5.0}
-_RIGCTLD_DEFAULTS  = {"host": "localhost", "port": 4532}
-_HAMLIB_DEFAULTS   = {"model_id": 1, "baud_rate": 9600, "data_bits": 8, "stop_bits": 1, "parity": "N"}
+_RIGCTLD_KEYS  = {"name", "backend", "host", "port", "timeout_s",
+                   "poll_interval_s", "reconnect_delay_s"}
+_MANAGED_KEYS  = {"name", "backend", "model_id", "serial_port", "serial_baud",
+                   "host", "port", "timeout_s", "startup_timeout_s",
+                   "poll_interval_s", "reconnect_delay_s"}
+_HAMLIB_KEYS   = {"name", "backend", "model_id", "port", "baud_rate",
+                   "data_bits", "stop_bits", "parity", "poll_interval_s", "reconnect_delay_s"}
+
+_COMMON_DEFAULTS  = {"poll_interval_s": 1.0, "reconnect_delay_s": 5.0}
+_RIGCTLD_DEFAULTS = {"host": "localhost", "port": 4532, "timeout_s": 15.0}
+_MANAGED_DEFAULTS = {"host": "127.0.0.1", "port": 0, "serial_baud": 9600,
+                     "timeout_s": 15.0, "startup_timeout_s": 10.0}
+_HAMLIB_DEFAULTS  = {"model_id": 1, "baud_rate": 9600, "data_bits": 8,
+                     "stop_bits": 1, "parity": "N"}
 
 
 def _clean_radio_entry(entry: dict) -> dict:
     """Strip keys irrelevant to the chosen backend and fill in missing defaults."""
     backend = entry.get("backend", "rigctld")
-    allowed = _RIGCTLD_KEYS if backend == "rigctld" else _HAMLIB_KEYS
+    if backend == "managed_rigctld":
+        allowed, defaults = _MANAGED_KEYS, {**_COMMON_DEFAULTS, **_MANAGED_DEFAULTS}
+    elif backend == "hamlib_direct":
+        allowed, defaults = _HAMLIB_KEYS,  {**_COMMON_DEFAULTS, **_HAMLIB_DEFAULTS}
+    else:
+        allowed, defaults = _RIGCTLD_KEYS, {**_COMMON_DEFAULTS, **_RIGCTLD_DEFAULTS}
     cleaned = {k: v for k, v in entry.items() if k in allowed}
-    defaults = {**_COMMON_DEFAULTS, **(
-        _RIGCTLD_DEFAULTS if backend == "rigctld" else _HAMLIB_DEFAULTS
-    )}
     for k, v in defaults.items():
         cleaned.setdefault(k, v)
     return cleaned
 
 
 async def _rebuild_radio(state: AppState) -> bool:
-    """Stop the current radio interface and start a fresh one from the saved config."""
+    """Stop all current radio interfaces and start fresh ones from the saved config."""
     from radio.radio_manager import RadioManager
 
-    if state.radio_interface is not None:
+    # Stop everything managed by the old manager
+    if state.radio_manager is not None:
+        try:
+            await state.radio_manager.stop_all()
+        except Exception:
+            pass
+    elif state.radio_interface is not None:
         try:
             await state.radio_interface.stop()
             await state.radio_interface.disconnect()
@@ -58,21 +74,23 @@ async def _rebuild_radio(state: AppState) -> bool:
         if not manager.names():
             return False
 
-        iface = manager[manager.names()[0]]
+        ws_hub = state.ws_hub
 
-        if state.ws_hub is not None:
-            ws_hub = state.ws_hub
+        for iface in manager:
+            if ws_hub is not None:
+                async def _on_change(rs, _diff, _hub=ws_hub):
+                    await _hub.broadcast_radio(rs)
+                iface.on_state_change(_on_change)
+            try:
+                await iface.connect()
+            except Exception:
+                log.warning("Radio '%s' connect failed — poll loop will retry", iface.name)
+            await iface.start()
 
-            async def _on_change(rs, _diff):
-                await ws_hub.broadcast_radio(rs)
-
-            iface.on_state_change(_on_change)
-
-        state.radio_interface = iface
-        state.radio_state     = iface.state
-
-        await iface.connect()
-        await iface.start()
+        primary = manager[manager.names()[0]]
+        state.radio_manager   = manager
+        state.radio_interface = primary
+        state.radio_state     = primary.state
         return True
 
     except Exception:

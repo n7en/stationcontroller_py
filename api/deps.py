@@ -35,6 +35,7 @@ class AppState:
 
         self.radio_state: Optional["RadioState"] = None
         self.radio_interface: Optional[Any] = None
+        self.radio_manager: Optional[Any] = None   # holds all RadioInterface instances
         self.engine: Optional["AutomationEngine"] = None
         self.band_registry: Optional["BandRegistry"] = None
         self.telemetry:   Optional["TelemetryStore"] = None

@@ -18,6 +18,7 @@ cards:
   - type: swr_bar
     title: "SWR"
     sensor: watt_meter_port_0_swr
+    span: 2
     thresholds:
       good: 1.5
       warning: 2.0
@@ -50,4 +51,4 @@ cards:
     critical_below: 11.5
 
   - type: radio_status
-    title: "Radio"
+    span: 2

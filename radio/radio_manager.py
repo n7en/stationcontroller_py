@@ -4,13 +4,15 @@ RadioManager — orchestrates multiple RadioInterface instances.
 from __future__ import annotations
 
 from .backends.hamlib_direct import HamlibDirectBackend
+from .backends.managed_rigctld import ManagedRigctldBackend
 from .backends.rigctld import RigctldBackend
 from .config import load_radio_config
 from .radio_interface import RadioInterface
 
 _BACKEND_REGISTRY: dict[str, type] = {
-    "rigctld":       RigctldBackend,
-    "hamlib_direct": HamlibDirectBackend,
+    "rigctld":         RigctldBackend,
+    "hamlib_direct":   HamlibDirectBackend,
+    "managed_rigctld": ManagedRigctldBackend,
 }
 
 _INTERFACE_KEYS = {"name", "backend", "poll_interval_s", "reconnect_delay_s"}

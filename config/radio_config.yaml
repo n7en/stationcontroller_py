@@ -1,28 +1,41 @@
 # Radio control configuration
 #
-# Each entry under 'radios' defines one radio.  Two backends are available:
+# Each entry under 'radios' defines one radio.  Three backends are available:
 #
-#   rigctld       - TCP client to a running rigctld daemon.
-#                   Works for local (localhost) or remote (network) daemons.
-#                   Recommended for most deployments.
+#   managed_rigctld — Station Controller launches and manages its own rigctld
+#                     process.  Just point it at the serial port; no manual
+#                     daemon startup required.  Recommended for local radios.
 #
-#   hamlib_direct - Python hamlib bindings in-process.
-#                   Local only (serial port on this machine).
-#                   Requires the hamlib Python bindings (python3-hamlib on Linux).
+#   rigctld         — TCP client to an already-running rigctld daemon.
+#                     Works for local (localhost) or remote (network) daemons.
+#
+#   hamlib_direct   — Python hamlib bindings in-process.
+#                     Local only (serial port on this machine).
+#                     Requires the hamlib Python bindings (python3-hamlib).
+#
+# Common model IDs:
+#   1    = Dummy (no radio — for testing)
+#   351  = Icom IC-7300
+#   3073 = Icom IC-7610
+#   2014 = Kenwood TS-2000
+#   135  = Yaesu FT-991A
+#   122  = Yaesu FT-817ND
 
 radios:
 
   # --------------------------------------------------------------------------
-  # Example: IC-7300 via local rigctld daemon
-  #   Start the daemon with: rigctld -m 351 -r /dev/ttyUSB0 -s 9600
+  # Example: IC-7300 — auto-managed rigctld (no manual daemon startup needed)
   # --------------------------------------------------------------------------
   - name: ic7300
-    backend: rigctld
-    host: localhost
-    port: 4532
-    poll_interval_s: 1.0      # seconds between state polls; increase if rigctld is slow
+    backend: managed_rigctld
+    model_id: 351              # Hamlib model number
+    serial_port: COM3          # Windows: COM3  /  Linux: /dev/ttyUSB0
+    serial_baud: 9600          # CAT baud rate
+    port: 0                    # 0 = auto-select a free port (recommended)
+    timeout_s: 15.0
+    startup_timeout_s: 10.0
+    poll_interval_s: 1.0
     reconnect_delay_s: 5.0
-    timeout_s: 15.0           # per-command TCP timeout; increase for slow serial ports
 
   # --------------------------------------------------------------------------
   # Example: Remote radio (rigctld running on another machine on the network)
@@ -33,15 +46,26 @@ radios:
   #   port: 4532
   #   poll_interval_s: 1.0
   #   reconnect_delay_s: 10.0
+  #   timeout_s: 15.0
+
+  # --------------------------------------------------------------------------
+  # Example: Connect to an already-running local rigctld
+  # --------------------------------------------------------------------------
+  # - name: ic7300_manual
+  #   backend: rigctld
+  #   host: localhost
+  #   port: 4532
+  #   poll_interval_s: 1.0
+  #   reconnect_delay_s: 5.0
+  #   timeout_s: 15.0
 
   # --------------------------------------------------------------------------
   # Example: FT-991A via direct hamlib Python bindings (Linux)
-  #   model_id 135 = Yaesu FT-991A  (use model_id 1 for DUMMY/testing)
   # --------------------------------------------------------------------------
   # - name: ft991
   #   backend: hamlib_direct
   #   model_id: 135
-  #   port: /dev/ttyUSB1    # Windows: COM3
+  #   port: /dev/ttyUSB1       # Windows: COM3
   #   baud_rate: 38400
   #   data_bits: 8
   #   stop_bits: 1

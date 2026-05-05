@@ -5,55 +5,521 @@
 
   export let dashboardId = 'main'
 
-  let config  = null
+  let config  = { cards: [] }
   let error   = null
   let loading = true
+  let editMode  = false
+  let saving    = false
+  let saveBanner = ''
+
+  // Drag-and-drop state
+  let dragIdx = null
+  let dropIdx = null
+
+  // Card picker state
+  let showPicker  = false
+  let editingIdx  = null   // null = new card, number = editing existing
+  let pickerType  = 'radio_status'
+  let pickerConfig = {}
+
+  const CARD_TYPES = [
+    { id: 'radio_status', label: 'Radio Status' },
+    { id: 'sensor',       label: 'Sensor Value' },
+    { id: 'relay',        label: 'Relay Button' },
+    { id: 'power_meter',  label: 'Power Meter'  },
+    { id: 'swr_bar',      label: 'SWR Bar'      },
+  ]
 
   onMount(async () => {
+    loading = true
     try {
       const r = await fetch(`/api/dashboards/${dashboardId}`)
-      if (!r.ok) throw new Error(`HTTP ${r.status}`)
-      config = await r.json()
+      if (r.ok) {
+        const d = await r.json()
+        config = { cards: [], ...d }
+      } else if (r.status === 404) {
+        config = { cards: [] }
+      } else {
+        throw new Error(`HTTP ${r.status}`)
+      }
     } catch (e) {
       error = e.message
     } finally {
       loading = false
     }
   })
+
+  async function save() {
+    saving = true
+    try {
+      const r = await fetch(`/api/dashboards/${dashboardId}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(config),
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      saveBanner = 'Saved'
+      setTimeout(() => saveBanner = '', 2000)
+    } catch (e) {
+      saveBanner = 'Save failed: ' + e.message
+    } finally {
+      saving = false
+    }
+  }
+
+  function toggleEdit() {
+    if (editMode) save()
+    editMode   = !editMode
+    showPicker = false
+  }
+
+  // ── Drag-and-drop ─────────────────────────────────────────────────────────
+  function onDragStart(e, i) {
+    dragIdx = i
+    e.dataTransfer.effectAllowed = 'move'
+  }
+  function onDragOver(e, i) {
+    if (dragIdx === null) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    dropIdx = i
+  }
+  function onDrop(e, i) {
+    e.preventDefault()
+    if (dragIdx === null || dragIdx === i) { dragIdx = dropIdx = null; return }
+    const cards = [...config.cards]
+    const [moved] = cards.splice(dragIdx, 1)
+    cards.splice(i, 0, moved)
+    config  = { ...config, cards }
+    dragIdx = null
+    dropIdx = null
+  }
+  function onDragEnd() { dragIdx = null; dropIdx = null }
+
+  // ── Card operations ───────────────────────────────────────────────────────
+  function removeCard(i) {
+    config = { ...config, cards: config.cards.filter((_, idx) => idx !== i) }
+  }
+
+  function setSpan(i, span) {
+    const cards = [...config.cards]
+    if (span === 1) {
+      const { span: _s, ...rest } = cards[i]
+      cards[i] = rest
+    } else {
+      cards[i] = { ...cards[i], span }
+    }
+    config = { ...config, cards }
+  }
+
+  // ── Card picker ───────────────────────────────────────────────────────────
+  function openPicker(idx = null) {
+    editingIdx = idx
+    if (idx !== null) {
+      const c = config.cards[idx]
+      pickerType   = c.type
+      pickerConfig = JSON.parse(JSON.stringify(c))
+    } else {
+      pickerType   = 'radio_status'
+      pickerConfig = mkDefault('radio_status')
+    }
+    showPicker = true
+  }
+
+  function mkDefault(type) {
+    switch (type) {
+      case 'radio_status': return { type, span: 2 }
+      case 'sensor':       return { type, title: '', sensor: '', unit: '' }
+      case 'relay':        return { type, title: '', relay_key: '', device_addr: '01', relay_num: 1 }
+      case 'power_meter':  return { type, title: 'Power', sensor: '', max_w: 1500 }
+      case 'swr_bar':      return { type, title: 'SWR', sensor: '', span: 2,
+                                    thresholds: { good: 1.5, warning: 2.0, critical: 3.0 } }
+      default: return { type }
+    }
+  }
+
+  function onPickerTypeChange(type) {
+    const oldTitle = pickerConfig.title
+    pickerConfig = { ...mkDefault(type), title: oldTitle ?? '' }
+    pickerType   = type
+  }
+
+  function commitPicker() {
+    const card  = { ...pickerConfig, type: pickerType }
+    const cards = [...config.cards]
+    if (editingIdx !== null) {
+      cards[editingIdx] = card
+    } else {
+      cards.push(card)
+    }
+    config     = { ...config, cards }
+    showPicker = false
+  }
+
+  $: sensorKeys = Object.keys($sensors).sort()
 </script>
 
 {#if loading}
   <div class="msg">Loading dashboard…</div>
 {:else if error}
   <div class="msg err">Could not load dashboard: {error}</div>
-{:else if config}
-  {#if config.title}
-    <div class="dash-title">{config.title}</div>
+{:else}
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <div class="dash-header">
+    {#if config.title}
+      <span class="dash-title">{config.title}</span>
+    {:else}
+      <span></span>
+    {/if}
+    <div class="dash-actions">
+      {#if saveBanner}
+        <span class="save-banner">{saveBanner}</span>
+      {/if}
+      {#if editMode}
+        <button class="btn-add" on:click={() => openPicker()}>+ Add Card</button>
+      {/if}
+      <button class="btn-edit" class:active={editMode} on:click={toggleEdit}>
+        {#if editMode}{saving ? 'Saving…' : 'Done'}{:else}Edit{/if}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Empty state ─────────────────────────────────────────────────────── -->
+  {#if config.cards.length === 0}
+    <div class="empty-state">
+      {#if editMode}
+        No cards yet — click <strong>+ Add Card</strong> to build your dashboard.
+      {:else}
+        This dashboard is empty. Click <strong>Edit</strong> to add cards.
+      {/if}
+    </div>
   {/if}
-  <div class="card-grid">
-    {#each config.cards ?? [] as card (JSON.stringify(card))}
-      <div class="card-wrap card-{card.type}">
+
+  <!-- ── Card grid ───────────────────────────────────────────────────────── -->
+  <div class="card-grid" class:edit-mode={editMode}>
+    {#each config.cards as card, i (i)}
+      <div
+        class="card-wrap"
+        class:is-dragging={dragIdx === i}
+        class:drop-target={dropIdx === i && dragIdx !== i}
+        style="grid-column: span {card.span ?? 1}"
+        draggable={editMode}
+        on:dragstart={e => onDragStart(e, i)}
+        on:dragover={e  => onDragOver(e, i)}
+        on:dragleave={() => { if (dropIdx === i) dropIdx = null }}
+        on:drop={e      => onDrop(e, i)}
+        on:dragend={onDragEnd}
+      >
         <DashboardCard {card} sensors={$sensors} labels={$labels} radio={$radio} />
+
+        {#if editMode}
+          <div class="edit-overlay">
+            <div class="drag-handle" title="Drag to reorder">⠿</div>
+            <div class="overlay-actions">
+              <span class="span-label">W</span>
+              {#each [1, 2, 3] as s}
+                <button
+                  class="span-btn"
+                  class:active={(card.span ?? 1) === s}
+                  title="Width {s}"
+                  on:click={() => setSpan(i, s)}
+                >{s}</button>
+              {/each}
+              <button class="ov-btn" title="Edit card"   on:click={() => openPicker(i)}>✏</button>
+              <button class="ov-btn del" title="Remove"  on:click={() => removeCard(i)}>✕</button>
+            </div>
+          </div>
+        {/if}
       </div>
     {/each}
+  </div>
+
+{/if}
+
+<!-- ── Card picker modal ──────────────────────────────────────────────────── -->
+{#if showPicker}
+  <div class="picker-backdrop" on:click|self={() => showPicker = false}>
+    <div class="picker-modal">
+
+      <div class="picker-header">
+        <span>{editingIdx !== null ? 'Edit Card' : 'Add Card'}</span>
+        <button class="close-btn" on:click={() => showPicker = false}>✕</button>
+      </div>
+
+      <div class="picker-body">
+
+        <div class="type-list">
+          {#each CARD_TYPES as t}
+            <button
+              class="type-btn"
+              class:active={pickerType === t.id}
+              on:click={() => onPickerTypeChange(t.id)}
+            >{t.label}</button>
+          {/each}
+        </div>
+
+        <div class="picker-form">
+          {#if pickerType === 'radio_status'}
+            <p class="form-hint">Shows the radio's frequency, mode, signal level and PTT state in real time. No configuration needed.</p>
+
+          {:else if pickerType === 'sensor'}
+            <label>Title
+              <input bind:value={pickerConfig.title} placeholder="e.g. Temperature" />
+            </label>
+            <label>Sensor key
+              <input bind:value={pickerConfig.sensor} list="dv-sensor-keys" placeholder="hardware_key" />
+            </label>
+            <label>Unit
+              <input bind:value={pickerConfig.unit} placeholder="e.g. °F, V, A" />
+            </label>
+            <div class="form-subhead">Thresholds (optional)</div>
+            <div class="form-row">
+              <label>Warn above  <input type="number" bind:value={pickerConfig.warn_above}     /></label>
+              <label>Warn below  <input type="number" bind:value={pickerConfig.warn_below}     /></label>
+            </div>
+            <div class="form-row">
+              <label>Crit above  <input type="number" bind:value={pickerConfig.critical_above} /></label>
+              <label>Crit below  <input type="number" bind:value={pickerConfig.critical_below} /></label>
+            </div>
+
+          {:else if pickerType === 'relay'}
+            <label>Title
+              <input bind:value={pickerConfig.title} placeholder="e.g. Antenna A" />
+            </label>
+            <label>Relay key
+              <input bind:value={pickerConfig.relay_key} list="dv-sensor-keys" placeholder="hardware_key" />
+            </label>
+            <div class="form-row">
+              <label>Device addr
+                <input bind:value={pickerConfig.device_addr} placeholder="01" />
+              </label>
+              <label>Relay #
+                <input type="number" bind:value={pickerConfig.relay_num} min="1" />
+              </label>
+            </div>
+
+          {:else if pickerType === 'power_meter'}
+            <label>Title
+              <input bind:value={pickerConfig.title} placeholder="e.g. Forward Power" />
+            </label>
+            <label>Sensor key
+              <input bind:value={pickerConfig.sensor} list="dv-sensor-keys" placeholder="hardware_key" />
+            </label>
+            <label>Max watts
+              <input type="number" bind:value={pickerConfig.max_w} min="1" />
+            </label>
+
+          {:else if pickerType === 'swr_bar'}
+            <label>Title
+              <input bind:value={pickerConfig.title} placeholder="e.g. SWR" />
+            </label>
+            <label>Sensor key
+              <input bind:value={pickerConfig.sensor} list="dv-sensor-keys" placeholder="hardware_key" />
+            </label>
+            <div class="form-subhead">Thresholds</div>
+            <div class="form-row">
+              <label>Good &lt;    <input type="number" step="0.1" bind:value={pickerConfig.thresholds.good}     /></label>
+              <label>Warning &lt; <input type="number" step="0.1" bind:value={pickerConfig.thresholds.warning}  /></label>
+              <label>Critical &lt;<input type="number" step="0.1" bind:value={pickerConfig.thresholds.critical} /></label>
+            </div>
+          {/if}
+        </div>
+
+      </div>
+
+      <datalist id="dv-sensor-keys">
+        {#each sensorKeys as k}
+          <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
+        {/each}
+      </datalist>
+
+      <div class="picker-footer">
+        <button class="btn-cancel" on:click={() => showPicker = false}>Cancel</button>
+        <button class="btn-commit" on:click={commitPicker}>
+          {editingIdx !== null ? 'Update' : 'Add'}
+        </button>
+      </div>
+
+    </div>
   </div>
 {/if}
 
 <style>
-  .msg { padding: 1rem; color: var(--text-muted); font-size: 0.85rem; }
-  .err { color: var(--red); }
+  .msg       { padding: 1rem; color: var(--text-muted); font-size: 0.85rem; }
+  .err       { color: var(--red); }
 
-  .dash-title {
-    font-size: 0.72rem; text-transform: uppercase;
-    letter-spacing: 0.07em; color: var(--text-muted);
-    margin-bottom: 0.5rem;
+  /* ── Header ───────────────────────────────────────────────────────────── */
+  .dash-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5rem; margin-bottom: 0.75rem;
   }
+  .dash-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+  .dash-actions { display: flex; align-items: center; gap: 0.4rem; }
+  .save-banner { font-size: 0.75rem; color: var(--green); }
+
+  .btn-edit {
+    padding: 0.3rem 0.8rem;
+    background: var(--accent-dim); color: var(--accent);
+    border: 1px solid var(--accent); border-radius: 4px;
+    font-size: 0.78rem; cursor: pointer;
+  }
+  .btn-edit.active, .btn-edit:hover { background: var(--accent); color: #fff; }
+  .btn-add {
+    padding: 0.3rem 0.8rem;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 4px;
+    font-size: 0.78rem; cursor: pointer; font-weight: 600;
+  }
+  .btn-add:hover { opacity: 0.88; }
+
+  /* ── Empty state ──────────────────────────────────────────────────────── */
+  .empty-state {
+    text-align: center; padding: 3rem 1rem;
+    color: var(--text-muted); font-size: 0.85rem;
+    border: 1px dashed var(--border); border-radius: 8px;
+    margin-top: 0.5rem;
+  }
+
+  /* ── Card grid ────────────────────────────────────────────────────────── */
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 0.5rem;
   }
-  /* Wider cards for widgets that need horizontal space */
-  .card-wrap.card-radio_status { grid-column: span 2; }
-  .card-wrap.card-swr_bar      { grid-column: span 2; }
+  .card-grid.edit-mode { gap: 0.75rem; }
+
+  /* ── Card wrap ────────────────────────────────────────────────────────── */
+  .card-wrap { position: relative; transition: opacity 0.15s; }
+  .card-wrap.is-dragging { opacity: 0.35; cursor: grabbing; }
+  .card-wrap.drop-target::after {
+    content: '';
+    position: absolute; inset: -3px;
+    border: 2px dashed var(--accent); border-radius: 10px;
+    pointer-events: none; z-index: 10;
+  }
+  .edit-mode .card-wrap {
+    outline: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
+    border-radius: 8px; cursor: grab;
+  }
+
+  /* ── Edit overlay ─────────────────────────────────────────────────────── */
+  .edit-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 0.3rem 0.35rem;
+    background: rgba(8, 10, 18, 0.6);
+    border-radius: 8px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.12s;
+  }
+  .card-wrap:hover .edit-overlay { opacity: 1; pointer-events: all; }
+
+  .drag-handle {
+    color: var(--text-muted); font-size: 1rem; line-height: 1;
+    cursor: grab; padding: 0.15rem 0.1rem; user-select: none;
+  }
+  .drag-handle:active { cursor: grabbing; }
+
+  .overlay-actions { display: flex; align-items: center; gap: 0.2rem; }
+  .span-label { font-size: 0.6rem; color: var(--text-muted); margin-right: 0.05rem; }
+
+  .span-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 3px; color: var(--text-muted);
+    font-size: 0.63rem; width: 1.2rem; height: 1.2rem;
+    cursor: pointer; padding: 0; line-height: 1;
+  }
+  .span-btn.active  { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .span-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+  .ov-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 3px; color: var(--text);
+    font-size: 0.7rem; padding: 0.15rem 0.35rem;
+    cursor: pointer; line-height: 1;
+  }
+  .ov-btn:hover     { border-color: var(--accent); color: var(--accent); }
+  .ov-btn.del:hover { border-color: var(--red);    color: var(--red); }
+
+  /* ── Picker modal ─────────────────────────────────────────────────────── */
+  .picker-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+  }
+  .picker-modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px;
+    width: min(540px, 95vw);
+    display: flex; flex-direction: column;
+    max-height: 85vh; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .picker-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.7rem 1rem; border-bottom: 1px solid var(--border);
+    font-size: 0.85rem; font-weight: 600;
+  }
+  .close-btn {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 0.9rem; padding: 0.1rem 0.3rem;
+  }
+  .close-btn:hover { color: var(--text); }
+
+  .picker-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+  .type-list {
+    display: flex; flex-direction: column; gap: 0.1rem;
+    padding: 0.6rem 0.4rem;
+    border-right: 1px solid var(--border);
+    min-width: 130px;
+  }
+  .type-btn {
+    background: none; border: none; border-radius: 5px;
+    padding: 0.45rem 0.6rem; text-align: left;
+    font-size: 0.78rem; color: var(--text-muted); cursor: pointer;
+  }
+  .type-btn:hover        { background: var(--accent-dim); color: var(--text); }
+  .type-btn.active       { background: var(--accent-dim); color: var(--accent); }
+
+  .picker-form {
+    flex: 1; padding: 0.75rem 1rem;
+    overflow-y: auto; display: flex; flex-direction: column; gap: 0.55rem;
+  }
+  .picker-form label {
+    display: flex; flex-direction: column; gap: 0.2rem;
+    font-size: 0.74rem; color: var(--text-muted);
+  }
+  .picker-form input {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text);
+    padding: 0.35rem 0.5rem; font-size: 0.82rem;
+  }
+  .picker-form input:focus { outline: none; border-color: var(--accent); }
+  .form-hint { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
+  .form-subhead {
+    font-size: 0.68rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted); margin-top: 0.2rem;
+  }
+  .form-row { display: flex; gap: 0.5rem; }
+  .form-row label { flex: 1; }
+
+  .picker-footer {
+    display: flex; justify-content: flex-end; gap: 0.5rem;
+    padding: 0.7rem 1rem; border-top: 1px solid var(--border);
+  }
+  .btn-cancel {
+    background: none; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text-muted); font-size: 0.78rem;
+    padding: 0.35rem 0.8rem; cursor: pointer;
+  }
+  .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-commit {
+    background: var(--accent); border: none; border-radius: 4px;
+    color: #fff; font-size: 0.78rem;
+    padding: 0.35rem 0.9rem; cursor: pointer; font-weight: 600;
+  }
+  .btn-commit:hover { opacity: 0.88; }
 </style>

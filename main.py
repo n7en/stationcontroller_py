@@ -257,6 +257,7 @@ async def main() -> None:
     state.device_bus       = addr_bus
     state.radio_state      = radio_state
     state.radio_interface  = radio_interface
+    state.radio_manager    = radio_manager
     state.engine           = engine
     state.band_registry    = band_registry
     state.telemetry        = store
@@ -271,21 +272,26 @@ async def main() -> None:
     # Control bus reference used by automation (single-bus for now).
     control_network = state.control_network
 
-    # Radio state changes → WS broadcast + automation engine
-    if radio_interface is not None:
-        async def _on_radio(rs: RadioState, changed: dict) -> None:
-            await ws_hub.broadcast_radio(rs)
-            if engine and band_registry:
-                ctx = AutomationContext(
-                    radio_state=rs,
-                    registry=sensor_registry,
-                    band_registry=band_registry,
-                    radio_interface=radio_interface,
-                    control_network=control_network,
-                )
-                await engine.process(ctx)
+    # Radio state changes → WS broadcast + automation engine (primary only)
+    if radio_manager is not None:
+        for _iface in radio_manager:
+            _is_primary = (_iface is radio_interface)
 
-        radio_interface.on_state_change(_on_radio)
+            def _make_radio_handler(_iface=_iface, _is_primary=_is_primary):
+                async def _on_radio(rs: RadioState, changed: dict) -> None:
+                    await ws_hub.broadcast_radio(rs)
+                    if _is_primary and engine and band_registry:
+                        ctx = AutomationContext(
+                            radio_state=rs,
+                            registry=sensor_registry,
+                            band_registry=band_registry,
+                            radio_interface=_iface,
+                            control_network=control_network,
+                        )
+                        await engine.process(ctx)
+                return _on_radio
+
+            _iface.on_state_change(_make_radio_handler())
 
     # Sensor changes → automation engine
     if engine and band_registry:
@@ -340,12 +346,13 @@ async def main() -> None:
         except Exception:
             log.exception("Failed to connect bus '%s'", bus_name)
 
-    if radio_interface:
-        try:
-            await radio_interface.connect()
-        except Exception:
-            log.warning("Radio connect failed — poll loop will retry in background")
-        await radio_interface.start()   # always start; poll loop handles reconnection
+    if radio_manager is not None:
+        for _iface in radio_manager:
+            try:
+                await _iface.connect()
+            except Exception:
+                log.warning("Radio '%s' connect failed — poll loop will retry", _iface.name)
+            await _iface.start()
 
     # ── 10. Serve ─────────────────────────────────────────────────────────
     config = uvicorn.Config(
@@ -367,9 +374,8 @@ async def main() -> None:
         await server.serve()
     finally:
         log.info("Shutting down…")
-        if radio_interface:
-            await radio_interface.stop()
-            await radio_interface.disconnect()
+        if radio_manager is not None:
+            await radio_manager.stop_all()
         for bus_name, net in networks.items():
             try:
                 await net.disconnect_all()

@@ -21,9 +21,11 @@
   // ── Radio ─────────────────────────────────────────────────────────────────
   let radioEnabled = true
   let radio = {
-    name: 'radio', backend: 'rigctld',
-    host: 'localhost', port: 4532,
-    timeout_s: 15.0, poll_interval_s: 1.0, reconnect_delay_s: 5.0,
+    name: 'radio', backend: 'managed_rigctld',
+    model_id: 351, serial_port: '', serial_baud: 9600,
+    host: '127.0.0.1', port: 0,
+    timeout_s: 15.0, startup_timeout_s: 10.0,
+    poll_interval_s: 1.0, reconnect_delay_s: 5.0,
   }
 
   function switchBackend(e) {
@@ -32,9 +34,19 @@
                       poll_interval_s: radio.poll_interval_s,
                       reconnect_delay_s: radio.reconnect_delay_s,
                       timeout_s: radio.timeout_s ?? 15.0 }
-    radio = backend === 'rigctld'
-      ? { ...shared, host: 'localhost', port: 4532 }
-      : { ...shared, model_id: 1, port: '', baud_rate: 9600, data_bits: 8, stop_bits: 1, parity: 'N' }
+    if (backend === 'managed_rigctld') {
+      radio = { ...shared, model_id: radio.model_id ?? 351,
+                serial_port: radio.serial_port ?? radio.port ?? '',
+                serial_baud: radio.serial_baud ?? radio.baud_rate ?? 9600,
+                host: '127.0.0.1', port: 0, startup_timeout_s: 10.0 }
+    } else if (backend === 'rigctld') {
+      radio = { ...shared, host: 'localhost', port: 4532 }
+    } else {
+      radio = { ...shared, model_id: radio.model_id ?? 1,
+                port: radio.serial_port ?? radio.port ?? '',
+                baud_rate: radio.serial_baud ?? radio.baud_rate ?? 9600,
+                data_bits: 8, stop_bits: 1, parity: 'N' }
+    }
   }
 
   // ── Communications ────────────────────────────────────────────────────────
@@ -389,7 +401,7 @@
           Each step is optional — skip anything you don't need right now.
         </p>
         <div class="module-cards">
-          <div class="mcard"><span class="mcard-icon">📻</span><div><strong>Radio</strong><span>Connect via rigctld or hamlib</span></div></div>
+          <div class="mcard"><span class="mcard-icon">📻</span><div><strong>Radio</strong><span>Connect via managed rigctld, rigctld, or hamlib</span></div></div>
           <div class="mcard"><span class="mcard-icon">🔌</span><div><strong>Communications</strong><span>DCN buses and hardware devices</span></div></div>
           <div class="mcard"><span class="mcard-icon">📊</span><div><strong>Telemetry</strong><span>SQLite sensor data recording</span></div></div>
           <div class="mcard"><span class="mcard-icon">🔒</span><div><strong>Authentication</strong><span>Secure the web interface</span></div></div>
@@ -425,10 +437,43 @@
           <div class="field">
             <label for="r-backend">Backend</label>
             <select id="r-backend" value={radio.backend} on:change={switchBackend}>
-              <option value="rigctld">rigctld — TCP connection to a running rigctld daemon (recommended)</option>
+              <option value="managed_rigctld">managed rigctld — auto-start rigctld (recommended, local radio)</option>
+              <option value="rigctld">rigctld — TCP connection to a running rigctld daemon</option>
               <option value="hamlib_direct">hamlib direct — Python bindings, local serial port</option>
             </select>
           </div>
+
+          {#if radio.backend === 'managed_rigctld'}
+            <div class="field-row">
+              <div class="field narrow">
+                <label for="r-model">Model ID</label>
+                <input id="r-model" type="number" bind:value={radio.model_id} min="1" placeholder="351" />
+              </div>
+              <div class="field grow">
+                <label for="r-serial">Serial port</label>
+                <input id="r-serial" bind:value={radio.serial_port} placeholder="COM3 or /dev/ttyUSB0" />
+              </div>
+              <div class="field narrow">
+                <label for="r-sbaud">Baud rate</label>
+                <input id="r-sbaud" type="number" bind:value={radio.serial_baud} />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field narrow">
+                <label for="r-timeout">Timeout (s)</label>
+                <input id="r-timeout" type="number" bind:value={radio.timeout_s} min="5" max="60" step="1" />
+              </div>
+              <div class="field narrow">
+                <label for="r-startup">Startup timeout (s)</label>
+                <input id="r-startup" type="number" bind:value={radio.startup_timeout_s} min="5" max="60" step="1" />
+              </div>
+              <div class="field narrow">
+                <label for="r-port">TCP port (0 = auto)</label>
+                <input id="r-port" type="number" bind:value={radio.port} min="0" max="65535" />
+              </div>
+            </div>
+            <p class="hint">Model IDs: 1 = Dummy · 351 = IC-7300 · 3073 = IC-7610 · 135 = FT-991A · 2014 = TS-2000 · 122 = FT-817</p>
+          {/if}
 
           {#if radio.backend === 'rigctld'}
             <div class="field-row">
@@ -829,11 +874,16 @@
           <div class="rc-title">📻 Radio</div>
           {#if radioEnabled}
             <div class="rc-row"><span>Backend</span><strong>{radio.backend}</strong></div>
-            {#if radio.backend === 'rigctld'}
+            {#if radio.backend === 'managed_rigctld'}
+              <div class="rc-row"><span>Model ID</span><strong>{radio.model_id}</strong></div>
+              <div class="rc-row"><span>Serial port</span><strong>{radio.serial_port}</strong></div>
+              <div class="rc-row"><span>Baud</span><strong>{radio.serial_baud}</strong></div>
+              <div class="rc-row"><span>TCP port</span><strong>{radio.port === 0 ? 'auto' : radio.port}</strong></div>
+            {:else if radio.backend === 'rigctld'}
               <div class="rc-row"><span>Host</span><strong>{radio.host}:{radio.port}</strong></div>
               <div class="rc-row"><span>Timeout</span><strong>{radio.timeout_s}s</strong></div>
             {:else}
-              <div class="rc-row"><span>Port</span><strong>{radio.port}</strong></div>
+              <div class="rc-row"><span>Serial port</span><strong>{radio.port}</strong></div>
               <div class="rc-row"><span>Baud</span><strong>{radio.baud_rate}</strong></div>
             {/if}
             <div class="rc-row"><span>Poll</span><strong>{radio.poll_interval_s}s</strong></div>
