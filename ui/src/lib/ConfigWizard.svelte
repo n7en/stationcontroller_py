@@ -579,74 +579,86 @@
           <div class="inline-form">
             <div class="field-row">
               <div class="field grow">
-                <label>Bus name</label>
-                <input bind:value={newBus.name} placeholder="control" />
+                <label>Bus name
+                  <input bind:value={newBus.name} placeholder="control" />
+                </label>
               </div>
               <div class="field narrow">
-                <label>Transport</label>
-                <select bind:value={newBus.transport.type}>
-                  <option value="rs485">RS-485</option>
-                  <option value="nodered_mqtt">MQTT</option>
-                  <option value="nodered_tcp">TCP</option>
-                </select>
+                <label>Transport
+                  <select bind:value={newBus.transport.type}>
+                    <option value="rs485">RS-485</option>
+                    <option value="nodered_mqtt">MQTT</option>
+                    <option value="nodered_tcp">TCP</option>
+                  </select>
+                </label>
               </div>
             </div>
 
             {#if newBus.transport.type === 'rs485'}
               <div class="field-row">
                 <div class="field grow">
-                  <label>Serial port</label>
-                  <input bind:value={newBus.transport.port} placeholder="COM3 or /dev/ttyUSB0" />
+                  <label>Serial port
+                    <input bind:value={newBus.transport.port} placeholder="COM3 or /dev/ttyUSB0" />
+                  </label>
                 </div>
                 <div class="field narrow">
-                  <label>Baud rate</label>
-                  <select bind:value={newBus.transport.baud_rate}>
-                    {#each [4800,9600,19200,38400,57600,115200] as b}
-                      <option value={b}>{b}</option>
-                    {/each}
-                  </select>
+                  <label>Baud rate
+                    <select bind:value={newBus.transport.baud_rate}>
+                      {#each [4800,9600,19200,38400,57600,115200] as b}
+                        <option value={b}>{b}</option>
+                      {/each}
+                    </select>
+                  </label>
                 </div>
               </div>
             {:else if newBus.transport.type === 'nodered_mqtt'}
               <div class="field-row">
                 <div class="field grow">
-                  <label>Broker</label>
-                  <input bind:value={newBus.transport.broker} placeholder="localhost" />
+                  <label>Broker
+                    <input bind:value={newBus.transport.broker} placeholder="localhost" />
+                  </label>
                 </div>
                 <div class="field narrow">
-                  <label>Port</label>
-                  <input type="number" bind:value={newBus.transport.port_mqtt} />
+                  <label>Port
+                    <input type="number" bind:value={newBus.transport.port_mqtt} />
+                  </label>
                 </div>
               </div>
               <div class="field-row">
                 <div class="field grow">
-                  <label>RX topic</label>
-                  <input bind:value={newBus.transport.topic_rx} placeholder="dcn/{name}/rx" />
+                  <label>RX topic
+                    <input bind:value={newBus.transport.topic_rx} placeholder="dcn/{name}/rx" />
+                  </label>
                 </div>
                 <div class="field grow">
-                  <label>TX topic</label>
-                  <input bind:value={newBus.transport.topic_tx} placeholder="dcn/{name}/tx" />
+                  <label>TX topic
+                    <input bind:value={newBus.transport.topic_tx} placeholder="dcn/{name}/tx" />
+                  </label>
                 </div>
               </div>
               <div class="field-row">
                 <div class="field grow">
-                  <label>Username (optional)</label>
-                  <input bind:value={newBus.transport.username} />
+                  <label>Username (optional)
+                    <input bind:value={newBus.transport.username} />
+                  </label>
                 </div>
                 <div class="field grow">
-                  <label>Password (optional)</label>
-                  <input type="password" bind:value={newBus.transport.password} />
+                  <label>Password (optional)
+                    <input type="password" bind:value={newBus.transport.password} />
+                  </label>
                 </div>
               </div>
             {:else if newBus.transport.type === 'nodered_tcp'}
               <div class="field-row">
                 <div class="field grow">
-                  <label>Listen host</label>
-                  <input bind:value={newBus.transport.host} placeholder="0.0.0.0" />
+                  <label>Listen host
+                    <input bind:value={newBus.transport.host} placeholder="0.0.0.0" />
+                  </label>
                 </div>
                 <div class="field narrow">
-                  <label>Port</label>
-                  <input type="number" bind:value={newBus.transport.port_tcp} />
+                  <label>Port
+                    <input type="number" bind:value={newBus.transport.port_tcp} />
+                  </label>
                 </div>
               </div>
             {/if}
@@ -686,50 +698,55 @@
           <div class="inline-form">
             <div class="field-row">
               <div class="field narrow">
-                <label>Type</label>
-                <select bind:value={newDevice.type}>
-                  <option value="gpio">GPIO (#321)</option>
-                  <option value="coax_switch">Coax Switch (#331)</option>
-                  <option value="watt_meter">Watt Meter (#351)</option>
-                  <option value="vhf_relay">VHF Relay (#332)</option>
-                  <option value="antenna_relay">Antenna Relay (#361)</option>
-                </select>
+                <label>Type
+                  <select bind:value={newDevice.type}>
+                    <option value="gpio">GPIO (#321)</option>
+                    <option value="coax_switch">Coax Switch (#331)</option>
+                    <option value="watt_meter">Watt Meter (#351)</option>
+                    <option value="vhf_relay">VHF Relay (#332)</option>
+                    <option value="antenna_relay">Antenna Relay (#361)</option>
+                  </select>
+                </label>
               </div>
               <div class="field grow">
-                <label>Name</label>
-                <input bind:value={newDevice.name} placeholder="gpio" />
+                <label>Name
+                  <input bind:value={newDevice.name} placeholder="gpio" />
+                </label>
               </div>
             </div>
             <div class="field-row">
               <div class="field narrow">
-                <label>Address (hex)</label>
-                <input bind:value={newDevice.address} placeholder="01" maxlength="2" />
+                <label>Address (hex)
+                  <input bind:value={newDevice.address} placeholder="01" maxlength="2" />
+                </label>
               </div>
               <div class="field grow">
-                <label>Bus</label>
-                <select bind:value={newDevice.bus}>
-                  <option value="">— select bus —</option>
-                  {#each busNames as b}
-                    <option value={b}>{b}</option>
-                  {/each}
-                </select>
+                <label>Bus
+                  <select bind:value={newDevice.bus}>
+                    <option value="">— select bus —</option>
+                    {#each busNames as b}
+                      <option value={b}>{b}</option>
+                    {/each}
+                  </select>
+                </label>
               </div>
             </div>
             {#if newDevice.type === 'antenna_relay'}
               <div class="field">
-                <label>Persona</label>
-                <select bind:value={newDevice.persona}>
-                  <option value="cc_8a">CC-8A (8-antenna)</option>
-                  <option value="1_of_8">1-of-8 select</option>
-                  <option value="dual_vertical">Dual vertical</option>
-                  <option value="bcd">BCD</option>
-                  <option value="three_ant_phasing">3-element phasing</option>
-                  <option value="two_ant_phasing">2-element phasing</option>
-                  <option value="hi_z_3el">Hi-Z 3-element</option>
-                  <option value="hi_z_4el">Hi-Z 4-element</option>
-                  <option value="hi_z_4_8_pro">Hi-Z 4/8 Pro</option>
-                  <option value="hi_z_8el">Hi-Z 8-element</option>
-                </select>
+                <label>Persona
+                  <select bind:value={newDevice.persona}>
+                    <option value="cc_8a">CC-8A (8-antenna)</option>
+                    <option value="1_of_8">1-of-8 select</option>
+                    <option value="dual_vertical">Dual vertical</option>
+                    <option value="bcd">BCD</option>
+                    <option value="three_ant_phasing">3-element phasing</option>
+                    <option value="two_ant_phasing">2-element phasing</option>
+                    <option value="hi_z_3el">Hi-Z 3-element</option>
+                    <option value="hi_z_4el">Hi-Z 4-element</option>
+                    <option value="hi_z_4_8_pro">Hi-Z 4/8 Pro</option>
+                    <option value="hi_z_8el">Hi-Z 8-element</option>
+                  </select>
+                </label>
               </div>
             {/if}
             <div class="form-btns">
@@ -838,15 +855,16 @@
             <div class="inline-form">
               <div class="field-row">
                 <div class="field grow">
-                  <label>Username</label>
-                  <input bind:value={newUser.username} placeholder="admin" />
+                  <label>Username
+                    <input bind:value={newUser.username} placeholder="admin" />
+                  </label>
                 </div>
                 <div class="field grow">
-                  <label>Password</label>
-                  <input type="password" bind:value={newUser.password} placeholder="••••••••" />
+                  <label>Password
+                    <input type="password" bind:value={newUser.password} placeholder="••••••••" />
+                  </label>
                 </div>
-                <div class="field" style="justify-content:flex-end">
-                  <label>&nbsp;</label>
+                <div class="field" style="justify-content:flex-end;padding-top:1.1rem">
                   <button class="btn-primary" on:click={addUser}
                     disabled={addingUser || !newUser.username.trim() || !newUser.password}>
                     {addingUser ? '…' : 'Add User'}

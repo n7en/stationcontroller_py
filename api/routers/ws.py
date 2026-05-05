@@ -19,7 +19,7 @@ async def websocket_endpoint(ws: WebSocket, state: AppState = Depends(get_state)
     await hub.connect(ws)
     try:
         await hub.send_snapshot(
-            ws, state.sensor_registry, state.radio_state, state.label_registry,
+            ws, state.sensor_registry, state.radio_manager, state.label_registry,
             update_result=_update_mod._cached_result,
         )
         if state.log_buffer is not None:

@@ -5,11 +5,11 @@
  *   connected   — Svelte readable: true when WS is open
  *   sensors     — Svelte writable: { hardware_key: { value, unit, source, ts } }
  *   labels      — Svelte writable: { hardware_key: friendly_label }
- *   radio       — Svelte writable: { frequency_hz, mode, bandwidth_hz, vfo,
- *                                    ptt, signal_strength, rf_power, connected, info }
+ *   radios      — Svelte writable: { name: { frequency_hz, mode, … } } — all radios
+ *   radio       — Svelte derived (primary radio, i.e. first entry in radios)
  *   sendCmd(msg) — send a JSON message to the server
  */
-import { writable, readable } from 'svelte/store'
+import { writable, readable, derived } from 'svelte/store'
 
 /** @type {import('svelte/store').Writable<Record<string, {value: any, unit: string, source: string, ts: number}>>} */
 export const sensors = writable({})
@@ -17,8 +17,17 @@ export const sensors = writable({})
 /** @type {import('svelte/store').Writable<Record<string, string>>} */
 export const labels = writable({})
 
-/** @type {import('svelte/store').Writable<{frequency_hz: number|null, mode: string|null, bandwidth_hz: number|null, vfo: string|null, ptt: boolean, signal_strength: number|null, rf_power: number|null, connected: boolean, info: string|null}|null>} */
-export const radio = writable(null)
+/**
+ * Map of radio name → live state for all configured radios.
+ * @type {import('svelte/store').Writable<Record<string, {frequency_hz: number|null, mode: string|null, bandwidth_hz: number|null, vfo: string|null, ptt: boolean, signal_strength: number|null, rf_power: number|null, connected: boolean, info: string|null}>>}
+ */
+export const radios = writable({})
+
+/**
+ * Primary radio state (first entry in the radios map) — kept for backward compat.
+ * @type {import('svelte/store').Readable<{frequency_hz: number|null, mode: string|null, bandwidth_hz: number|null, vfo: string|null, ptt: boolean, signal_strength: number|null, rf_power: number|null, connected: boolean, info: string|null}|null>}
+ */
+export const radio = derived(radios, $r => Object.values($r)[0] ?? null)
 
 /** @type {import('svelte/store').Writable<{latest_version: string, release_url: string, published_at: string}|null>} */
 export const updateAvailable = writable(null)
@@ -61,7 +70,7 @@ function connect() {
 
     if (msg.type === 'full_snapshot') {
       sensors.set(msg.sensors ?? {})
-      radio.set(msg.radio ?? null)
+      radios.set(msg.radios ?? {})
       labels.set(msg.labels ?? {})
       if (msg.update) updateAvailable.set(msg.update)
     }
@@ -81,18 +90,24 @@ function connect() {
     }
 
     else if (msg.type === 'radio_state') {
-      radio.update(prev => ({
-        ...(prev ?? {}),
-        frequency_hz:    msg.frequency_hz    ?? null,
-        mode:            msg.mode            ?? null,
-        bandwidth_hz:    msg.bandwidth_hz    ?? null,
-        vfo:             msg.vfo             ?? null,
-        ptt:             msg.ptt             ?? false,
-        signal_strength: msg.signal_strength ?? null,
-        rf_power:        msg.rf_power        ?? null,
-        connected:       msg.connected       ?? false,
-        info:            msg.info            ?? null,
-      }))
+      const name = msg.name
+      if (name) {
+        radios.update(r => ({
+          ...r,
+          [name]: {
+            ...(r[name] ?? {}),
+            frequency_hz:    msg.frequency_hz    ?? null,
+            mode:            msg.mode            ?? null,
+            bandwidth_hz:    msg.bandwidth_hz    ?? null,
+            vfo:             msg.vfo             ?? null,
+            ptt:             msg.ptt             ?? false,
+            signal_strength: msg.signal_strength ?? null,
+            rf_power:        msg.rf_power        ?? null,
+            connected:       msg.connected       ?? false,
+            info:            msg.info            ?? null,
+          }
+        }))
+      }
     }
 
     else if (msg.type === 'labels_update') {

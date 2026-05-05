@@ -78,8 +78,8 @@ async def _rebuild_radio(state: AppState) -> bool:
 
         for iface in manager:
             if ws_hub is not None:
-                async def _on_change(rs, _diff, _hub=ws_hub):
-                    await _hub.broadcast_radio(rs)
+                async def _on_change(rs, _diff, _hub=ws_hub, _name=iface.name):
+                    await _hub.broadcast_radio(_name, rs)
                 iface.on_state_change(_on_change)
             try:
                 await iface.connect()

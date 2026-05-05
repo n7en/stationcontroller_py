@@ -197,9 +197,10 @@
   {/if}
 
   <!-- ── Card grid ───────────────────────────────────────────────────────── -->
-  <div class="card-grid" class:edit-mode={editMode}>
+  <div class="card-grid" class:edit-mode={editMode} role="list">
     {#each config.cards as card, i (i)}
       <div
+        role="listitem"
         class="card-wrap"
         class:is-dragging={dragIdx === i}
         class:drop-target={dropIdx === i && dragIdx !== i}
@@ -239,7 +240,12 @@
 
 <!-- ── Card picker modal ──────────────────────────────────────────────────── -->
 {#if showPicker}
-  <div class="picker-backdrop" on:click|self={() => showPicker = false}>
+  <div
+    class="picker-backdrop"
+    role="presentation"
+    on:click|self={() => showPicker = false}
+    on:keydown={(e) => { if (e.key === 'Escape') showPicker = false }}
+  >
     <div class="picker-modal">
 
       <div class="picker-header">

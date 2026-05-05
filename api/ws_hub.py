@@ -29,6 +29,7 @@ from fastapi import WebSocket
 if TYPE_CHECKING:
     from sensors.sensor_registry import Measurement, SensorRegistry
     from radio.radio_state import RadioState
+    from radio.radio_manager import RadioManager
 
 log = logging.getLogger(__name__)
 
@@ -95,11 +96,12 @@ class WSHub:
             "name": name,
         })
 
-    async def broadcast_radio(self, rs: "RadioState") -> None:
+    async def broadcast_radio(self, name: str, rs: "RadioState") -> None:
         mode = rs.mode
         mode_str = mode.value if mode is not None else None
         await self.broadcast({
             "type":            "radio_state",
+            "name":            name,
             "frequency_hz":    rs.frequency_hz,
             "mode":            mode_str,
             "bandwidth_hz":    rs.bandwidth_hz,
@@ -138,7 +140,7 @@ class WSHub:
         self,
         ws: WebSocket,
         sensor_registry: Optional["SensorRegistry"] = None,
-        radio_state: Optional["RadioState"] = None,
+        radio_manager: Optional["RadioManager"] = None,
         label_registry: Optional[Any] = None,
         update_result: Optional[dict] = None,
     ) -> None:
@@ -152,20 +154,22 @@ class WSHub:
                     "ts": m.timestamp,
                 }
 
-        radio = None
-        if radio_state is not None:
-            mode = radio_state.mode
-            radio = {
-                "frequency_hz":    radio_state.frequency_hz,
-                "mode":            mode.value if mode is not None else None,
-                "bandwidth_hz":    radio_state.bandwidth_hz,
-                "vfo":             radio_state.vfo,
-                "ptt":             radio_state.ptt,
-                "signal_strength": radio_state.signal_strength,
-                "rf_power":        radio_state.rf_power,
-                "connected":       radio_state.connected,
-                "info":            radio_state.info,
-            }
+        radios: dict = {}
+        if radio_manager is not None:
+            for iface in radio_manager:
+                rs = iface.state
+                mode = rs.mode
+                radios[iface.name] = {
+                    "frequency_hz":    rs.frequency_hz,
+                    "mode":            mode.value if mode is not None else None,
+                    "bandwidth_hz":    rs.bandwidth_hz,
+                    "vfo":             rs.vfo,
+                    "ptt":             rs.ptt,
+                    "signal_strength": rs.signal_strength,
+                    "rf_power":        rs.rf_power,
+                    "connected":       rs.connected,
+                    "info":            rs.info,
+                }
 
         labels = label_registry.all() if label_registry is not None else {}
 
@@ -180,7 +184,7 @@ class WSHub:
         await self.send(ws, {
             "type":    "full_snapshot",
             "sensors": sensors,
-            "radio":   radio,
+            "radios":  radios,
             "labels":  labels,
             "update":  update,
             "ts":      time.time(),

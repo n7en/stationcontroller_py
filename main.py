@@ -279,7 +279,7 @@ async def main() -> None:
 
             def _make_radio_handler(_iface=_iface, _is_primary=_is_primary):
                 async def _on_radio(rs: RadioState, changed: dict) -> None:
-                    await ws_hub.broadcast_radio(rs)
+                    await ws_hub.broadcast_radio(_iface.name, rs)
                     if _is_primary and engine and band_registry:
                         ctx = AutomationContext(
                             radio_state=rs,
