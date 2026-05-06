@@ -11,9 +11,12 @@ so this module loads cleanly even without hamlib installed.
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Optional
 
 from .base import RadioBackend, RadioBackendError
+
+log = logging.getLogger(__name__)
 
 
 # Mode name → Hamlib constant attribute name
@@ -104,6 +107,11 @@ class HamlibDirectBackend(RadioBackend):
         return await loop.run_in_executor(None, fn, *args)
 
     async def connect(self) -> None:
+        log.info(
+            "Opening hamlib rig: model=%d port=%r baud=%d data=%d stop=%d parity=%s",
+            self._model_id, self._port, self._baud_rate,
+            self._data_bits, self._stop_bits, self._parity,
+        )
         H = self._load_hamlib()
         self._H = H
 
@@ -123,11 +131,14 @@ class HamlibDirectBackend(RadioBackend):
         try:
             self._rig = await self._run(_open)
             self._connected = True
+            log.info("Hamlib rig ready: model=%d port=%r", self._model_id, self._port)
         except Exception as exc:
             self._connected = False
+            log.error("Hamlib open failed: model=%d port=%r — %s", self._model_id, self._port, exc)
             raise RadioBackendError(f"hamlib open failed: {exc}") from exc
 
     async def disconnect(self) -> None:
+        log.debug("Closing hamlib rig: model=%d port=%r", self._model_id, self._port)
         self._connected = False
         if self._rig is not None:
             rig, self._rig = self._rig, None
@@ -150,6 +161,7 @@ class HamlibDirectBackend(RadioBackend):
         return float(await self._run(rig.get_freq, H.RIG_VFO_CURR))
 
     async def set_frequency(self, hz: float) -> None:
+        log.debug("set_frequency: %.0f Hz", hz)
         rig, H = self._require()
         await self._run(rig.set_freq, H.RIG_VFO_CURR, int(hz))
 
@@ -163,6 +175,7 @@ class HamlibDirectBackend(RadioBackend):
         return H.rig_strrmode(mode_val), float(bw)
 
     async def set_mode(self, mode: str, bandwidth_hz: float = 0) -> None:
+        log.debug("set_mode: %s bw=%d", mode, bandwidth_hz)
         rig, H = self._require()
         attr = _MODE_TO_HAMLIB.get(mode.upper())
         if attr is None:
@@ -195,6 +208,7 @@ class HamlibDirectBackend(RadioBackend):
         return ptt_val != H.RIG_PTT_OFF
 
     async def set_ptt(self, transmit: bool) -> None:
+        log.debug("set_ptt: %s", transmit)
         rig, H = self._require()
         ptt_const = H.RIG_PTT_ON if transmit else H.RIG_PTT_OFF
         await self._run(rig.set_ptt, H.RIG_VFO_CURR, ptt_const)

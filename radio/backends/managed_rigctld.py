@@ -19,9 +19,13 @@ Config keys (in radio_config.yaml):
 """
 from __future__ import annotations
 
+import logging
+
 from .base import RadioBackendError
 from .rigctld import RigctldBackend
 from ..rigctld_launcher import RigctldLauncher
+
+log = logging.getLogger(__name__)
 
 
 class ManagedRigctldBackend(RigctldBackend):
@@ -48,13 +52,20 @@ class ManagedRigctldBackend(RigctldBackend):
         super().__init__(host=host, port=self._launcher.port, timeout_s=timeout_s)
 
     async def connect(self) -> None:
+        log.debug(
+            "ManagedRigctld connect: model=%d serial=%s baud=%d host=%s port=%d",
+            self._launcher.model_id, self._launcher.serial_port,
+            self._launcher.baud_rate, self._launcher.listen_host, self._launcher.port,
+        )
         try:
             await self._launcher.start(startup_timeout=self._startup_timeout)
         except Exception as exc:
+            log.error("Failed to start managed rigctld: %s", exc)
             raise RadioBackendError(f"Failed to start rigctld: {exc}") from exc
         self._port = self._launcher.port  # keep in sync
         await super().connect()
 
     async def disconnect(self) -> None:
+        log.debug("ManagedRigctld disconnect (port %d)", self._launcher.port)
         await super().disconnect()
         await self._launcher.stop()

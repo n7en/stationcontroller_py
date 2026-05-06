@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import logging.handlers
 import sys
 from pathlib import Path
 
@@ -37,6 +38,7 @@ RADIO_CFG      = CFG / "radio_config.yaml"
 AUTOMATION_CFG = CFG / "automation_config.yaml"
 TELEMETRY_CFG  = CFG / "telemetry_config.yaml"
 LABELS_CFG     = CFG / "labels.yaml"
+LOGGING_CFG    = CFG / "logging_config.yaml"
 
 TLS_CERT = CFG / "certs" / "cert.pem"
 TLS_KEY  = CFG / "certs" / "key.pem"
@@ -45,12 +47,89 @@ TLS_KEY  = CFG / "certs" / "key.pem"
 # Logging
 # ---------------------------------------------------------------------------
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
-    datefmt="%H:%M:%S",
-    stream=sys.stdout,
-)
+def _configure_logging(cfg_path: Path) -> None:
+    """
+    Configure the root logger from logging_config.yaml.
+
+    Two handlers are always set up:
+      • StreamHandler (stdout) — level controlled by console_level
+      • RotatingFileHandler   — level controlled by file.level
+                                CRITICAL is always captured (it exceeds any threshold)
+
+    The root logger is set to DEBUG so each handler can filter independently.
+    Noisy third-party libraries are capped at WARNING even in DEBUG mode.
+    """
+    console_level = logging.INFO
+    file_enabled  = True
+    file_path     = BASE / "logs" / "station.log"
+    file_level    = logging.WARNING
+    max_bytes     = 10 * 1024 * 1024   # 10 MB
+    backup_count  = 5
+
+    if cfg_path.exists():
+        try:
+            with open(cfg_path, encoding="utf-8") as fh:
+                raw = yaml.safe_load(fh) or {}
+            cfg = raw.get("logging", {})
+
+            console_level = getattr(
+                logging,
+                str(cfg.get("console_level", "INFO")).upper(),
+                logging.INFO,
+            )
+
+            fc = cfg.get("file", {})
+            file_enabled = fc.get("enabled", True)
+            file_level   = getattr(
+                logging,
+                str(fc.get("level", "WARNING")).upper(),
+                logging.WARNING,
+            )
+            raw_path = fc.get("path", "logs/station.log")
+            fp = Path(raw_path)
+            file_path = fp if fp.is_absolute() else BASE / fp
+            max_bytes    = int(fc.get("max_bytes", max_bytes))
+            backup_count = int(fc.get("backup_count", backup_count))
+        except Exception as exc:
+            print(f"WARNING: Could not read {cfg_path} ({exc}) — using logging defaults",
+                  file=sys.stderr)
+
+    # Root logger sees everything; individual handlers filter by level.
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    _console_fmt = logging.Formatter(
+        "%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
+        datefmt="%H:%M:%S",
+    )
+    _file_fmt = logging.Formatter(
+        "%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    console_h = logging.StreamHandler(sys.stdout)
+    console_h.setLevel(console_level)
+    console_h.setFormatter(_console_fmt)
+    root.addHandler(console_h)
+
+    if file_enabled:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_h = logging.handlers.RotatingFileHandler(
+            file_path,
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+            encoding="utf-8",
+        )
+        file_h.setLevel(file_level)
+        file_h.setFormatter(_file_fmt)
+        root.addHandler(file_h)
+
+    # Prevent very noisy libraries from flooding DEBUG output.
+    for _noisy in ("uvicorn.access", "asyncio", "httpx", "hpack", "h2"):
+        logging.getLogger(_noisy).setLevel(logging.WARNING)
+
+
+_configure_logging(LOGGING_CFG)
 log = logging.getLogger("main")
 
 

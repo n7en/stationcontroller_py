@@ -7,9 +7,12 @@ Works identically for local (127.0.0.1:4532) and remote (host:4532) daemons.
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Optional
 
 from .base import RadioBackend, RadioBackendError
+
+log = logging.getLogger(__name__)
 
 
 class RigctldBackend(RadioBackend):
@@ -33,19 +36,23 @@ class RigctldBackend(RadioBackend):
         return self._connected
 
     async def connect(self) -> None:
+        log.debug("Connecting to rigctld at %s:%d (timeout=%.1fs)", self._host, self._port, self._timeout)
         try:
             self._reader, self._writer = await asyncio.wait_for(
                 asyncio.open_connection(self._host, self._port),
                 timeout=self._timeout,
             )
             self._connected = True
+            log.info("Connected to rigctld at %s:%d", self._host, self._port)
         except (OSError, asyncio.TimeoutError) as exc:
             self._connected = False
+            log.debug("rigctld connect failed at %s:%d: %s", self._host, self._port, exc)
             raise RadioBackendError(
                 f"Cannot connect to rigctld at {self._host}:{self._port}: {exc}"
             ) from exc
 
     async def disconnect(self) -> None:
+        log.debug("Disconnecting from rigctld at %s:%d", self._host, self._port)
         self._connected = False
         if self._writer:
             try:
@@ -62,6 +69,7 @@ class RigctldBackend(RadioBackend):
 
     def _drop_connection(self) -> None:
         """Mark disconnected and close the underlying socket so rigctld frees the slot."""
+        log.warning("rigctld connection dropped (%s:%d)", self._host, self._port)
         self._connected = False
         self._reader = None
         if self._writer is not None:
@@ -79,6 +87,7 @@ class RigctldBackend(RadioBackend):
         if not self._connected or self._writer is None:
             raise RadioBackendError("Not connected to rigctld")
 
+        log.debug("rigctld cmd: %s", command)
         async with self._lock:
             try:
                 self._writer.write((command + "\n").encode())
@@ -119,6 +128,7 @@ class RigctldBackend(RadioBackend):
             raise RadioBackendError(f"Unexpected get_freq response: {lines}") from exc
 
     async def set_frequency(self, hz: float) -> None:
+        log.debug("set_frequency: %.0f Hz", hz)
         await self._cmd(rf"\set_freq {int(hz)}")
 
     # ------------------------------------------------------------------
@@ -135,6 +145,7 @@ class RigctldBackend(RadioBackend):
             raise RadioBackendError(f"Unexpected get_mode response: {lines}") from exc
 
     async def set_mode(self, mode: str, bandwidth_hz: float = 0) -> None:
+        log.debug("set_mode: %s bw=%d", mode, bandwidth_hz)
         await self._cmd(rf"\set_mode {mode} {int(bandwidth_hz)}")
 
     # ------------------------------------------------------------------
@@ -163,6 +174,7 @@ class RigctldBackend(RadioBackend):
             raise RadioBackendError(f"Unexpected get_ptt response: {lines}") from exc
 
     async def set_ptt(self, transmit: bool) -> None:
+        log.debug("set_ptt: %s", transmit)
         await self._cmd(rf"\set_ptt {1 if transmit else 0}")
 
     # ------------------------------------------------------------------

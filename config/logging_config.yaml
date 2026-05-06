@@ -1,0 +1,35 @@
+# Station Controller — logging configuration
+#
+# Changes take effect on the next application restart.
+#
+# Log levels (least → most verbose):
+#   CRITICAL  fatal errors only
+#   ERROR     recoverable errors
+#   WARNING   unexpected conditions (default file level)
+#   INFO      normal operational events (default console level)
+#   DEBUG     full detail — every command, poll, packet
+#
+# Typical workflow:
+#   Normal operation   → console: INFO,  file: WARNING
+#   Troubleshooting    → console: DEBUG, file: DEBUG   (then restart)
+#   Post-incident review → open logs/station.log
+
+logging:
+  # What gets printed to stdout / the terminal
+  console_level: INFO
+
+  file:
+    enabled: true
+
+    # Path to the log file.  Relative paths are resolved from the
+    # application root directory (where main.py lives).
+    path: logs/station.log
+
+    # Minimum level written to file.
+    # CRITICAL is always captured regardless of this setting.
+    # Lower to DEBUG for full troubleshooting detail, then restart.
+    level: WARNING
+
+    # Rotation: each file grows to max_bytes before rolling over.
+    max_bytes: 10485760   # 10 MB per file
+    backup_count: 5       # keep station.log + 5 rotated files

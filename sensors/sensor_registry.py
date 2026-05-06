@@ -13,6 +13,7 @@ exists; they are silently dropped if called from a non-asyncio context
 from __future__ import annotations
 
 import asyncio
+import logging
 import threading
 import time
 from dataclasses import dataclass, field
@@ -20,6 +21,8 @@ from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Union
 
 if TYPE_CHECKING:
     from .label_registry import LabelRegistry
+
+log = logging.getLogger(__name__)
 
 Callback = Callable[["Measurement"], Union[None, Awaitable[None]]]
 
@@ -90,8 +93,12 @@ class SensorRegistry:
         """Record a new measurement and notify subscribers."""
         m = Measurement(name=name, value=value, unit=unit, source=source)
         with self._lock:
+            is_new = name not in self._store
             self._store[name] = m
             callbacks = list(self._per_key.get(name, [])) + list(self._wildcard)
+
+        if is_new:
+            log.debug("New sensor: %s  source=%s  unit=%s", name, source or "(none)", unit or "(none)")
 
         self._fire_all(callbacks, m)
 
@@ -215,4 +222,4 @@ class SensorRegistry:
                     else:
                         result.close()
             except Exception:
-                pass
+                log.exception("Sensor callback raised for %s", measurement.name)
