@@ -89,7 +89,10 @@
     if (dragIdx === null || dragIdx === i) { dragIdx = dropIdx = null; return }
     const cards = [...config.cards]
     const [moved] = cards.splice(dragIdx, 1)
-    cards.splice(i, 0, moved)
+    // After removing dragIdx, indices above it shift down by 1.
+    // Compensate so the card lands before the originally-targeted position.
+    const insertAt = i > dragIdx ? i - 1 : i
+    cards.splice(insertAt, 0, moved)
     config  = { ...config, cards }
     dragIdx = null
     dropIdx = null
@@ -234,6 +237,20 @@
         {/if}
       </div>
     {/each}
+
+    <!-- Drop zone at the end so cards can be moved after the last item -->
+    {#if editMode}
+      <div
+        class="end-drop-zone"
+        class:active={dropIdx === config.cards.length && dragIdx !== null}
+        role="listitem"
+        on:dragover={e => { if (dragIdx === null) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; dropIdx = config.cards.length }}
+        on:dragleave={() => { if (dropIdx === config.cards.length) dropIdx = null }}
+        on:drop={e => onDrop(e, config.cards.length)}
+      >
+        {dragIdx !== null ? 'Drop here to move to end' : '+ drag cards here'}
+      </div>
+    {/if}
   </div>
 
 {/if}
@@ -390,20 +407,32 @@
   /* ── Card grid ────────────────────────────────────────────────────────── */
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
   }
   .card-grid.edit-mode { gap: 0.75rem; }
 
+  /* Responsive: 2 cols on medium, 1 col on small */
+  @media (max-width: 700px) {
+    .card-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 440px) {
+    .card-grid { grid-template-columns: 1fr; }
+  }
+
   /* ── Card wrap ────────────────────────────────────────────────────────── */
   .card-wrap { position: relative; transition: opacity 0.15s; }
   .card-wrap.is-dragging { opacity: 0.35; cursor: grabbing; }
-  .card-wrap.drop-target::after {
+  /* Left-edge insertion line — shows WHERE the card will land */
+  .card-wrap.drop-target::before {
     content: '';
-    position: absolute; inset: -3px;
-    border: 2px dashed var(--accent); border-radius: 10px;
-    pointer-events: none; z-index: 10;
+    position: absolute;
+    left: -5px; top: 8%; height: 84%; width: 3px;
+    background: var(--accent);
+    border-radius: 3px;
+    pointer-events: none; z-index: 20;
   }
+  .card-wrap.drop-target::after { display: none; }
   .edit-mode .card-wrap {
     outline: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
     border-radius: 8px; cursor: grab;
@@ -447,6 +476,23 @@
   }
   .ov-btn:hover     { border-color: var(--accent); color: var(--accent); }
   .ov-btn.del:hover { border-color: var(--red);    color: var(--red); }
+
+  /* ── End drop zone ────────────────────────────────────────────────────── */
+  .end-drop-zone {
+    grid-column: 1 / -1;     /* always spans all columns */
+    min-height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    font-size: 0.72rem; color: var(--text-muted);
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    pointer-events: all;
+  }
+  .end-drop-zone.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
 
   /* ── Picker modal ─────────────────────────────────────────────────────── */
   .picker-backdrop {
