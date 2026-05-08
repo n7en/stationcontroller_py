@@ -79,6 +79,12 @@ def create_app(app_state: Optional[AppState] = None) -> FastAPI:
     if _state.ws_hub is None:
         _state.ws_hub = WSHub()
 
+    # Write the hub back so the caller's app_state.ws_hub is populated.
+    # main.py does `ws_hub = state.ws_hub` after create_app(); without this
+    # that reference would be None and all radio/log broadcasts would silently fail.
+    if app_state is not None:
+        app_state.ws_hub = _state.ws_hub
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if _state.sensor_registry is not None:
