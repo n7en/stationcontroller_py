@@ -29,7 +29,7 @@ radios:
   - name: ic7300
     backend: managed_rigctld
     model_id: 351              # Hamlib model number
-    serial_port: COM3          # Windows: COM3  /  Linux: /dev/ttyUSB0
+    serial_port: COM3          # Windows: COM3  /  Linux/Pi: /dev/ttyACM0 or /dev/ttyUSB0
     serial_baud: 9600          # CAT baud rate
     port: 0                    # 0 = auto-select a free port (recommended)
     timeout_s: 15.0

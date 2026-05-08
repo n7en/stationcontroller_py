@@ -41,6 +41,13 @@ ui/.vite/
 # SQLite database and WAL files created on first run
 data/
 
+# ── Machine-specific config ───────────────────────────────────────────────────
+# These contain hardware paths (serial ports, etc.) that differ per machine.
+# Rename the .example files and edit them on each deployment.
+config/radio_config.yaml
+config/comms_config.yaml
+config/logging_config.yaml
+
 # Log files
 *.log
 logs/

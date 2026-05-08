@@ -289,7 +289,10 @@ async def main() -> None:
         except Exception:
             log.exception("Failed to load radio config — radio control disabled")
     else:
-        log.warning("radio_config.yaml not found — radio control disabled")
+        log.warning(
+            "radio_config.yaml not found — radio control disabled.  "
+            "Copy config/radio_config.yaml.example to config/radio_config.yaml and edit it."
+        )
 
     # ── 5. Automation engine ─────────────────────────────────────────────
     from automation.config  import load_engine as load_automation
