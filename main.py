@@ -44,6 +44,30 @@ TLS_CERT = CFG / "certs" / "cert.pem"
 TLS_KEY  = CFG / "certs" / "key.pem"
 
 # ---------------------------------------------------------------------------
+# First-run config bootstrap
+# ---------------------------------------------------------------------------
+
+def _ensure_default_configs() -> None:
+    """
+    Copy <name>.yaml.example → <name>.yaml for any machine-specific config
+    that is missing.  Runs before logging is configured so it uses print().
+    """
+    import shutil
+    for cfg in (COMMS_CFG, RADIO_CFG, LOGGING_CFG):
+        if not cfg.exists():
+            example = Path(str(cfg) + ".example")
+            if example.exists():
+                shutil.copy2(example, cfg)
+                print(
+                    f"[setup] Created {cfg.name} from {example.name}. "
+                    f"Edit it for your hardware before restarting.",
+                    file=sys.stderr,
+                )
+
+
+_ensure_default_configs()
+
+# ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
 
