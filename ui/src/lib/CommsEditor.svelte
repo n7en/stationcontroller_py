@@ -11,6 +11,13 @@
   /** @type {{port: string, description: string}[]} */
   let serialPorts = []
 
+  /** RS-485 port strings in use by buses other than the one being edited. */
+  $: usedBusPorts = buses
+    .filter((_, idx) => idx !== editingBusIdx)
+    .filter(b => b.transport.type === 'rs485')
+    .map(b => b.transport.port)
+    .filter(Boolean)
+
   let editingBusIdx    = null
   let editingDeviceIdx = null
   let addingBus        = false
@@ -259,7 +266,7 @@
               <div class="field-row">
                 <div class="field grow">
                   <label>Serial port
-                    <SerialPortPicker bind:value={editBus.transport.port} ports={serialPorts}
+                    <SerialPortPicker bind:value={editBus.transport.port} ports={serialPorts} usedPorts={usedBusPorts}
                                       placeholder="COM3 or /dev/ttyUSB0" />
                   </label>
                 </div>
@@ -377,7 +384,7 @@
             <div class="field-row">
               <div class="field grow">
                 <label>Serial port
-                  <SerialPortPicker bind:value={newBus.transport.port} ports={serialPorts}
+                  <SerialPortPicker bind:value={newBus.transport.port} ports={serialPorts} usedPorts={usedBusPorts}
                                     placeholder="COM3 or /dev/ttyUSB0" />
                 </label>
               </div>

@@ -3,14 +3,17 @@
   export let value = ''
   /** Detected ports from /api/radio/serial-ports */
   export let ports = []
+  /** Port strings already assigned to other configs — pushed to the bottom of the list */
+  export let usedPorts = []
   export let placeholder = 'COM3  or  /dev/ttyUSB0'
 
   const CUSTOM = '\x00'
 
   $: inList = ports.some(p => p.port === value)
-  // Show the text input when no ports were detected, the user picked "Type manually…",
-  // or the saved value isn't in the current detected list (e.g. device unplugged).
   $: showInput = ports.length === 0 || (!inList && (value !== '' || customMode))
+
+  $: freePorts = ports.filter(p => !usedPorts.includes(p.port))
+  $: takenPorts = ports.filter(p =>  usedPorts.includes(p.port))
 
   let customMode = false
 
@@ -24,7 +27,6 @@
     }
   }
 
-  // If an external write sets value to something in the list, leave custom mode.
   $: if (inList) customMode = false
 
   function portLabel(p) {
@@ -36,9 +38,16 @@
 
 {#if ports.length > 0}
   <select value={inList ? value : CUSTOM} on:change={onSelect}>
-    {#each ports as p}
+    {#each freePorts as p}
       <option value={p.port}>{portLabel(p)}</option>
     {/each}
+    {#if takenPorts.length > 0}
+      <optgroup label="Already in use">
+        {#each takenPorts as p}
+          <option value={p.port}>{portLabel(p)}</option>
+        {/each}
+      </optgroup>
+    {/if}
     <option value={CUSTOM}>Type manually…</option>
   </select>
 {/if}

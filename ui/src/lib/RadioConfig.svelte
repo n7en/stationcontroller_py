@@ -17,6 +17,20 @@
 
   const BAUD_RATES = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200]
 
+  /** Extract the serial port string from a radio config entry, or '' if it uses TCP/network. */
+  function radioSerialPort(r) {
+    if (r.backend === 'managed_rigctld') return r.serial_port || ''
+    if (r.backend === 'hamlib_direct')   return r.port || ''
+    if (r.backend === 'elecraft_k4' && r.transport !== 'tcp') return r.port || ''
+    return ''
+  }
+
+  /** Port strings used by radios other than the one currently being edited. */
+  $: usedSerialPorts = (config?.radios ?? [])
+    .filter((_, idx) => idx !== editIdx)
+    .map(radioSerialPort)
+    .filter(Boolean)
+
   onMount(async () => {
     await loadConfig()
     try {
@@ -241,7 +255,7 @@
                 </div>
                 <div class="field grow">
                   <label>Serial port
-                    <SerialPortPicker bind:value={editEntry.serial_port} ports={serialPorts} />
+                    <SerialPortPicker bind:value={editEntry.serial_port} ports={serialPorts} usedPorts={usedSerialPorts} />
                   </label>
                 </div>
                 <div class="field narrow">
@@ -306,7 +320,7 @@
                 </div>
                 <div class="field grow">
                   <label>Device port
-                    <SerialPortPicker bind:value={editEntry.port} ports={serialPorts} />
+                    <SerialPortPicker bind:value={editEntry.port} ports={serialPorts} usedPorts={usedSerialPorts} />
                   </label>
                 </div>
                 <div class="field narrow">
@@ -378,7 +392,7 @@
                 <div class="field-row">
                   <div class="field grow">
                     <label>Serial port
-                      <SerialPortPicker bind:value={editEntry.port} ports={serialPorts}
+                      <SerialPortPicker bind:value={editEntry.port} ports={serialPorts} usedPorts={usedSerialPorts}
                                         placeholder="COM3  or  /dev/ttyACM0" />
                     </label>
                   </div>
@@ -478,7 +492,7 @@
               </div>
               <div class="field grow">
                 <label>Serial port
-                  <SerialPortPicker bind:value={editEntry.serial_port} ports={serialPorts} />
+                  <SerialPortPicker bind:value={editEntry.serial_port} ports={serialPorts} usedPorts={usedSerialPorts} />
                 </label>
               </div>
               <div class="field narrow">
@@ -543,7 +557,7 @@
               </div>
               <div class="field grow">
                 <label>Device port
-                  <SerialPortPicker bind:value={editEntry.port} ports={serialPorts} />
+                  <SerialPortPicker bind:value={editEntry.port} ports={serialPorts} usedPorts={usedSerialPorts} />
                 </label>
               </div>
               <div class="field narrow">
@@ -615,7 +629,7 @@
               <div class="field-row">
                 <div class="field grow">
                   <label>Serial port
-                    <SerialPortPicker bind:value={editEntry.port} ports={serialPorts}
+                    <SerialPortPicker bind:value={editEntry.port} ports={serialPorts} usedPorts={usedSerialPorts}
                                       placeholder="COM3  or  /dev/ttyACM0" />
                   </label>
                 </div>
