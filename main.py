@@ -115,7 +115,7 @@ def _configure_logging(cfg_path: Path) -> None:
             max_bytes    = int(fc.get("max_bytes", max_bytes))
             backup_count = int(fc.get("backup_count", backup_count))
         except Exception as exc:
-            print(f"WARNING: Could not read {cfg_path} ({exc}) — using logging defaults",
+            print(f"WARNING: Could not read {cfg_path} ({exc}) - using logging defaults",
                   file=sys.stderr)
 
     # Root logger sees everything; individual handlers filter by level.
@@ -123,11 +123,11 @@ def _configure_logging(cfg_path: Path) -> None:
     root.setLevel(logging.DEBUG)
 
     _console_fmt = logging.Formatter(
-        "%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
+        "%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
         datefmt="%H:%M:%S",
     )
     _file_fmt = logging.Formatter(
-        "%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
+        "%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
