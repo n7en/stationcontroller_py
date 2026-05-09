@@ -72,3 +72,16 @@ radios:
   #   parity: N
   #   poll_interval_s: 1.0
   #   reconnect_delay_s: 5.0
+
+  # --------------------------------------------------------------------------
+  # Example: Elecraft K4 — native serial CAT (no Hamlib required)
+  # --------------------------------------------------------------------------
+  # - name: k4
+  #   backend: elecraft_k4
+  #   port: COM4               # Windows: COM4  /  Linux/Pi: /dev/ttyACM0
+  #   baud_rate: 38400         # K4 default; match Front Panel → XCVR → KIO3 CAT
+  #   timeout_s: 5.0
+  #   max_power_w: 100         # K4 max TX power for RF-power normalisation
+  #   power_range: H           # H = high/100 W range, L = QRP/10 W range
+  #   poll_interval_s: 1.0
+  #   reconnect_delay_s: 5.0

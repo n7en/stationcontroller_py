@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 
+from .backends.elecraft_k4 import ElecraftK4Backend
 from .backends.hamlib_direct import HamlibDirectBackend
 from .backends.managed_rigctld import ManagedRigctldBackend
 from .backends.rigctld import RigctldBackend
@@ -17,6 +18,7 @@ _BACKEND_REGISTRY: dict[str, type] = {
     "rigctld":         RigctldBackend,
     "hamlib_direct":   HamlibDirectBackend,
     "managed_rigctld": ManagedRigctldBackend,
+    "elecraft_k4":     ElecraftK4Backend,
 }
 
 _INTERFACE_KEYS = {"name", "backend", "poll_interval_s", "reconnect_delay_s"}

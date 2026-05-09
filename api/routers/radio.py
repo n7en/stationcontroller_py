@@ -28,6 +28,8 @@ _MANAGED_KEYS  = {"name", "backend", "model_id", "serial_port", "serial_baud",
                    "poll_interval_s", "reconnect_delay_s"}
 _HAMLIB_KEYS   = {"name", "backend", "model_id", "port", "baud_rate",
                    "data_bits", "stop_bits", "parity", "poll_interval_s", "reconnect_delay_s"}
+_K4_KEYS       = {"name", "backend", "port", "baud_rate", "timeout_s",
+                   "max_power_w", "power_range", "poll_interval_s", "reconnect_delay_s"}
 
 _COMMON_DEFAULTS  = {"poll_interval_s": 1.0, "reconnect_delay_s": 5.0}
 _RIGCTLD_DEFAULTS = {"host": "localhost", "port": 4532, "timeout_s": 15.0}
@@ -35,6 +37,8 @@ _MANAGED_DEFAULTS = {"host": "127.0.0.1", "port": 0, "serial_baud": 9600,
                      "timeout_s": 15.0, "startup_timeout_s": 10.0}
 _HAMLIB_DEFAULTS  = {"model_id": 1, "baud_rate": 9600, "data_bits": 8,
                      "stop_bits": 1, "parity": "N"}
+_K4_DEFAULTS      = {"baud_rate": 38400, "timeout_s": 5.0,
+                     "max_power_w": 100, "power_range": "H"}
 
 
 def _clean_radio_entry(entry: dict) -> dict:
@@ -44,6 +48,8 @@ def _clean_radio_entry(entry: dict) -> dict:
         allowed, defaults = _MANAGED_KEYS, {**_COMMON_DEFAULTS, **_MANAGED_DEFAULTS}
     elif backend == "hamlib_direct":
         allowed, defaults = _HAMLIB_KEYS,  {**_COMMON_DEFAULTS, **_HAMLIB_DEFAULTS}
+    elif backend == "elecraft_k4":
+        allowed, defaults = _K4_KEYS,      {**_COMMON_DEFAULTS, **_K4_DEFAULTS}
     else:
         allowed, defaults = _RIGCTLD_KEYS, {**_COMMON_DEFAULTS, **_RIGCTLD_DEFAULTS}
     cleaned = {k: v for k, v in entry.items() if k in allowed}
