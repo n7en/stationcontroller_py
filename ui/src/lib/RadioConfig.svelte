@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte'
   import { radios } from '../stores/ws.js'
+  import SerialPortPicker from './SerialPortPicker.svelte'
 
   /** @type {{radios: any[]}|null} */
   let config      = null
@@ -13,6 +14,8 @@
 
   /** @type {{port: string, description: string}[]} */
   let serialPorts = []
+
+  const BAUD_RATES = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200]
 
   onMount(async () => {
     await loadConfig()
@@ -212,6 +215,7 @@
 
         {#if editIdx === i}
           <div class="edit-form">
+
             <div class="field">
               <label>Name<input bind:value={editEntry.name} placeholder="ic7300" /></label>
             </div>
@@ -237,14 +241,16 @@
                 </div>
                 <div class="field grow">
                   <label>Serial port
-                    <input bind:value={editEntry.serial_port}
-                           list="port-list"
-                           placeholder="COM3  or  /dev/ttyUSB0" />
+                    <SerialPortPicker bind:value={editEntry.serial_port} ports={serialPorts} />
                   </label>
                 </div>
                 <div class="field narrow">
                   <label>Baud rate
-                    <input type="number" bind:value={editEntry.serial_baud} />
+                    <select bind:value={editEntry.serial_baud}>
+                      {#each BAUD_RATES as b}
+                        <option value={b}>{b}</option>
+                      {/each}
+                    </select>
                   </label>
                 </div>
               </div>
@@ -300,14 +306,16 @@
                 </div>
                 <div class="field grow">
                   <label>Device port
-                    <input bind:value={editEntry.port}
-                           list="port-list"
-                           placeholder="COM3  or  /dev/ttyUSB0" />
+                    <SerialPortPicker bind:value={editEntry.port} ports={serialPorts} />
                   </label>
                 </div>
                 <div class="field narrow">
                   <label>Baud rate
-                    <input type="number" bind:value={editEntry.baud_rate} />
+                    <select bind:value={editEntry.baud_rate}>
+                      {#each BAUD_RATES as b}
+                        <option value={b}>{b}</option>
+                      {/each}
+                    </select>
                   </label>
                 </div>
               </div>
@@ -370,14 +378,17 @@
                 <div class="field-row">
                   <div class="field grow">
                     <label>Serial port
-                      <input bind:value={editEntry.port}
-                             list="port-list"
-                             placeholder="COM3  or  /dev/ttyACM0" />
+                      <SerialPortPicker bind:value={editEntry.port} ports={serialPorts}
+                                        placeholder="COM3  or  /dev/ttyACM0" />
                     </label>
                   </div>
                   <div class="field narrow">
                     <label>Baud rate
-                      <input type="number" bind:value={editEntry.baud_rate} />
+                      <select bind:value={editEntry.baud_rate}>
+                        {#each BAUD_RATES as b}
+                          <option value={b}>{b}</option>
+                        {/each}
+                      </select>
                     </label>
                   </div>
                 </div>
@@ -467,14 +478,16 @@
               </div>
               <div class="field grow">
                 <label>Serial port
-                  <input bind:value={editEntry.serial_port}
-                         list="port-list"
-                         placeholder="COM3  or  /dev/ttyUSB0" />
+                  <SerialPortPicker bind:value={editEntry.serial_port} ports={serialPorts} />
                 </label>
               </div>
               <div class="field narrow">
                 <label>Baud rate
-                  <input type="number" bind:value={editEntry.serial_baud} />
+                  <select bind:value={editEntry.serial_baud}>
+                    {#each BAUD_RATES as b}
+                      <option value={b}>{b}</option>
+                    {/each}
+                  </select>
                 </label>
               </div>
             </div>
@@ -530,14 +543,16 @@
               </div>
               <div class="field grow">
                 <label>Device port
-                  <input bind:value={editEntry.port}
-                         list="port-list"
-                         placeholder="COM3  or  /dev/ttyUSB0" />
+                  <SerialPortPicker bind:value={editEntry.port} ports={serialPorts} />
                 </label>
               </div>
               <div class="field narrow">
                 <label>Baud rate
-                  <input type="number" bind:value={editEntry.baud_rate} />
+                  <select bind:value={editEntry.baud_rate}>
+                    {#each BAUD_RATES as b}
+                      <option value={b}>{b}</option>
+                    {/each}
+                  </select>
                 </label>
               </div>
             </div>
@@ -600,14 +615,17 @@
               <div class="field-row">
                 <div class="field grow">
                   <label>Serial port
-                    <input bind:value={editEntry.port}
-                           list="port-list"
-                           placeholder="COM3  or  /dev/ttyACM0" />
+                    <SerialPortPicker bind:value={editEntry.port} ports={serialPorts}
+                                      placeholder="COM3  or  /dev/ttyACM0" />
                   </label>
                 </div>
                 <div class="field narrow">
                   <label>Baud rate
-                    <input type="number" bind:value={editEntry.baud_rate} />
+                    <select bind:value={editEntry.baud_rate}>
+                      {#each BAUD_RATES as b}
+                        <option value={b}>{b}</option>
+                      {/each}
+                    </select>
                   </label>
                 </div>
               </div>
@@ -679,13 +697,6 @@
     </div>
   {/if}
 </div>
-
-<!-- Detected serial ports — used by all serial port inputs via list="port-list" -->
-<datalist id="port-list">
-  {#each serialPorts as p}
-    <option value={p.port}>{p.port} — {p.description}</option>
-  {/each}
-</datalist>
 
 <style>
   .radio-cfg { max-width: 700px; display: flex; flex-direction: column; gap: 1rem; }

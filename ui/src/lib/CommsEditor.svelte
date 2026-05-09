@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte'
+  import SerialPortPicker from './SerialPortPicker.svelte'
 
   let buses   = []
   let devices = []
@@ -258,15 +259,14 @@
               <div class="field-row">
                 <div class="field grow">
                   <label>Serial port
-                    <input bind:value={editBus.transport.port}
-                           list="comms-port-list"
-                           placeholder="COM3 or /dev/ttyUSB0" />
+                    <SerialPortPicker bind:value={editBus.transport.port} ports={serialPorts}
+                                      placeholder="COM3 or /dev/ttyUSB0" />
                   </label>
                 </div>
                 <div class="field narrow">
                   <label>Baud rate
                     <select bind:value={editBus.transport.baud_rate}>
-                      {#each [4800,9600,19200,38400,57600,115200] as b}
+                      {#each [1200,2400,4800,9600,19200,38400,57600,115200] as b}
                         <option value={b}>{b}</option>
                       {/each}
                     </select>
@@ -377,15 +377,14 @@
             <div class="field-row">
               <div class="field grow">
                 <label>Serial port
-                  <input bind:value={newBus.transport.port}
-                         list="comms-port-list"
-                         placeholder="COM3 or /dev/ttyUSB0" />
+                  <SerialPortPicker bind:value={newBus.transport.port} ports={serialPorts}
+                                    placeholder="COM3 or /dev/ttyUSB0" />
                 </label>
               </div>
               <div class="field narrow">
                 <label>Baud rate
                   <select bind:value={newBus.transport.baud_rate}>
-                    {#each [4800,9600,19200,38400,57600,115200] as b}
+                    {#each [1200,2400,4800,9600,19200,38400,57600,115200] as b}
                       <option value={b}>{b}</option>
                     {/each}
                   </select>
@@ -616,13 +615,6 @@
 
   {/if}
 </div>
-
-<!-- Detected serial ports — used by RS-485 port inputs via list="comms-port-list" -->
-<datalist id="comms-port-list">
-  {#each serialPorts as p}
-    <option value={p.port}>{p.port} — {p.description}</option>
-  {/each}
-</datalist>
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <style>
