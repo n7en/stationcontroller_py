@@ -28,8 +28,11 @@ _MANAGED_KEYS  = {"name", "backend", "model_id", "serial_port", "serial_baud",
                    "poll_interval_s", "reconnect_delay_s"}
 _HAMLIB_KEYS   = {"name", "backend", "model_id", "port", "baud_rate",
                    "data_bits", "stop_bits", "parity", "poll_interval_s", "reconnect_delay_s"}
-_K4_KEYS       = {"name", "backend", "port", "baud_rate", "timeout_s",
-                   "max_power_w", "power_range", "poll_interval_s", "reconnect_delay_s"}
+_K4_KEYS       = {"name", "backend", "transport",
+                   "port", "baud_rate",
+                   "host", "tcp_port", "password",
+                   "timeout_s", "max_power_w", "power_range",
+                   "poll_interval_s", "reconnect_delay_s"}
 
 _COMMON_DEFAULTS  = {"poll_interval_s": 1.0, "reconnect_delay_s": 5.0}
 _RIGCTLD_DEFAULTS = {"host": "localhost", "port": 4532, "timeout_s": 15.0}

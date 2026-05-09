@@ -78,10 +78,27 @@ radios:
   # --------------------------------------------------------------------------
   # - name: k4
   #   backend: elecraft_k4
+  #   transport: serial
   #   port: COM4               # Windows: COM4  /  Linux/Pi: /dev/ttyACM0
   #   baud_rate: 38400         # K4 default; match Front Panel → XCVR → KIO3 CAT
   #   timeout_s: 5.0
   #   max_power_w: 100         # K4 max TX power for RF-power normalisation
   #   power_range: H           # H = high/100 W range, L = QRP/10 W range
+  #   poll_interval_s: 1.0
+  #   reconnect_delay_s: 5.0
+
+  # --------------------------------------------------------------------------
+  # Example: Elecraft K4 — Ethernet TCP CAT (same protocol over the network)
+  #   On the K4: Front Panel → Config → Network → set TCP port and optional password
+  # --------------------------------------------------------------------------
+  # - name: k4_net
+  #   backend: elecraft_k4
+  #   transport: tcp
+  #   host: 192.168.1.100      # K4 IP address or hostname
+  #   tcp_port: 9204           # TCP port configured on the K4 (default 9204)
+  #   password: ""             # Remote access password (leave blank if RRP not set)
+  #   timeout_s: 5.0
+  #   max_power_w: 100
+  #   power_range: H
   #   poll_interval_s: 1.0
   #   reconnect_delay_s: 5.0
