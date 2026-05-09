@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import shutil
+import signal
 import socket
+import tempfile
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -53,6 +56,10 @@ class RigctldLauncher:
         self.port        = port if port > 0 else _find_free_port()
         self.extra_args  = extra_args or []
         self._proc: Optional[asyncio.subprocess.Process] = None
+        # PID file lets us kill a leftover process from a previous app run.
+        # Keyed on serial_port so it survives port-number changes between restarts.
+        _safe = serial_port.replace("/", "_").replace("\\", "_").replace(":", "_")
+        self._pid_file = os.path.join(tempfile.gettempdir(), f"sc_rigctld_{_safe}.pid")
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -62,6 +69,9 @@ class RigctldLauncher:
         """Spawn rigctld and block until its TCP port is accepting connections."""
         if self._proc is not None and self._proc.returncode is None:
             return  # already running
+
+        # Kill any rigctld left over from a previous app run on this serial port.
+        self._kill_stale()
 
         exe = shutil.which("rigctld")
         if exe is None:
@@ -113,6 +123,7 @@ class RigctldLauncher:
                     self.listen_host, self.port, self._proc.pid,
                     self.model_id, self.serial_port, self.baud_rate,
                 )
+                self._write_pid(self._proc.pid)
                 return
             except (ConnectionRefusedError, OSError, asyncio.TimeoutError):
                 await asyncio.sleep(0.2)
@@ -125,6 +136,7 @@ class RigctldLauncher:
     async def stop(self) -> None:
         """Terminate the rigctld process gracefully, then forcibly if needed."""
         if self._proc is None or self._proc.returncode is not None:
+            self._remove_pid()
             return
         logger.info("Stopping rigctld (pid %d)", self._proc.pid)
         self._proc.terminate()
@@ -135,10 +147,42 @@ class RigctldLauncher:
             self._proc.kill()
             await self._proc.wait()
         self._proc = None
+        self._remove_pid()
 
     @property
     def running(self) -> bool:
         return self._proc is not None and self._proc.returncode is None
+
+    # ------------------------------------------------------------------
+    # PID-file helpers — survive app restarts on the same serial port
+    # ------------------------------------------------------------------
+
+    def _write_pid(self, pid: int) -> None:
+        try:
+            with open(self._pid_file, "w") as fh:
+                fh.write(str(pid))
+        except OSError as exc:
+            logger.debug("Could not write PID file %s: %s", self._pid_file, exc)
+
+    def _remove_pid(self) -> None:
+        try:
+            os.unlink(self._pid_file)
+        except OSError:
+            pass
+
+    def _kill_stale(self) -> None:
+        """Kill a rigctld left over from a previous run, if the PID file exists."""
+        try:
+            with open(self._pid_file) as fh:
+                pid = int(fh.read().strip())
+        except (OSError, ValueError):
+            return
+        try:
+            os.kill(pid, signal.SIGTERM)
+            logger.info("Sent SIGTERM to stale rigctld (pid %d, port %s)", pid, self.serial_port)
+        except (ProcessLookupError, OSError):
+            pass  # already gone
+        self._remove_pid()
 
     # ------------------------------------------------------------------
 
