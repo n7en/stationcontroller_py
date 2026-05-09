@@ -377,7 +377,9 @@
             <div class="field-row">
               <div class="field grow">
                 <label>Serial port
-                  <input bind:value={newBus.transport.port} placeholder="COM3 or /dev/ttyUSB0" />
+                  <input bind:value={newBus.transport.port}
+                         list="comms-port-list"
+                         placeholder="COM3 or /dev/ttyUSB0" />
                 </label>
               </div>
               <div class="field narrow">
