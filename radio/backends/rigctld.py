@@ -101,6 +101,12 @@ class RigctldBackend(RadioBackend):
             except asyncio.TimeoutError as exc:
                 self._drop_connection()
                 raise RadioBackendError("rigctld response timed out") from exc
+            except RadioBackendError:
+                # rigctld returns RPRT < 0 and then closes the TCP socket.
+                # Mark disconnected now so the next command in get_full_state()
+                # doesn't hit a broken-pipe surprise on an already-closed socket.
+                self._drop_connection()
+                raise
 
     async def _read_response(self) -> list[str]:
         lines: list[str] = []
