@@ -99,7 +99,7 @@ async def _rebuild_radio(state: AppState) -> bool:
             try:
                 await iface.connect()
             except Exception:
-                log.warning("Radio '%s' connect failed — poll loop will retry", iface.name)
+                log.warning("Radio '%s' connect failed - poll loop will retry", iface.name)
             await iface.start()
 
         primary = manager[manager.names()[0]]

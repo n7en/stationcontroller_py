@@ -81,13 +81,13 @@ async def _dispatch(title: str, message: str, urgency: str = "normal") -> tuple[
     try:
         from pywebpush import webpush, WebPushException
     except ImportError:
-        log.warning("pywebpush not installed — notifications disabled")
+        log.warning("pywebpush not installed - notifications disabled")
         return 0, 0
 
     from .._vapid import load_vapid_claims
     claims = load_vapid_claims()
     if claims is None:
-        log.warning("VAPID keys not configured — notifications disabled")
+        log.warning("VAPID keys not configured - notifications disabled")
         return 0, 0
 
     subs = _load()

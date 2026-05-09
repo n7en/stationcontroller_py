@@ -69,7 +69,7 @@ def load_devices(
         device_type = dev_cfg.get("type", "")
         device_cls = dev_registry.get(device_type)
         if device_cls is None:
-            log.warning("Unknown device type '%s' — skipping", device_type)
+            log.warning("Unknown device type '%s' - skipping", device_type)
             continue
 
         name    = dev_cfg.get("name") or device_type
@@ -77,7 +77,7 @@ def load_devices(
         bus_name = dev_cfg.get("bus", "control")
 
         if name in devices:
-            log.warning("Duplicate device name '%s' — skipping second definition", name)
+            log.warning("Duplicate device name '%s' - skipping second definition", name)
             continue
 
         try:

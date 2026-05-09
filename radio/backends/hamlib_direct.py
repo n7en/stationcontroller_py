@@ -134,7 +134,7 @@ class HamlibDirectBackend(RadioBackend):
             log.info("Hamlib rig ready: model=%d port=%r", self._model_id, self._port)
         except Exception as exc:
             self._connected = False
-            log.error("Hamlib open failed: model=%d port=%r — %s", self._model_id, self._port, exc)
+            log.error("Hamlib open failed: model=%d port=%r - %s", self._model_id, self._port, exc)
             raise RadioBackendError(f"hamlib open failed: {exc}") from exc
 
     async def disconnect(self) -> None:

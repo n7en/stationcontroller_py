@@ -28,7 +28,7 @@ def _find_free_port(start: int = 4532, stop: int = 4600) -> int:
                 return port
             except OSError:
                 continue
-    raise RuntimeError(f"No free TCP port available in range {start}–{stop - 1}")
+    raise RuntimeError(f"No free TCP port available in range {start}-{stop - 1}")
 
 
 class RigctldLauncher:

@@ -119,7 +119,7 @@ class AutomationEngine:
         if automation is None:
             raise KeyError(f"Automation {name!r} not found")
         if not automation.enabled:
-            log.warning("Automation %r is disabled — manual trigger ignored", name)
+            log.warning("Automation %r is disabled - manual trigger ignored", name)
             return False
         td = TriggerData(
             trigger_type="manual",

@@ -44,11 +44,11 @@ async def _update_check_loop(ws_hub: WSHub) -> None:
             update._cached_result = result
 
             if result.get("update_available"):
-                _log.info("Update available: %s — %s",
+                _log.info("Update available: %s - %s",
                           result.get("latest_version"), result.get("release_url"))
                 await ws_hub.broadcast_update_available(result)
             else:
-                _log.debug("Update check complete — already up to date (%s)",
+                _log.debug("Update check complete - already up to date (%s)",
                            result.get("current_version"))
 
         except asyncio.CancelledError:

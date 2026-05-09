@@ -292,7 +292,7 @@ async def main() -> None:
             len(devices), len(networks), list(devices.keys()),
         )
     else:
-        log.warning("comms_config.yaml not found — running without DCN hardware")
+        log.warning("comms_config.yaml not found - running without DCN hardware")
 
     # ── 4. Radio ─────────────────────────────────────────────────────────
     from radio.radio_manager import RadioManager
@@ -457,7 +457,7 @@ async def main() -> None:
             try:
                 await _iface.connect()
             except Exception:
-                log.warning("Radio '%s' connect failed — poll loop will retry", _iface.name)
+                log.warning("Radio '%s' connect failed - poll loop will retry", _iface.name)
             await _iface.start()
 
     # ── 10. Serve ─────────────────────────────────────────────────────────
