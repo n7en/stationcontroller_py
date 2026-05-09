@@ -1,11 +1,11 @@
-"""
+﻿"""
 Condition hierarchy for the automation engine.
 
 All conditions implement evaluate(ctx) -> bool.
 Logical combinators (And, Or, Not) can be composed freely, including via
 the & | ~ operators on any Condition subclass.
 
-Conditions are stateless — safe to evaluate from multiple contexts.
+Conditions are stateless - safe to evaluate from multiple contexts.
 """
 from __future__ import annotations
 

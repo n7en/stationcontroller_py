@@ -1,5 +1,5 @@
-"""
-DCNNetwork — manages one or more DCN transports as a unified network.
+﻿"""
+DCNNetwork - manages one or more DCN transports as a unified network.
 
 Usage (from config file):
 
@@ -234,7 +234,7 @@ class DCNNetwork:
             transport_cls = _TRANSPORT_REGISTRY.get(transport_type)
             if transport_cls is None:
                 logger.warning(
-                    "Unknown transport type '%s' — skipping entry '%s'",
+                    "Unknown transport type '%s' - skipping entry '%s'",
                     transport_type, net_cfg.get("name", "?"),
                 )
                 continue
@@ -275,7 +275,7 @@ class DCNNetwork:
                 transport_cls = _TRANSPORT_REGISTRY.get(transport_type)
                 if transport_cls is None:
                     logger.warning(
-                        "Unknown transport type '%s' in bus '%s' — skipping",
+                        "Unknown transport type '%s' in bus '%s' - skipping",
                         transport_type, bus_name,
                     )
                     continue

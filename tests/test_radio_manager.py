@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for radio/radio_manager.py and radio/config.py.
 """
 import pytest
@@ -74,7 +74,7 @@ class TestLoadRadioConfig:
 
 
 # ---------------------------------------------------------------------------
-# RadioManager — manual construction
+# RadioManager - manual construction
 # ---------------------------------------------------------------------------
 
 class TestRadioManagerManual:
@@ -186,7 +186,7 @@ class TestFromConfig:
 
 
 # ---------------------------------------------------------------------------
-# RadioManager — async lifecycle
+# RadioManager - async lifecycle
 # ---------------------------------------------------------------------------
 
 class TestManagerLifecycle:

@@ -1,5 +1,5 @@
-"""
-TelemetryLogHandler — Python logging.Handler that writes to TelemetryStore.
+﻿"""
+TelemetryLogHandler - Python logging.Handler that writes to TelemetryStore.
 
 Install once at startup:
 
@@ -44,6 +44,6 @@ class TelemetryLogHandler(logging.Handler):
                     name="telemetry.log",
                 )
             except RuntimeError:
-                pass  # no event loop — drop silently to avoid recursion
+                pass  # no event loop - drop silently to avoid recursion
         except Exception:
             self.handleError(record)

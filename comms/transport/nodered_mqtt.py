@@ -1,12 +1,12 @@
-"""
+﻿"""
 Node-RED MQTT bridge transport.
 
 This transport connects to an MQTT broker to exchange DCN packets with a
 Node-RED flow running on the same or a remote device.
 
 Node-RED flow direction:
-  Serial IN  → validate → MQTT publish  → topic_rx  (Node-RED → Python)
-  topic_tx   → MQTT subscribe → Serial OUT          (Python → Node-RED)
+  Serial IN  -> validate -> MQTT publish  -> topic_rx  (Node-RED -> Python)
+  topic_tx   -> MQTT subscribe -> Serial OUT          (Python -> Node-RED)
 
 Import nodered/dcn_mqtt_bridge_flow.json into Node-RED to set up the other end.
 
@@ -86,7 +86,7 @@ class NodeRedMQTTTransport(DCNTransport):
 
     async def send(self, packet: DCNPacket) -> None:
         if not self._connected or not self._client:
-            logger.warning("MQTT '%s': send skipped — not connected", self.name)
+            logger.warning("MQTT '%s': send skipped - not connected", self.name)
             return
         payload = str(packet)
         self._client.publish(self._topic_tx, payload, qos=0)
@@ -110,7 +110,7 @@ class NodeRedMQTTTransport(DCNTransport):
         self._connected = False
         if rc != 0:
             logger.warning(
-                "MQTT '%s' unexpected disconnect rc=%d — paho will reconnect",
+                "MQTT '%s' unexpected disconnect rc=%d - paho will reconnect",
                 self.name, rc,
             )
 

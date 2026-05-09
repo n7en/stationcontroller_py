@@ -1,11 +1,11 @@
-"""
-Band plan — amateur radio frequency allocations.
+﻿"""
+Band plan - amateur radio frequency allocations.
 
 Three levels of detail:
 
-  Band        — the full allocation (40m = 7.000-7.300 MHz)
-  BandSegment — a sub-range with characteristic modes (CW, digital, phone)
-  Activity    — a specific frequency for a digital mode or calling frequency
+  Band        - the full allocation (40m = 7.000-7.300 MHz)
+  BandSegment - a sub-range with characteristic modes (CW, digital, phone)
+  Activity    - a specific frequency for a digital mode or calling frequency
                 (FT8 @ 14.074.000, WSPR @ 14.095.600)
 
 BandPlan holds a complete named plan (US Extra Class, Canadian Amateur, etc.)
@@ -13,11 +13,11 @@ and exposes lookup methods used by the automation engine and its conditions.
 
 Built-in plans
 --------------
-  BandPlan.us_extra()    — FCC Part 97, Amateur Extra class (default)
-  BandPlan.us_general()  — FCC Part 97, General class
-  BandPlan.ca_amateur()  — Radio Amateurs of Canada band plan
-  BandPlan.itu_region_2() — ITU Region 2 generic (no licence-class splits)
-  BandPlan.amateur()     — alias for us_extra(), for backward compatibility
+  BandPlan.us_extra()    - FCC Part 97, Amateur Extra class (default)
+  BandPlan.us_general()  - FCC Part 97, General class
+  BandPlan.ca_amateur()  - Radio Amateurs of Canada band plan
+  BandPlan.itu_region_2() - ITU Region 2 generic (no licence-class splits)
+  BandPlan.amateur()     - alias for us_extra(), for backward compatibility
 
 Custom plans can be defined entirely in YAML or loaded via band_plan_from_config().
 """
@@ -49,7 +49,7 @@ class Activity:
     """A well-known activity frequency within a band (FT8, WSPR, JS8, calling)."""
     name: str               # e.g., "ft8", "wspr", "js8", "cw_calling"
     frequency_hz: float
-    mode: str               # e.g., "FT8", "CW", "USB" — informational
+    mode: str               # e.g., "FT8", "CW", "USB" - informational
     bandwidth_hz: float = 3000.0    # approximate signal bandwidth
     description: str = ""
 
@@ -97,7 +97,7 @@ class Band:
 
 class BandPlan:
     """
-    A complete named band plan — a collection of Band objects with segments
+    A complete named band plan - a collection of Band objects with segments
     and activities representing a specific regional or licence-class allocation.
     """
 
@@ -165,7 +165,7 @@ class BandPlan:
     @classmethod
     def us_extra(cls) -> "BandPlan":
         """
-        FCC Part 97 — Amateur Extra class HF/VHF/UHF privileges.
+        FCC Part 97 - Amateur Extra class HF/VHF/UHF privileges.
         Includes standard digital-mode activity frequencies.
         """
         return cls(
@@ -178,7 +178,7 @@ class BandPlan:
     @classmethod
     def us_general(cls) -> "BandPlan":
         """
-        FCC Part 97 — General class HF privileges.
+        FCC Part 97 - General class HF privileges.
         General has narrower phone/CW windows on 80, 40, 20, 15 m.
         """
         return cls(
@@ -204,7 +204,7 @@ class BandPlan:
     @classmethod
     def itu_region_2(cls) -> "BandPlan":
         """
-        ITU Region 2 generic allocation (Americas) — no licence-class splits.
+        ITU Region 2 generic allocation (Americas) - no licence-class splits.
         Use as a baseline when no country-specific plan is configured.
         """
         return cls(
@@ -215,7 +215,7 @@ class BandPlan:
 
     @classmethod
     def amateur(cls) -> "BandPlan":
-        """Alias for us_extra() — backward compatibility."""
+        """Alias for us_extra() - backward compatibility."""
         return cls.us_extra()
 
     @classmethod
@@ -255,7 +255,7 @@ def band_plan_from_config(cfg: dict) -> BandPlan:
       bands: [...]                # fully custom band list
 
     If both built_in and bands are present, the custom bands list is used
-    (built_in is ignored — use it OR bands, not both).
+    (built_in is ignored - use it OR bands, not both).
     """
     if not cfg:
         return BandPlan.amateur()
@@ -482,7 +482,7 @@ def _us_extra_bands() -> list[Band]:
 
 def _us_general_bands() -> list[Band]:
     """
-    US General class — narrower phone windows on 80/40/20/15m.
+    US General class - narrower phone windows on 80/40/20/15m.
     Non-General portions are still listed as segments with a note.
     """
     ft8 = _ft8_activities()
@@ -628,7 +628,7 @@ def _ca_bands() -> list[Band]:
 
 def _itu_r2_bands() -> list[Band]:
     """
-    ITU Region 2 generic HF allocations — Americas, no licence-class splits.
+    ITU Region 2 generic HF allocations - Americas, no licence-class splits.
     Includes digital activity frequencies without mode-segment detail.
     """
     ft8 = _ft8_activities()

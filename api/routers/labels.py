@@ -1,7 +1,7 @@
-"""
-GET    /api/labels           — list all friendly name labels
-PUT    /api/labels/{key}     — set or update a label
-DELETE /api/labels/{key}     — remove a label
+﻿"""
+GET    /api/labels           - list all friendly name labels
+PUT    /api/labels/{key}     - set or update a label
+DELETE /api/labels/{key}     - remove a label
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/labels", tags=["labels"])
 
 @router.get("")
 async def get_labels(state: AppState = Depends(get_state)) -> dict[str, str]:
-    """Return all hardware_key → friendly_label mappings."""
+    """Return all hardware_key -> friendly_label mappings."""
     if state.label_registry is None:
         return {}
     return state.label_registry.all()

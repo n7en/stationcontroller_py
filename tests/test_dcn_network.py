@@ -1,5 +1,5 @@
-"""
-Tests for comms/dcn_network.py — transport orchestration, routing, config loading.
+﻿"""
+Tests for comms/dcn_network.py - transport orchestration, routing, config loading.
 Uses a MockTransport that records sent packets and can inject received ones.
 """
 import asyncio
@@ -194,7 +194,7 @@ class TestSend:
     async def test_send_no_connected_transports_does_not_raise(self):
         net = DCNNetwork()
         net.add_transport(MockTransport("ctrl"))
-        await net.send("01", "STATE")  # disconnected — should warn and return
+        await net.send("01", "STATE")  # disconnected - should warn and return
 
     async def test_broadcast_sends_broadcast_packet(self):
         net = DCNNetwork()
@@ -556,7 +556,7 @@ class TestBusesFromConfig:
         assert buses["a"] is not buses["b"]
 
     def test_same_device_address_on_two_buses(self, tmp_path):
-        """Two watt meters at address 03 on separate buses — valid config."""
+        """Two watt meters at address 03 on separate buses - valid config."""
         path = self._yaml(
             "buses:\n"
             "  - name: power1\n"

@@ -1,8 +1,8 @@
-"""
+﻿"""
 GPIO Module (#321) hardware tests.
 
 Tests the Sierra Radio Systems GPIO module at its configured DCN address.
-Uses the GPIOModule device module — after each STATE query the module's
+Uses the GPIOModule device module - after each STATE query the module's
 state is automatically populated from the response packet.
 
 All tests skip automatically if gpio_module.present is false in
@@ -240,10 +240,10 @@ class TestGPIORelayControl:
         await query(control_net, addr, "STATE")
 
         assert gpio.state.relay_states == relays1, (
-            f"Relay state changed: {relays1!r} → {gpio.state.relay_states!r}"
+            f"Relay state changed: {relays1!r} -> {gpio.state.relay_states!r}"
         )
         assert gpio.state.digital_inputs == inputs1, (
-            f"Digital input state changed: {inputs1!r} → {gpio.state.digital_inputs!r}"
+            f"Digital input state changed: {inputs1!r} -> {gpio.state.digital_inputs!r}"
         )
 
 

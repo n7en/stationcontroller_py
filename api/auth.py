@@ -1,5 +1,5 @@
-"""
-Authentication utilities — JWT, bcrypt, per-IP rate limiting, token revocation.
+﻿"""
+Authentication utilities - JWT, bcrypt, per-IP rate limiting, token revocation.
 
 Auth is opt-in: if auth.enabled is false (or config is absent), every route
 treats the caller as "anonymous" and all checks pass.  Enable by creating
@@ -21,7 +21,7 @@ from fastapi import HTTPException, Request, status
 ALGORITHM   = "HS256"
 COOKIE_NAME = "sc_token"
 
-# Pre-computed dummy hash — ensures verify_password is always called even
+# Pre-computed dummy hash - ensures verify_password is always called even
 # when the username does not exist, preventing timing-based user enumeration.
 _DUMMY_HASH: str = _bcrypt.hashpw(b"__dummy_sentinel__", _bcrypt.gensalt()).decode()
 
@@ -105,7 +105,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 # JWT + token revocation
 # ---------------------------------------------------------------------------
 
-# Maps jti → expiry timestamp.  Entries are pruned after their JWT expires.
+# Maps jti -> expiry timestamp.  Entries are pruned after their JWT expires.
 _revoked: dict[str, float] = {}
 
 

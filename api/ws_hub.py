@@ -1,20 +1,20 @@
-"""
-WSHub — WebSocket connection manager and broadcaster.
+﻿"""
+WSHub - WebSocket connection manager and broadcaster.
 
 Maintains the set of active browser connections and fans out JSON messages
 to all of them.  Wires into SensorRegistry.on_any() and RadioState changes
 so the browser receives live updates without polling.
 
-Message types (server → client):
-  sensor_update    — one sensor value changed
-  relay_state      — a relay was toggled
-  radio_state      — frequency / mode / PTT / connected changed
-  automation_fired — an automation executed
-  full_snapshot    — complete current state, sent once on connect
+Message types (server -> client):
+  sensor_update    - one sensor value changed
+  relay_state      - a relay was toggled
+  radio_state      - frequency / mode / PTT / connected changed
+  automation_fired - an automation executed
+  full_snapshot    - complete current state, sent once on connect
 
-Message types (client → server, handled in ws router):
-  relay_cmd        — toggle a relay
-  radio_tune       — set frequency / mode
+Message types (client -> server, handled in ws router):
+  relay_cmd        - toggle a relay
+  radio_tune       - set frequency / mode
 """
 from __future__ import annotations
 
@@ -133,7 +133,7 @@ class WSHub:
         })
 
     # ------------------------------------------------------------------
-    # Full snapshot — sent to a newly connected client
+    # Full snapshot - sent to a newly connected client
     # ------------------------------------------------------------------
 
     async def send_snapshot(
@@ -191,7 +191,7 @@ class WSHub:
         })
 
     # ------------------------------------------------------------------
-    # Wiring helpers — call these at startup
+    # Wiring helpers - call these at startup
     # ------------------------------------------------------------------
 
     def attach_sensor_registry(self, registry: "SensorRegistry") -> None:

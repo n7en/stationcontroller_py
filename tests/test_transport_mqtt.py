@@ -1,6 +1,6 @@
-"""
+﻿"""
 Tests for comms/transport/nodered_mqtt.py.
-paho-mqtt Client is fully mocked — no broker required.
+paho-mqtt Client is fully mocked - no broker required.
 """
 import asyncio
 import pytest

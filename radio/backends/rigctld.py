@@ -1,4 +1,4 @@
-"""
+﻿"""
 Rigctld TCP backend.
 
 Connects to a running rigctld daemon (hamlib) over TCP.
@@ -227,7 +227,7 @@ class RigctldBackend(RadioBackend):
             return ""
 
     # ------------------------------------------------------------------
-    # Full-state override — polls only stable commands
+    # Full-state override - polls only stable commands
     # ------------------------------------------------------------------
 
     async def get_full_state(self) -> dict:

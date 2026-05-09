@@ -1,7 +1,7 @@
-"""
+﻿"""
 Hardware connectivity tests.
 
-These tests verify the most basic layer — that we can open the serial port,
+These tests verify the most basic layer - that we can open the serial port,
 exchange bytes with the DCN bus, and that at least one device on the network
 responds to broadcast commands.
 
@@ -89,13 +89,13 @@ class TestNetworkTraffic:
         """
         If a master (Raspberry Pi dashboard) is running and polling devices,
         packets should appear on the bus within a few seconds.
-        This is informational — it passes even with zero traffic (some
+        This is informational - it passes even with zero traffic (some
         deployments only have traffic when commands are sent).
         """
         traffic = await wait_for_any_traffic(control_net, timeout=3.0)
         if not traffic:
             pytest.skip(
-                "No spontaneous bus traffic observed in 3 s — "
+                "No spontaneous bus traffic observed in 3 s - "
                 "master may not be polling. Continuing with command-driven tests."
             )
         # All received items should parse as valid DCN packets

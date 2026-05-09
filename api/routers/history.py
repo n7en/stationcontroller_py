@@ -1,4 +1,4 @@
-"""GET /api/history/sensors and /api/history/devices — telemetry query endpoints."""
+﻿"""GET /api/history/sensors and /api/history/devices - telemetry query endpoints."""
 from __future__ import annotations
 
 import time

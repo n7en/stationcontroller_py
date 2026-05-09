@@ -1,4 +1,4 @@
-"""Tests for automation/power_map.py."""
+﻿"""Tests for automation/power_map.py."""
 import pytest
 from automation.power_map import (
     IdentityPowerMap,
@@ -27,7 +27,7 @@ class TestLinearPowerMap:
 
     def test_positive_gain_amplifies(self):
         m = LinearPowerMap(gain_db=10.0)
-        # 10 dB gain → ratio = 10×
+        # 10 dB gain -> ratio = 10×
         assert m.forward(100.0) == pytest.approx(1000.0)
 
     def test_negative_gain_attenuates(self):
@@ -43,7 +43,7 @@ class TestLinearPowerMap:
         assert m.inverse(m.forward(5.0)) == pytest.approx(5.0, rel=1e-6)
 
     def test_inverse_drive_from_output(self):
-        # 20 dB gain → 100× ratio; want 600 W out, need 6 W drive
+        # 20 dB gain -> 100× ratio; want 600 W out, need 6 W drive
         m = LinearPowerMap(gain_db=20.0)
         assert m.inverse(600.0) == pytest.approx(6.0, rel=0.01)
 

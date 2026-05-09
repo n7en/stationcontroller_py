@@ -1,4 +1,4 @@
-"""
+﻿"""
 User management CLI for StationController authentication.
 
 Usage:
@@ -60,7 +60,7 @@ def _hash(plain: str) -> str:
 
 def cmd_init() -> None:
     if CONFIG_PATH.exists():
-        print(f"Config already exists at {CONFIG_PATH} — not overwriting.")
+        print(f"Config already exists at {CONFIG_PATH} - not overwriting.")
         print("Delete it first if you want to re-initialize.")
         return
     cfg = _DEFAULTS.copy()
@@ -96,7 +96,7 @@ def cmd_add(username: str) -> None:
     cfg = _load()
     if not cfg:
         cfg = {"auth": dict(_DEFAULTS["auth"])}
-        print(f"No config found — creating {CONFIG_PATH} with defaults.")
+        print(f"No config found - creating {CONFIG_PATH} with defaults.")
 
     auth = cfg.setdefault("auth", {})
     users = auth.setdefault("users", {})

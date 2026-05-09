@@ -1,8 +1,8 @@
-"""
-GET  /api/dashboards        — list all dashboard configs
-GET  /api/dashboards/{id}   — get one dashboard config
-PUT  /api/dashboards/{id}   — save dashboard config (JSON body)
-POST /api/dashboards        — create new dashboard
+﻿"""
+GET  /api/dashboards        - list all dashboard configs
+GET  /api/dashboards/{id}   - get one dashboard config
+PUT  /api/dashboards/{id}   - save dashboard config (JSON body)
+POST /api/dashboards        - create new dashboard
 """
 from __future__ import annotations
 

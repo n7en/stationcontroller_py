@@ -1,15 +1,15 @@
-"""
+﻿"""
 Trigger hierarchy for the automation engine.
 
 Each trigger watches for a specific *transition* event and fires once when
-that transition occurs.  Triggers are stateful — they track previous values
+that transition occurs.  Triggers are stateful - they track previous values
 so they can detect crossings.
 
 Trigger.update() is called by the engine on every state change.  It returns
 TriggerData when the trigger fires, None otherwise.  The first call
 establishes a baseline and never fires, matching Home Assistant behaviour.
 
-ManualTrigger never fires from update() — it exists solely so the engine's
+ManualTrigger never fires from update() - it exists solely so the engine's
 trigger() method can force-fire an automation for testing.
 """
 from __future__ import annotations
@@ -66,7 +66,7 @@ class SensorAboveTrigger(Trigger):
     """
     Fires when sensor value rises above threshold (crosses from <= to >).
 
-    Optional for_seconds — the sensor must stay continuously above threshold
+    Optional for_seconds - the sensor must stay continuously above threshold
     for this many seconds before the trigger fires.  Useful for ignoring
     brief spikes (e.g. SWR during auto-tuner cycles).  Default 0 fires
     immediately on crossing, matching the original behaviour.
@@ -96,7 +96,7 @@ class SensorAboveTrigger(Trigger):
         self._was_above = is_above
 
         if prev is _UNSET:
-            return None  # baseline — never fire on first call
+            return None  # baseline - never fire on first call
 
         if not is_above:
             self._above_since = None
@@ -105,7 +105,7 @@ class SensorAboveTrigger(Trigger):
 
         # Sensor is above threshold
         if prev is False:
-            self._above_since = time.time()  # fresh crossing — start timer
+            self._above_since = time.time()  # fresh crossing - start timer
 
         if self._above_since is None or self._fired_this_period:
             return None
@@ -137,7 +137,7 @@ class SensorBelowTrigger(Trigger):
     """
     Fires when sensor value falls below threshold (crosses from >= to <).
 
-    Optional for_seconds — the sensor must stay continuously below threshold
+    Optional for_seconds - the sensor must stay continuously below threshold
     for this many seconds before the trigger fires.  Default 0 fires
     immediately on crossing.
     """
@@ -401,7 +401,7 @@ class TimeTrigger(Trigger):
     (three-letter abbreviations: "mon", "tue", "wed", "thu", "fri", "sat", "sun").
 
     The engine must be called at least once per minute near the scheduled time
-    for the trigger to fire reliably — use a periodic background task alongside
+    for the trigger to fire reliably - use a periodic background task alongside
     normal event-driven calls.
     """
 
@@ -434,7 +434,7 @@ class TimeTrigger(Trigger):
 
 class ManualTrigger(Trigger):
     """
-    Never fires from update() — it only activates via engine.trigger().
+    Never fires from update() - it only activates via engine.trigger().
 
     Including this in an automation's trigger list documents that the
     automation supports manual testing.  It has no effect on normal operation.

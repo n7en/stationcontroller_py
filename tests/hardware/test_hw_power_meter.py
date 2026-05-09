@@ -1,14 +1,14 @@
-"""
+﻿"""
 RF Watt Meter (#335) hardware tests.
 
 Tests fall into two groups:
 
-  TestWattMeterControlNetwork — query/response over the 9600-baud control
+  TestWattMeterControlNetwork - query/response over the 9600-baud control
     network.  Uses the WattMeter device module: the fixture attaches it to
     the network so its state is populated by the module when each STATE
     response arrives.
 
-  TestHighSpeedPowerNetwork — streaming packets on the 115200-baud power
+  TestHighSpeedPowerNetwork - streaming packets on the 115200-baud power
     network.  Verifies traffic rate and that the WattMeter module correctly
     populates its state from streamed packets.
 
@@ -90,7 +90,7 @@ class TestWattMeterControlNetwork:
         fwd = watt_meter.state.forward_power_w or 0.0
         ref = watt_meter.state.reflected_power_w or 0.0
         if fwd == 0.0:
-            pytest.skip("Forward power is 0 W — transmitter not active")
+            pytest.skip("Forward power is 0 W - transmitter not active")
         assert ref <= fwd, (
             f"Reflected ({ref:.2f} W) > Forward ({fwd:.2f} W)"
         )
@@ -110,10 +110,10 @@ class TestWattMeterControlNetwork:
         await query(control_net, wm_cfg["address"], "STATE")
         fwd = watt_meter.state.forward_power_w or 0.0
         if fwd == 0.0:
-            pytest.skip("Transmitter not active — SWR not meaningful at idle")
+            pytest.skip("Transmitter not active - SWR not meaningful at idle")
         swr = watt_meter.state.swr
         assert swr is not None
-        assert swr >= 1.0, f"SWR {swr:.3f} < 1.0 — impossible value"
+        assert swr >= 1.0, f"SWR {swr:.3f} < 1.0 - impossible value"
         assert swr < 100.0, f"SWR {swr:.3f} implausibly high"
 
     async def test_rf_metrics_published_to_registry(
@@ -139,7 +139,7 @@ class TestWattMeterControlNetwork:
         fwd2 = watt_meter.state.forward_power_w or 0.0
 
         if fwd1 > 0 or fwd2 > 0:
-            pytest.skip("TX active — consecutive readings may differ")
+            pytest.skip("TX active - consecutive readings may differ")
 
         assert abs(fwd1 - fwd2) < 0.1, (
             f"Idle forward power readings differ: {fwd1:.3f} W vs {fwd2:.3f} W"
@@ -168,7 +168,7 @@ class TestHighSpeedPowerNetwork:
         elapsed = time.monotonic() - start
         received = len(power_net._hw_received) - start_count
         if received == 0:
-            pytest.skip("No packets on power network — skipping rate check")
+            pytest.skip("No packets on power network - skipping rate check")
         rate = received / elapsed
         assert rate > 5.0, (
             f"Expected >5 packets/s on 115200-baud network, got {rate:.1f}/s"
@@ -197,7 +197,7 @@ class TestHighSpeedPowerNetwork:
         await asyncio.sleep(1.5)
         fwd = watt_meter_hf.state.forward_power_w or 0.0
         if fwd == 0.0:
-            pytest.skip("Transmitter not active — SWR not meaningful")
+            pytest.skip("Transmitter not active - SWR not meaningful")
         swr = watt_meter_hf.state.swr
         assert swr is not None
         assert swr >= 1.0

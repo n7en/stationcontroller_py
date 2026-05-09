@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for the HA-style automation engine:
   automation/automation.py, automation/engine.py, automation/config.py
 """
@@ -136,7 +136,7 @@ class TestEngineManagement:
 
 
 # ---------------------------------------------------------------------------
-# process() — trigger-driven execution
+# process() - trigger-driven execution
 # ---------------------------------------------------------------------------
 
 class TestEngineProcess:
@@ -171,7 +171,7 @@ class TestEngineProcess:
 
         await engine.process(ctx_low)
         await engine.process(ctx_high)   # fires
-        await engine.process(ctx_high)   # stays high — should NOT fire again
+        await engine.process(ctx_high)   # stays high - should NOT fire again
         assert len(called) == 1
 
     async def test_conditions_block_action(self):
@@ -267,7 +267,7 @@ class TestEngineProcess:
 
 
 # ---------------------------------------------------------------------------
-# engine.trigger() — manual testing
+# engine.trigger() - manual testing
 # ---------------------------------------------------------------------------
 
 class TestManualTrigger:
@@ -303,7 +303,7 @@ class TestManualTrigger:
         assert called == [1]
 
     async def test_manual_trigger_condition_with_real_state(self):
-        """Conditions check live context — ptt_active blocks when PTT is off."""
+        """Conditions check live context - ptt_active blocks when PTT is off."""
         called = []
         action = MagicMock(); action.execute = AsyncMock(side_effect=lambda ctx: called.append(1))
         engine = AutomationEngine()
@@ -377,7 +377,7 @@ class TestExecutionModes:
 
         assert run_count[0] == 1  # first execution started
 
-        # Second trigger — "a" is in _executing, mode=SINGLE → skip.
+        # Second trigger - "a" is in _executing, mode=SINGLE -> skip.
         ran2 = await engine.trigger("a", _ctx())
         assert ran2 is False
 

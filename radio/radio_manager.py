@@ -1,5 +1,5 @@
-"""
-RadioManager — orchestrates multiple RadioInterface instances.
+﻿"""
+RadioManager - orchestrates multiple RadioInterface instances.
 """
 from __future__ import annotations
 
@@ -101,7 +101,7 @@ class RadioManager:
             backend_cls = _BACKEND_REGISTRY.get(backend_type)
             if backend_cls is None:
                 log.error(
-                    "Unknown backend '%s' for radio '%s' — skipping (available: %s)",
+                    "Unknown backend '%s' for radio '%s' - skipping (available: %s)",
                     backend_type, name, list(_BACKEND_REGISTRY),
                 )
                 raise ValueError(

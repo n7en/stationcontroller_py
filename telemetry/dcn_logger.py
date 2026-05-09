@@ -1,5 +1,5 @@
-"""
-DCNMessageLogger — logs every received and transmitted DCN packet to the database.
+﻿"""
+DCNMessageLogger - logs every received and transmitted DCN packet to the database.
 
 Attach to a DCNNetwork at startup:
 

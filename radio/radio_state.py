@@ -1,5 +1,5 @@
-"""
-RadioState — snapshot of a single radio's operating parameters.
+﻿"""
+RadioState - snapshot of a single radio's operating parameters.
 
 Fields use SI units throughout (frequency in Hz, bandwidth in Hz).
 """

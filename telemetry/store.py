@@ -1,5 +1,5 @@
-"""
-TelemetryStore — async write and query API for the telemetry database.
+﻿"""
+TelemetryStore - async write and query API for the telemetry database.
 
 All public methods are async and safe to call from asyncio coroutines.
 The store manages its own engine and session factory; call open() / close()

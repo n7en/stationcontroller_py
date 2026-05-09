@@ -1,4 +1,4 @@
-"""Tests for sensors/sensor_registry.py."""
+﻿"""Tests for sensors/sensor_registry.py."""
 import asyncio
 import time
 import pytest
@@ -135,7 +135,7 @@ class TestSnapshot:
 
 
 # ---------------------------------------------------------------------------
-# Subscriptions — sync callbacks
+# Subscriptions - sync callbacks
 # ---------------------------------------------------------------------------
 
 class TestSyncCallbacks:
@@ -200,7 +200,7 @@ class TestSyncCallbacks:
 
 
 # ---------------------------------------------------------------------------
-# Subscriptions — async callbacks
+# Subscriptions - async callbacks
 # ---------------------------------------------------------------------------
 
 class TestAsyncCallbacks:

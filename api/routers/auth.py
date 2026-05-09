@@ -1,6 +1,6 @@
-"""POST /api/auth/login  — validate credentials, set JWT cookie.
-POST /api/auth/logout — revoke token, clear cookie.
-GET  /api/auth/me     — return current auth state (safe to call unauthenticated).
+﻿"""POST /api/auth/login  - validate credentials, set JWT cookie.
+POST /api/auth/logout - revoke token, clear cookie.
+GET  /api/auth/me     - return current auth state (safe to call unauthenticated).
 """
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ async def login(body: LoginBody, request: Request, response: Response) -> dict:
     reload_if_changed()  # pick up user/config changes without a restart
     users  = _users()
     user   = users.get(body.username)
-    # Always call verify_password — even for unknown users — to prevent
+    # Always call verify_password - even for unknown users - to prevent
     # timing-based username enumeration.
     hashed = user.get("password_hash", _DUMMY_HASH) if isinstance(user, dict) else _DUMMY_HASH
     valid  = bool(user) and verify_password(body.password, hashed)

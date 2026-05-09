@@ -1,4 +1,4 @@
-"""
+﻿"""
 DCN GPIO Module (#321) device module.
 
 Subscribes to UPDATE,GPIO1 packets from the DCN network, parses all
@@ -78,10 +78,10 @@ class GPIOModule:
     under keys prefixed with the instance name.
 
     Published sensor names (with name="gpio"):
-        gpio_relay_0 … _7    — individual relay states (0.0 or 1.0)
-        gpio_input_0 … _3    — individual digital inputs (0.0 or 1.0)
-        gpio_voltmeter_0 … _3 — voltmeter readings in volts
-        gpio_temp_0_f, _1_f   — temperature in Fahrenheit
+        gpio_relay_0 ... _7    - individual relay states (0.0 or 1.0)
+        gpio_input_0 ... _3    - individual digital inputs (0.0 or 1.0)
+        gpio_voltmeter_0 ... _3 - voltmeter readings in volts
+        gpio_temp_0_f, _1_f   - temperature in Fahrenheit
 
     Usage::
 

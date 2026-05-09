@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for radio/radio_interface.py.
 
 A FakeBackend implements RadioBackend with in-memory state so no TCP
@@ -175,7 +175,7 @@ class TestLifecycle:
 
 
 # ---------------------------------------------------------------------------
-# Poll loop — state updates
+# Poll loop - state updates
 # ---------------------------------------------------------------------------
 
 class TestPollLoop:
@@ -221,7 +221,7 @@ class TestPollLoop:
         async with iface:
             await asyncio.sleep(0.15)   # initial poll fires connected=True change
             snapshot = len(changes)
-            await asyncio.sleep(0.15)   # nothing changes — no more callbacks
+            await asyncio.sleep(0.15)   # nothing changes - no more callbacks
             assert len(changes) == snapshot
 
     async def test_async_callback_is_awaited(self):
@@ -255,7 +255,7 @@ class TestPollLoop:
 
 
 # ---------------------------------------------------------------------------
-# Poll loop — connection loss and reconnect
+# Poll loop - connection loss and reconnect
 # ---------------------------------------------------------------------------
 
 class TestReconnect:
@@ -280,7 +280,7 @@ class TestReconnect:
         )
         async with iface:
             b.fail_once = True
-            await asyncio.sleep(0.5)   # time for: fail → reconnect → next poll
+            await asyncio.sleep(0.5)   # time for: fail -> reconnect -> next poll
             assert iface.state.connected is True
 
     async def test_reconnect_calls_backend_connect_again(self):

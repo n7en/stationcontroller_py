@@ -1,9 +1,9 @@
-"""
+﻿"""
 Simulated rigctld daemon for hardware-free radio testing.
 
 SimRigctld is an async TCP server that speaks the rigctld extended protocol.
 The app's rigctld backend connects to it exactly as it would a real rigctld
-process — no changes to the app or radio config needed beyond pointing host/port
+process - no changes to the app or radio config needed beyond pointing host/port
 at the simulator.
 
 Integrated into DCNSimulator via the radio.rigctld section of sim_config.yaml.

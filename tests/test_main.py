@@ -1,4 +1,4 @@
-"""Tests for main.py startup utilities and the full startup sequence."""
+﻿"""Tests for main.py startup utilities and the full startup sequence."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -130,7 +130,7 @@ class TestMainStartup:
 
     @pytest.fixture
     def no_config(self, tmp_path):
-        """All config paths point to nonexistent tmp files — no hardware."""
+        """All config paths point to nonexistent tmp files - no hardware."""
         originals = {}
         for attr in ("COMMS_CFG", "RADIO_CFG", "AUTOMATION_CFG", "TELEMETRY_CFG", "LABELS_CFG"):
             originals[attr] = getattr(m, attr)

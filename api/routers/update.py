@@ -1,4 +1,4 @@
-"""Update-check endpoints — reads GitHub releases and compares against VERSION."""
+﻿"""Update-check endpoints - reads GitHub releases and compares against VERSION."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -74,7 +74,7 @@ async def _do_check() -> dict:
         return {
             "configured": False,
             "current_version": current,
-            "error": "Invalid GitHub URL — expected https://github.com/owner/repo",
+            "error": "Invalid GitHub URL - expected https://github.com/owner/repo",
         }
 
     api_url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
@@ -109,7 +109,7 @@ async def _do_check() -> dict:
 
     except httpx.TimeoutException:
         return {"configured": True, "current_version": current,
-                "error": "Request timed out — check your internet connection."}
+                "error": "Request timed out - check your internet connection."}
     except httpx.HTTPStatusError as exc:
         return {"configured": True, "current_version": current,
                 "error": f"GitHub returned HTTP {exc.response.status_code}."}

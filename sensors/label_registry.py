@@ -1,5 +1,5 @@
-"""
-LabelRegistry — friendly name mappings for hardware sensor keys.
+﻿"""
+LabelRegistry - friendly name mappings for hardware sensor keys.
 
 Maps hardware sensor keys (e.g. "coax_port_1") to user-facing labels
 (e.g. "20m Yagi") and back.  Labels are optional: hardware keys always
@@ -11,10 +11,10 @@ Typical usage::
     lr.set("coax_port_1", "20m Yagi")
     lr.set("coax_port_2", "40m Dipole")
 
-    lr.resolve("20m Yagi")      # → "coax_port_1"
-    lr.resolve("coax_port_1")   # → "coax_port_1"  (passthrough)
-    lr.label_for("coax_port_1") # → "20m Yagi"
-    lr.label_for("coax_port_3") # → "coax_port_3"  (no label → returns key)
+    lr.resolve("20m Yagi")      # -> "coax_port_1"
+    lr.resolve("coax_port_1")   # -> "coax_port_1"  (passthrough)
+    lr.label_for("coax_port_1") # -> "20m Yagi"
+    lr.label_for("coax_port_3") # -> "coax_port_3"  (no label -> returns key)
 
 Load from / save to YAML::
 
@@ -34,8 +34,8 @@ class LabelRegistry:
     """Bidirectional map between hardware sensor keys and friendly display names."""
 
     def __init__(self) -> None:
-        self._by_key: dict[str, str] = {}    # hardware_key → label
-        self._by_label: dict[str, str] = {}  # label → hardware_key
+        self._by_key: dict[str, str] = {}    # hardware_key -> label
+        self._by_label: dict[str, str] = {}  # label -> hardware_key
 
     # ------------------------------------------------------------------
     # Mutation
@@ -82,7 +82,7 @@ class LabelRegistry:
         return self._by_label.get(label)
 
     def all(self) -> dict[str, str]:
-        """Return a copy of the full hardware_key → label mapping."""
+        """Return a copy of the full hardware_key -> label mapping."""
         return dict(self._by_key)
 
     def __len__(self) -> int:

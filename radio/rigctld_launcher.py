@@ -1,5 +1,5 @@
-"""
-RigctldLauncher — manages a rigctld subprocess.
+﻿"""
+RigctldLauncher - manages a rigctld subprocess.
 
 Finds a free TCP port (or uses a fixed one), spawns rigctld with the
 specified rig model and serial port, waits until the port accepts
@@ -36,7 +36,7 @@ class RigctldLauncher:
     Manages one rigctld process.
 
     Attributes:
-        port  — the resolved TCP port (set at construction; read after __init__)
+        port  - the resolved TCP port (set at construction; read after __init__)
     """
 
     def __init__(
@@ -146,7 +146,7 @@ class RigctldLauncher:
         try:
             await asyncio.wait_for(self._proc.wait(), timeout=5.0)
         except asyncio.TimeoutError:
-            logger.warning("rigctld (pid %d) did not exit — killing", self._proc.pid)
+            logger.warning("rigctld (pid %d) did not exit - killing", self._proc.pid)
             self._proc.kill()
             await self._proc.wait()
         self._proc = None
@@ -157,7 +157,7 @@ class RigctldLauncher:
         return self._proc is not None and self._proc.returncode is None
 
     # ------------------------------------------------------------------
-    # PID-file helpers — survive app restarts on the same serial port
+    # PID-file helpers - survive app restarts on the same serial port
     # ------------------------------------------------------------------
 
     def _write_pid(self, pid: int) -> None:

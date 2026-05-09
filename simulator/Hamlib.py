@@ -1,8 +1,8 @@
-"""
+﻿"""
 Drop-in fake Hamlib module for hardware-free testing of the hamlib_direct
 radio backend.
 
-Activation — add simulator/ to the front of PYTHONPATH before starting
+Activation - add simulator/ to the front of PYTHONPATH before starting
 the app so this file shadows the real Hamlib library:
 
     # Linux / macOS
@@ -16,7 +16,7 @@ through the normal set_freq / set_mode / set_ptt calls, and get_* calls
 return whatever was last set.  Signal-strength readings include a small
 noise term so the UI S-meter looks live.
 
-This shim is intentionally self-contained — it has no dependency on the
+This shim is intentionally self-contained - it has no dependency on the
 rest of the simulator package so it can be used without the MQTT stack.
 """
 
@@ -169,7 +169,7 @@ class _RigState:
 
 
 # ---------------------------------------------------------------------------
-# Rig — the main class the hamlib_direct backend instantiates
+# Rig - the main class the hamlib_direct backend instantiates
 # ---------------------------------------------------------------------------
 
 class Rig:

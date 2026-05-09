@@ -1,4 +1,4 @@
-"""Tests for sensors/label_registry.py and SensorRegistry label integration."""
+﻿"""Tests for sensors/label_registry.py and SensorRegistry label integration."""
 import io
 import pytest
 import yaml
@@ -8,7 +8,7 @@ from sensors.sensor_registry import SensorRegistry
 
 
 # ---------------------------------------------------------------------------
-# LabelRegistry — basic operations
+# LabelRegistry - basic operations
 # ---------------------------------------------------------------------------
 
 class TestLabelRegistryBasics:
@@ -71,7 +71,7 @@ class TestLabelRegistryBasics:
 
 
 # ---------------------------------------------------------------------------
-# LabelRegistry — mutation edge cases
+# LabelRegistry - mutation edge cases
 # ---------------------------------------------------------------------------
 
 class TestLabelRegistryMutation:
@@ -114,7 +114,7 @@ class TestLabelRegistryMutation:
 
 
 # ---------------------------------------------------------------------------
-# LabelRegistry — YAML persistence
+# LabelRegistry - YAML persistence
 # ---------------------------------------------------------------------------
 
 class TestLabelRegistryYaml:
@@ -168,7 +168,7 @@ class TestLabelRegistryYaml:
 
 
 # ---------------------------------------------------------------------------
-# SensorRegistry — label integration
+# SensorRegistry - label integration
 # ---------------------------------------------------------------------------
 
 class TestSensorRegistryLabelIntegration:
@@ -230,7 +230,7 @@ class TestSensorRegistryLabelIntegration:
         reg, _ = self._make_reg()
         reg.publish("watt_meter_swr", 1.5, source="test")
         s = reg.snapshot_labeled()
-        assert "watt_meter_swr" in s  # no label → key unchanged
+        assert "watt_meter_swr" in s  # no label -> key unchanged
 
     def test_snapshot_labeled_without_labels_matches_snapshot(self):
         reg = SensorRegistry()
@@ -241,7 +241,7 @@ class TestSensorRegistryLabelIntegration:
         reg = SensorRegistry()
         reg.publish("coax_port_1", 1.0)
         assert reg.value("coax_port_1") == pytest.approx(1.0)
-        assert reg.value("20m Yagi") == pytest.approx(0.0)  # unknown → default
+        assert reg.value("20m Yagi") == pytest.approx(0.0)  # unknown -> default
 
     def test_detached_label_resolves_to_itself(self):
         reg, lr = self._make_reg()

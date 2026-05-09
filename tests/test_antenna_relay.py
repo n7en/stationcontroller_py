@@ -1,4 +1,4 @@
-"""Tests for devices/antenna_relay.py — #361 Antenna Relay Control Module."""
+﻿"""Tests for devices/antenna_relay.py - #361 Antenna Relay Control Module."""
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 

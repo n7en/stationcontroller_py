@@ -1,4 +1,4 @@
-"""Tests for automation/condition.py and automation/context.py."""
+﻿"""Tests for automation/condition.py and automation/context.py."""
 import pytest
 from unittest.mock import patch
 
@@ -285,9 +285,9 @@ class TestPTTDurationConditions:
             mock_time.time.return_value = 100.0
             c.evaluate(_ctx(ptt=True))
             mock_time.time.return_value = 115.0
-            c.evaluate(_ctx(ptt=False))   # PTT off — clears timer
+            c.evaluate(_ctx(ptt=False))   # PTT off - clears timer
             mock_time.time.return_value = 116.0
-            c.evaluate(_ctx(ptt=True))   # PTT on again — timer restarts from 116
+            c.evaluate(_ctx(ptt=True))   # PTT on again - timer restarts from 116
             mock_time.time.return_value = 118.0  # only 2s since restart
             result = c.evaluate(_ctx(ptt=True))
         assert result is False
@@ -337,7 +337,7 @@ class TestPTTDurationConditions:
             mock_time.time.return_value = 170.0
             c.evaluate(_ctx(ptt=False))   # reset
             mock_time.time.return_value = 171.0
-            result = c.evaluate(_ctx(ptt=True))   # fresh start — only 0s elapsed
+            result = c.evaluate(_ctx(ptt=True))   # fresh start - only 0s elapsed
         assert result is True
 
     def test_duration_above_from_config(self):

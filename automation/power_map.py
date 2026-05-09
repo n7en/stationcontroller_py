@@ -1,10 +1,10 @@
-"""
+﻿"""
 Power maps: translate between radio drive power and antenna/output power.
 
 Three implementations:
-  IdentityPowerMap   — 1:1, no gain or loss
-  LinearPowerMap     — fixed dB gain/loss (e.g. amplifier with known gain)
-  LookupPowerMap     — user-measured [(radio_w, antenna_w)] points, linearly
+  IdentityPowerMap   - 1:1, no gain or loss
+  LinearPowerMap     - fixed dB gain/loss (e.g. amplifier with known gain)
+  LookupPowerMap     - user-measured [(radio_w, antenna_w)] points, linearly
                        interpolated; extrapolates at boundaries
 
 All maps expose forward(radio_w) -> antenna_w and inverse(antenna_w) -> radio_w.
@@ -37,8 +37,8 @@ class LinearPowerMap(PowerMap):
     """
     Fixed gain expressed in dB.
 
-    gain_db > 0 → amplification (e.g. amp with 20 dB gain)
-    gain_db < 0 → attenuation/loss (e.g. long feedline)
+    gain_db > 0 -> amplification (e.g. amp with 20 dB gain)
+    gain_db < 0 -> attenuation/loss (e.g. long feedline)
     """
 
     def __init__(self, gain_db: float) -> None:

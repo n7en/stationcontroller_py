@@ -1,4 +1,4 @@
-"""
+﻿"""
 RS-485 serial transport.
 
 Each instance owns one serial port at a configurable baud rate.
@@ -63,7 +63,7 @@ class RS485Transport(DCNTransport):
             )
         else:
             logger.warning(
-                "RS-485 '%s' failed to open %s — will retry in background",
+                "RS-485 '%s' failed to open %s - will retry in background",
                 self.name, self._config["port"],
             )
 
@@ -79,7 +79,7 @@ class RS485Transport(DCNTransport):
 
     async def send(self, packet: DCNPacket) -> None:
         if not self._connected or not self._serial or not self._serial.is_open:
-            logger.warning("RS-485 '%s': send skipped — not connected", self.name)
+            logger.warning("RS-485 '%s': send skipped - not connected", self.name)
             return
         try:
             self._serial.write(packet.encode())
@@ -125,7 +125,7 @@ class RS485Transport(DCNTransport):
                     self._buffer += data.decode("ascii", errors="replace")
                     self._process_buffer()
             except serial.SerialException as exc:
-                logger.error("RS-485 '%s' read error: %s — will reconnect", self.name, exc)
+                logger.error("RS-485 '%s' read error: %s - will reconnect", self.name, exc)
                 self._connected = False
                 try:
                     self._serial.close()

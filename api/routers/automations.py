@@ -1,9 +1,9 @@
-"""
-GET  /api/automations         — list all automations + enabled state
-GET  /api/automations/config  — raw YAML of the automation config file
-PUT  /api/automations/config  — save and reload automation config
-POST /api/automations/{name}/trigger — manually fire an automation
-POST /api/automations/{name}/enable  — enable / disable
+﻿"""
+GET  /api/automations         - list all automations + enabled state
+GET  /api/automations/config  - raw YAML of the automation config file
+PUT  /api/automations/config  - save and reload automation config
+POST /api/automations/{name}/trigger - manually fire an automation
+POST /api/automations/{name}/enable  - enable / disable
 """
 from __future__ import annotations
 

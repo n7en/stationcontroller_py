@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for comms/transport/rs485.py.
 Serial port is mocked; threading is verified via asyncio event scheduling.
 """
@@ -109,7 +109,7 @@ class TestSend:
     async def test_send_not_connected_does_not_raise(self):
         t = _make()
         pkt = build_packet("01", "STATE")
-        await t.send(pkt)  # not connected — should warn and return cleanly
+        await t.send(pkt)  # not connected - should warn and return cleanly
 
     async def test_send_serial_exception_does_not_raise(self):
         patcher, _, mock_port = _mock_serial()
@@ -124,7 +124,7 @@ class TestSend:
 
 
 # ---------------------------------------------------------------------------
-# _process_buffer — packet extraction and dispatch
+# _process_buffer - packet extraction and dispatch
 # ---------------------------------------------------------------------------
 
 class TestProcessBuffer:

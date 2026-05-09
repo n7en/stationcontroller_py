@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for comms/transport/nodered_tcp.py.
 Uses real asyncio TCP on 127.0.0.1 with OS-assigned ports (port=0).
 No external processes or hardware required.
@@ -11,7 +11,7 @@ from comms.dcn_packet import build_packet, parse_packet
 
 
 def _make():
-    # port=0 → OS picks a free port
+    # port=0 -> OS picks a free port
     return NodeRedTCPTransport("test", {"host": "127.0.0.1", "port": 0})
 
 
@@ -45,7 +45,7 @@ class TestLifecycle:
         t = _make()
         await t.connect()
         try:
-            await t.send(build_packet("01", "STATE"))  # no client — should warn only
+            await t.send(build_packet("01", "STATE"))  # no client - should warn only
         finally:
             await t.disconnect()
 

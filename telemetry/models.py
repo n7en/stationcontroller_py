@@ -1,11 +1,11 @@
-"""
+﻿"""
 SQLAlchemy ORM models for the telemetry database.
 
 Four tables:
-  sensor_readings   — continuous sensor history
-  device_events     — relay toggles, radio state changes, device online/offline
-  automation_events — rule fire/clear transitions (not every eval cycle)
-  application_log   — Python logging sink
+  sensor_readings   - continuous sensor history
+  device_events     - relay toggles, radio state changes, device online/offline
+  automation_events - rule fire/clear transitions (not every eval cycle)
+  application_log   - Python logging sink
 """
 from __future__ import annotations
 

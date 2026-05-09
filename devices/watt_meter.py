@@ -1,11 +1,11 @@
-"""
+﻿"""
 DCN Watt Meter (#335) device module.
 
 Subscribes to UPDATE,WM1 packets from the DCN network, computes the full
 set of RF power metrics from the raw forward/reflected power readings, and
 publishes everything to a SensorRegistry.
 
-RF metric ownership lives here — the automation engine and any other consumer
+RF metric ownership lives here - the automation engine and any other consumer
 reads named values from the registry and has no knowledge of the formulas.
 
 DCN packet format (UPDATE,WM1):
@@ -28,7 +28,7 @@ from sensors.sensor_registry import SensorRegistry
 
 
 # ---------------------------------------------------------------------------
-# RF metric calculations — public so other modules can reuse them
+# RF metric calculations - public so other modules can reuse them
 # ---------------------------------------------------------------------------
 
 def compute_rf_metrics(forward_w: float, reflected_w: float) -> dict:
@@ -36,10 +36,10 @@ def compute_rf_metrics(forward_w: float, reflected_w: float) -> dict:
     Compute derived RF power metrics from forward and reflected power.
 
     Returns a dict with keys:
-        swr                  — voltage standing wave ratio (1.0 = perfect match)
-        reflection_coefficient — magnitude of Γ (0.0–1.0)
-        return_loss_db       — return loss in dB (positive = loss)
-        mismatch_loss_db     — power lost to mismatch in dB
+        swr                  - voltage standing wave ratio (1.0 = perfect match)
+        reflection_coefficient - magnitude of Γ (0.0–1.0)
+        return_loss_db       - return loss in dB (positive = loss)
+        mismatch_loss_db     - power lost to mismatch in dB
 
     All values are None when forward_w <= 0 (transmitter off / no signal).
     reflected_w is clamped to [0, forward_w] before computation to guard
@@ -53,7 +53,7 @@ def compute_rf_metrics(forward_w: float, reflected_w: float) -> dict:
             "mismatch_loss_db": None,
         }
 
-    # Clamp ratio to [0, 1) — reflected can never exceed forward physically
+    # Clamp ratio to [0, 1) - reflected can never exceed forward physically
     ratio = min(max(reflected_w / forward_w, 0.0), 0.9999)
     gamma = math.sqrt(ratio)
 

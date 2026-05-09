@@ -1,4 +1,4 @@
-"""
+﻿"""
 Action hierarchy for the automation engine.
 
 All actions implement execute(ctx) as a coroutine.
@@ -86,9 +86,9 @@ class SetRadioPower(Action):
     """
     Set the radio transmit power.
 
-    watts — desired output power in watts.
+    watts - desired output power in watts.
     ctx.radio_interface must be set and ctx.radio_max_power_w must be provided
-    so the engine can normalise watts → 0.0–1.0 for the backend.
+    so the engine can normalise watts -> 0.0–1.0 for the backend.
     """
 
     def __init__(self, watts: float) -> None:
@@ -144,7 +144,7 @@ class TuneRadio(Action):
     Set frequency and optionally mode in one step.
 
     Equivalent to SetFrequency followed by SetMode, but expressed as a single
-    config block — useful for automation rules like "tune to the 20m net freq".
+    config block - useful for automation rules like "tune to the 20m net freq".
     """
 
     def __init__(
@@ -176,9 +176,9 @@ class SetRelay(Action):
     """
     Send a relay command over the DCN control network.
 
-    relay_num  — 1-indexed relay number on the GPIO module
-    state      — 1 (on) or 0 (off)
-    dcn_address — target device DCN address string (e.g. "01")
+    relay_num  - 1-indexed relay number on the GPIO module
+    state      - 1 (on) or 0 (off)
+    dcn_address - target device DCN address string (e.g. "01")
 
     ctx.control_network must be a connected DCNNetwork.
     """

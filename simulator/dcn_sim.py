@@ -1,10 +1,10 @@
-"""
-DCN hardware simulator — publishes realistic device UPDATE packets over MQTT,
+﻿"""
+DCN hardware simulator - publishes realistic device UPDATE packets over MQTT,
 and responds to commands (relay set, coax select, etc.) exactly as firmware would.
 
 Packet format mirrors the nodered_mqtt transport:
-  topic_rx  — simulator PUBLISHES here  (Python receives these as device responses)
-  topic_tx  — simulator SUBSCRIBES here (Python sends commands here)
+  topic_rx  - simulator PUBLISHES here  (Python receives these as device responses)
+  topic_tx  - simulator SUBSCRIBES here (Python sends commands here)
 
 Run:  python -m simulator [config.yaml]  (default: simulator/sim_config.yaml)
 """
@@ -73,7 +73,7 @@ class _SimDevice:
 
 
 # ---------------------------------------------------------------------------
-# GPIO module (#321)  — relays, digital I/O, voltmeters, temps
+# GPIO module (#321)  - relays, digital I/O, voltmeters, temps
 # ---------------------------------------------------------------------------
 
 class SimGPIO(_SimDevice):
@@ -116,7 +116,7 @@ class SimGPIO(_SimDevice):
 
 
 # ---------------------------------------------------------------------------
-# Coax switch (#331 CX-1) — selects one of 4 antenna ports
+# Coax switch (#331 CX-1) - selects one of 4 antenna ports
 # ---------------------------------------------------------------------------
 
 class SimCoaxSwitch(_SimDevice):
@@ -138,7 +138,7 @@ class SimCoaxSwitch(_SimDevice):
 
 
 # ---------------------------------------------------------------------------
-# Watt meter (#351) — RF forward/reflected power at configurable rate
+# Watt meter (#351) - RF forward/reflected power at configurable rate
 # ---------------------------------------------------------------------------
 
 class SimWattMeter(_SimDevice):
@@ -167,7 +167,7 @@ class SimWattMeter(_SimDevice):
 
 
 # ---------------------------------------------------------------------------
-# VHF coax relay (#332 CX-2) — single SPDT relay
+# VHF coax relay (#332 CX-2) - single SPDT relay
 # ---------------------------------------------------------------------------
 
 class SimVHFRelay(_SimDevice):
@@ -189,7 +189,7 @@ class SimVHFRelay(_SimDevice):
 
 
 # ---------------------------------------------------------------------------
-# Antenna relay module (#361) — 8-relay bank
+# Antenna relay module (#361) - 8-relay bank
 # ---------------------------------------------------------------------------
 
 class SimAntennaRelay(_SimDevice):
@@ -276,7 +276,7 @@ class DCNSimulator:
         for dev_cfg in config.get("devices", []):
             cls = _DEVICE_CLASSES.get(dev_cfg.get("type", ""))
             if cls is None:
-                logger.warning("Unknown device type '%s' — skipped", dev_cfg.get("type"))
+                logger.warning("Unknown device type '%s' - skipped", dev_cfg.get("type"))
                 continue
             dev = cls(dev_cfg, self._master)
             self._devices[dev.address] = dev
@@ -364,7 +364,7 @@ class DCNSimulator:
         self._client.connect_async(self._broker, self._port, keepalive=60)
         self._client.loop_start()
 
-        logger.info("DCN simulator starting — %d device(s)", len(self._devices))
+        logger.info("DCN simulator starting - %d device(s)", len(self._devices))
         tasks = [
             asyncio.create_task(self._device_loop(dev), name=f"sim-{dev.address}")
             for dev in self._devices.values()
@@ -391,7 +391,7 @@ def main(argv: Optional[list] = None) -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="DCN hardware simulator — publishes device packets over MQTT",
+        description="DCN hardware simulator - publishes device packets over MQTT",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Example:\n  python -m simulator\n  python -m simulator simulator/sim_config.yaml -v",
     )

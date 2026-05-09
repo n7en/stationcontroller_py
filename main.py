@@ -1,5 +1,5 @@
-"""
-Station Controller — application entry point.
+﻿"""
+Station Controller - application entry point.
 
 Loads config, wires all hardware modules, opens the database,
 and starts the FastAPI/Uvicorn server on port 8080.
@@ -8,11 +8,11 @@ Usage:
     python main.py
 
 Config files (edit before first run):
-    config/comms_config.yaml      — DCN buses, transports, and device instances
-    config/radio_config.yaml      — radio backend (rigctld or hamlib)
-    config/automation_config.yaml — automation rules
-    config/telemetry_config.yaml  — SQLite path and recording settings
-    config/labels.yaml            — friendly sensor names (optional)
+    config/comms_config.yaml      - DCN buses, transports, and device instances
+    config/radio_config.yaml      - radio backend (rigctld or hamlib)
+    config/automation_config.yaml - automation rules
+    config/telemetry_config.yaml  - SQLite path and recording settings
+    config/labels.yaml            - friendly sensor names (optional)
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ import uvicorn
 import yaml
 
 # ---------------------------------------------------------------------------
-# Paths — resolve relative to this file so the app can be launched from any CWD
+# Paths - resolve relative to this file so the app can be launched from any CWD
 # ---------------------------------------------------------------------------
 
 BASE = Path(__file__).parent
@@ -49,7 +49,7 @@ TLS_KEY  = CFG / "certs" / "key.pem"
 
 def _ensure_default_configs() -> None:
     """
-    Copy <name>.yaml.example → <name>.yaml for any machine-specific config
+    Copy <name>.yaml.example -> <name>.yaml for any machine-specific config
     that is missing.  Runs before logging is configured so it uses print().
     """
     import shutil
@@ -76,8 +76,8 @@ def _configure_logging(cfg_path: Path) -> None:
     Configure the root logger from logging_config.yaml.
 
     Two handlers are always set up:
-      • StreamHandler (stdout) — level controlled by console_level
-      • RotatingFileHandler   — level controlled by file.level
+      • StreamHandler (stdout) - level controlled by console_level
+      • RotatingFileHandler   - level controlled by file.level
                                 CRITICAL is always captured (it exceeds any threshold)
 
     The root logger is set to DEBUG so each handler can filter independently.
@@ -158,7 +158,7 @@ log = logging.getLogger("main")
 
 
 # ---------------------------------------------------------------------------
-# Database migrations (sync — runs before the async loop)
+# Database migrations (sync - runs before the async loop)
 # ---------------------------------------------------------------------------
 
 def _run_migrations(db_url: str) -> None:
@@ -173,7 +173,7 @@ def _run_migrations(db_url: str) -> None:
     cfg = AlembicConfig(str(BASE / "alembic.ini"))
     cfg.set_main_option("script_location", str(BASE / "alembic"))
     cfg.set_main_option("sqlalchemy.url", sync_url)
-    log.info("Running database migrations…")
+    log.info("Running database migrations...")
     alembic_cmd.upgrade(cfg, "head")
 
 
@@ -188,7 +188,7 @@ def _read_db_url() -> str:
 
 
 # ---------------------------------------------------------------------------
-# TLS — self-signed certificate
+# TLS - self-signed certificate
 # ---------------------------------------------------------------------------
 
 def _ensure_tls_cert(cert_path: Path, key_path: Path) -> None:
@@ -311,10 +311,10 @@ async def main() -> None:
                 radio_state     = radio_interface.state
                 log.info("Primary radio: %s", primary)
         except Exception:
-            log.exception("Failed to load radio config — radio control disabled")
+            log.exception("Failed to load radio config - radio control disabled")
     else:
         log.warning(
-            "radio_config.yaml not found — radio control disabled.  "
+            "radio_config.yaml not found - radio control disabled.  "
             "Copy config/radio_config.yaml.example to config/radio_config.yaml and edit it."
         )
 
@@ -330,7 +330,7 @@ async def main() -> None:
             engine, band_registry = load_automation(AUTOMATION_CFG)
             log.info("Automation engine: %d rule(s)", len(engine.automations()))
         except Exception:
-            log.exception("Failed to load automation config — automations disabled")
+            log.exception("Failed to load automation config - automations disabled")
 
     # ── 6. Telemetry ─────────────────────────────────────────────────────
     from telemetry.config import load_telemetry
@@ -346,7 +346,7 @@ async def main() -> None:
                 dcn_logger.attach_all(networks)
             log.info("Telemetry store open")
         except Exception:
-            log.exception("Failed to open telemetry store — telemetry disabled")
+            log.exception("Failed to open telemetry store - telemetry disabled")
 
     # ── 7. AppState + FastAPI app ─────────────────────────────────────────
     from api.app  import create_app
@@ -378,7 +378,7 @@ async def main() -> None:
     # Control bus reference used by automation (single-bus for now).
     control_network = state.control_network
 
-    # Radio state changes → WS broadcast + automation engine (primary only)
+    # Radio state changes -> WS broadcast + automation engine (primary only)
     if radio_manager is not None:
         for _iface in radio_manager:
             _is_primary = (_iface is radio_interface)
@@ -399,7 +399,7 @@ async def main() -> None:
 
             _iface.on_state_change(_make_radio_handler())
 
-    # Sensor changes → automation engine
+    # Sensor changes -> automation engine
     if engine and band_registry:
         def _on_sensor(m) -> None:
             try:
@@ -420,7 +420,7 @@ async def main() -> None:
 
         sensor_registry.on_any(_on_sensor)
 
-    # DCN packets → live log stream
+    # DCN packets -> live log stream
     def _make_dcn_hooks(buf, bus_name):
         async def _rx(packet, transport):
             buf.append_dcn({
@@ -473,13 +473,13 @@ async def main() -> None:
     server = uvicorn.Server(config)
 
     log.info("=" * 55)
-    log.info("  Station Controller  →  https://localhost:8080")
+    log.info("  Station Controller  ->  https://localhost:8080")
     log.info("=" * 55)
 
     try:
         await server.serve()
     finally:
-        log.info("Shutting down…")
+        log.info("Shutting down...")
         if radio_manager is not None:
             await radio_manager.stop_all()
         for bus_name, net in networks.items():

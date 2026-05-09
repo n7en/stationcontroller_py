@@ -1,4 +1,4 @@
-"""
+﻿"""
 Node-RED TCP bridge transport.
 
 Python acts as a TCP server; the Node-RED flow connects as a TCP client.
@@ -45,7 +45,7 @@ class NodeRedTCPTransport(DCNTransport):
         )
         self._connected = True
         logger.info(
-            "TCP '%s' listening on %s:%d — waiting for Node-RED client",
+            "TCP '%s' listening on %s:%d - waiting for Node-RED client",
             self.name, self._host, self._port,
         )
 
@@ -65,7 +65,7 @@ class NodeRedTCPTransport(DCNTransport):
 
     async def send(self, packet: DCNPacket) -> None:
         if not self._writer:
-            logger.warning("TCP '%s': send skipped — no client connected", self.name)
+            logger.warning("TCP '%s': send skipped - no client connected", self.name)
             return
         try:
             self._writer.write(packet.encode())
@@ -97,7 +97,7 @@ class NodeRedTCPTransport(DCNTransport):
         self._writer = writer
 
         # Immediately send a single CR so Node-RED's tcp in fires and captures
-        # msg._session.  Without this, the serial→Python path silently drops
+        # msg._session.  Without this, the serial->Python path silently drops
         # packets until Python sends its first real command (which may never
         # happen for receive-only devices like sensors).
         try:

@@ -1,9 +1,9 @@
-"""
+﻿"""
 Load automations from a YAML config file.
 
 YAML structure (Home Assistant style):
 
-  bands:                      # optional — omit for built-in amateur registry
+  bands:                      # optional - omit for built-in amateur registry
     - name: "40m"
       start_hz: 7000000
       end_hz: 7300000
@@ -14,11 +14,11 @@ YAML structure (Home Assistant style):
       priority: 100
       description: "..."
       mode: single            # single | restart | queued | parallel
-      trigger:                # list — any trigger fires the automation
+      trigger:                # list - any trigger fires the automation
         - type: sensor_above
           sensor: watt_meter_swr
           threshold: 3.0
-      condition:              # list — ALL must pass (optional)
+      condition:              # list - ALL must pass (optional)
         - type: ptt_active
       action:
         type: log

@@ -1,4 +1,4 @@
-"""
+﻿"""
 FastAPI application factory.
 
 Usage (development):
@@ -67,7 +67,7 @@ def create_app(app_state: Optional[AppState] = None) -> FastAPI:
     Create and return the FastAPI app.
 
     Pass a populated AppState to wire live hardware singletons.
-    Called without arguments the app starts in standalone mode — API
+    Called without arguments the app starts in standalone mode - API
     endpoints work but return empty/offline responses (useful for
     frontend development).
     """
@@ -145,7 +145,7 @@ def create_app(app_state: Optional[AppState] = None) -> FastAPI:
     app.include_router(history.router)
     app.include_router(system.router)
 
-    # Serve built frontend — falls back gracefully if not yet built
+    # Serve built frontend - falls back gracefully if not yet built
     if UI_DIST.exists() and any(UI_DIST.iterdir()):
         app.mount("/", StaticFiles(directory=str(UI_DIST), html=True), name="ui")
 

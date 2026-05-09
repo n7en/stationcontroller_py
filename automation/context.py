@@ -1,5 +1,5 @@
-"""
-AutomationContext — unified snapshot passed to every condition and action.
+﻿"""
+AutomationContext - unified snapshot passed to every condition and action.
 
 Bundles radio state, the live sensor registry, and the band registry so
 conditions and actions have a single consistent view of the station.
@@ -28,7 +28,7 @@ class AutomationContext:
     radio_interface: Optional[Any] = field(default=None, repr=False)
     control_network: Optional[Any] = field(default=None, repr=False)
 
-    # Maximum radio output power in watts — used by SetRadioPower to convert
+    # Maximum radio output power in watts - used by SetRadioPower to convert
     # watts to the 0.0–1.0 normalized level the radio backend expects.
     radio_max_power_w: Optional[float] = None
 

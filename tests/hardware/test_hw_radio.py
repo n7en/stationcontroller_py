@@ -1,4 +1,4 @@
-"""
+﻿"""
 Hardware integration tests for radio control via rigctld.
 
 Prerequisites:
@@ -14,8 +14,8 @@ Example hardware_test_config.yaml radio section:
       rigctld_port: 4532
       response_timeout: 5.0
       poll_interval_s: 0.5
-      expected_min_freq_hz: 1_000_000       # 1 MHz — basic sanity bound
-      expected_max_freq_hz: 30_000_000      # 30 MHz — HF upper bound
+      expected_min_freq_hz: 1_000_000       # 1 MHz - basic sanity bound
+      expected_max_freq_hz: 30_000_000      # 30 MHz - HF upper bound
 
 CAUTION:
   - These tests never key the transmitter (PTT is never set to True).
@@ -118,7 +118,7 @@ class TestHwMode:
 
 
 # ---------------------------------------------------------------------------
-# PTT — read only (never transmit in automated tests)
+# PTT - read only (never transmit in automated tests)
 # ---------------------------------------------------------------------------
 
 class TestHwPtt:
@@ -126,7 +126,7 @@ class TestHwPtt:
     async def test_get_ptt_is_false_at_rest(self, radio_interface):
         ptt = await radio_interface.get_ptt()
         assert ptt is False, (
-            "Radio is transmitting at test start — aborting for safety"
+            "Radio is transmitting at test start - aborting for safety"
         )
 
 

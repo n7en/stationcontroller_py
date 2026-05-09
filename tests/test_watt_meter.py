@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for devices/watt_meter.py.
 
 Covers compute_rf_metrics(), WattMeter packet handling, registry publishing,
@@ -14,7 +14,7 @@ from sensors.sensor_registry import SensorRegistry
 
 
 # ---------------------------------------------------------------------------
-# compute_rf_metrics — pure function tests
+# compute_rf_metrics - pure function tests
 # ---------------------------------------------------------------------------
 
 class TestComputeRfMetrics:
@@ -37,8 +37,8 @@ class TestComputeRfMetrics:
         assert m["return_loss_db"] == float("inf")
 
     def test_known_swr_calculation(self):
-        # Gamma = 0.5 → SWR = (1+0.5)/(1-0.5) = 3.0
-        # Gamma = sqrt(Pr/Pf) = 0.5 → Pr/Pf = 0.25
+        # Gamma = 0.5 -> SWR = (1+0.5)/(1-0.5) = 3.0
+        # Gamma = sqrt(Pr/Pf) = 0.5 -> Pr/Pf = 0.25
         forward_w = 100.0
         reflected_w = 25.0
         m = compute_rf_metrics(forward_w, reflected_w)
@@ -51,8 +51,8 @@ class TestComputeRfMetrics:
         assert m2["swr"] > m1["swr"]
 
     def test_return_loss_decreases_with_more_reflected(self):
-        m1 = compute_rf_metrics(100.0, 1.0)    # low reflected → high return loss
-        m2 = compute_rf_metrics(100.0, 50.0)   # high reflected → low return loss
+        m1 = compute_rf_metrics(100.0, 1.0)    # low reflected -> high return loss
+        m2 = compute_rf_metrics(100.0, 50.0)   # high reflected -> low return loss
         assert m2["return_loss_db"] < m1["return_loss_db"]
 
     def test_return_loss_is_positive(self):

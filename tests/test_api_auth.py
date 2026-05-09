@@ -1,4 +1,4 @@
-"""
+﻿"""
 Security-focused tests for the authentication system.
 
 Coverage:
@@ -10,9 +10,9 @@ Coverage:
   - Cookie attributes (httpOnly, SameSite)
   - JWT tampering
   - Expired tokens
-  - Token revocation — logout prevents replay
+  - Token revocation - logout prevents replay
   - Protected routes require authentication
-  - Auth-disabled mode — all routes open
+  - Auth-disabled mode - all routes open
   - Injection characters in username / password
 """
 from __future__ import annotations
@@ -118,7 +118,7 @@ async def logged_in_client(auth_app):
 
 
 # ---------------------------------------------------------------------------
-# Login — happy path
+# Login - happy path
 # ---------------------------------------------------------------------------
 
 class TestLoginHappyPath:
@@ -177,7 +177,7 @@ class TestLoginHappyPath:
 
 
 # ---------------------------------------------------------------------------
-# Login — wrong / missing credentials
+# Login - wrong / missing credentials
 # ---------------------------------------------------------------------------
 
 class TestLoginRejection:
@@ -193,7 +193,7 @@ class TestLoginRejection:
         assert r.status_code == 401
 
     async def test_wrong_and_unknown_return_same_message(self, client):
-        """No user enumeration — both cases return identical error text."""
+        """No user enumeration - both cases return identical error text."""
         r_wrong   = await client.post("/api/auth/login",
                                       json={"username": "admin", "password": "wrong"})
         r_unknown = await client.post("/api/auth/login",
@@ -273,7 +273,7 @@ class TestRateLimiting:
         assert r.status_code == 429
 
     async def test_429_before_password_check(self, client):
-        """Rate limit fires before credentials are evaluated — correct password blocked too."""
+        """Rate limit fires before credentials are evaluated - correct password blocked too."""
         for _ in range(5):
             await client.post("/api/auth/login",
                               json={"username": "admin", "password": "wrong"})
@@ -321,7 +321,7 @@ class TestLogout:
                              json={"username": "admin", "password": "correct-horse"})
             assert r.status_code == 200
             token = r.cookies[auth_mod.COOKIE_NAME]
-            # Logout — adds jti to _revoked within the same _auth_cfg context
+            # Logout - adds jti to _revoked within the same _auth_cfg context
             await c.post("/api/auth/logout")
             # Replay the captured token (simulates attacker reusing a stolen cookie)
             c.cookies.set(auth_mod.COOKIE_NAME, token)
@@ -449,7 +449,7 @@ class TestProtectedRoutes:
         assert r.status_code == 200
 
     async def test_login_endpoint_is_not_protected(self, client):
-        """Login must be reachable before authentication — auth guard must not intercept it."""
+        """Login must be reachable before authentication - auth guard must not intercept it."""
         r = await client.post("/api/auth/login",
                               json={"username": "x", "password": "y"})
         # Auth guard says "Not authenticated"; login handler says "Invalid credentials".

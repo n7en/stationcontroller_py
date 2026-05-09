@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tests for the Python logic embedded in install.sh.
 
 Each helper function below is a faithful copy of the corresponding heredoc
@@ -24,7 +24,7 @@ def describe_port(dev: str, udev_props: dict) -> str:
     model  = udev_props.get("ID_MODEL", "")
     serial = udev_props.get("ID_SERIAL_SHORT", "")
     parts  = [p for p in [vendor, model] if p]
-    desc   = " — " + " ".join(parts) if parts else ""
+    desc   = " - " + " ".join(parts) if parts else ""
     if serial:
         desc += f" [{serial}]"
     return f"{dev}{desc}"
@@ -34,21 +34,21 @@ class TestDescribePort:
 
     def test_vendor_and_model(self):
         assert describe_port("/dev/ttyUSB0", {"ID_VENDOR": "FTDI", "ID_MODEL": "FT232R"}) \
-            == "/dev/ttyUSB0 — FTDI FT232R"
+            == "/dev/ttyUSB0 - FTDI FT232R"
 
     def test_vendor_only(self):
         assert describe_port("/dev/ttyUSB0", {"ID_VENDOR": "Silicon_Labs"}) \
-            == "/dev/ttyUSB0 — Silicon_Labs"
+            == "/dev/ttyUSB0 - Silicon_Labs"
 
     def test_model_only(self):
         assert describe_port("/dev/ttyUSB0", {"ID_MODEL": "CP2102"}) \
-            == "/dev/ttyUSB0 — CP2102"
+            == "/dev/ttyUSB0 - CP2102"
 
     def test_vendor_model_and_serial(self):
         assert describe_port(
             "/dev/ttyUSB0",
             {"ID_VENDOR": "FTDI", "ID_MODEL": "FT232R", "ID_SERIAL_SHORT": "A10KXYZ1"},
-        ) == "/dev/ttyUSB0 — FTDI FT232R [A10KXYZ1]"
+        ) == "/dev/ttyUSB0 - FTDI FT232R [A10KXYZ1]"
 
     def test_no_udev_info_returns_bare_path(self):
         assert describe_port("/dev/ttyAMA0", {}) == "/dev/ttyAMA0"
@@ -59,7 +59,7 @@ class TestDescribePort:
 
     def test_different_device_paths(self):
         assert describe_port("/dev/ttyACM0", {"ID_VENDOR": "Arduino"}) \
-            == "/dev/ttyACM0 — Arduino"
+            == "/dev/ttyACM0 - Arduino"
         assert describe_port("/dev/rfcomm0", {}) == "/dev/rfcomm0"
 
 
@@ -276,7 +276,7 @@ def patch_ports(config_text: str, assignments: dict[str, str]) -> str:
 
 
 _SINGLE_BUS_CONFIG = textwrap.dedent("""\
-    # Station config — comments must survive patching
+    # Station config - comments must survive patching
     buses:
       - name: control
         transports:
@@ -328,7 +328,7 @@ class TestPatchPorts:
 
     def test_inline_comment_on_port_line_is_dropped(self):
         # The patcher intentionally drops the trailing comment on the port line
-        # when replacing the value — all other lines are untouched.
+        # when replacing the value - all other lines are untouched.
         out = patch_ports(_SINGLE_BUS_CONFIG, {"ctrl_serial": "/dev/ttyUSB2"})
         assert "Windows example" not in out
 

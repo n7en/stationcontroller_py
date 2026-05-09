@@ -1,4 +1,4 @@
-"""Tests for automation/trigger.py."""
+﻿"""Tests for automation/trigger.py."""
 import pytest
 from datetime import datetime
 from unittest.mock import patch
@@ -81,7 +81,7 @@ class TestSensorAboveTrigger:
 
     def test_missing_sensor_treated_as_below(self):
         t = SensorAboveTrigger("swr", 3.0)
-        _update(t, _reg())          # no sensor — baseline = False
+        _update(t, _reg())          # no sensor - baseline = False
         td = _update(t, _reg(swr=5.0))   # now appears above
         assert td is not None
 
@@ -127,7 +127,7 @@ class TestSensorAboveTriggerForSeconds:
             mock_time.time.return_value = 106.0
             _update(t, _reg(swr=4.0))   # fires
             mock_time.time.return_value = 110.0
-            result = _update(t, _reg(swr=4.0))  # still above — should not refire
+            result = _update(t, _reg(swr=4.0))  # still above - should not refire
         assert result is None
 
     def test_resets_timer_on_dip_below(self):
@@ -137,7 +137,7 @@ class TestSensorAboveTriggerForSeconds:
             mock_time.time.return_value = 100.0
             _update(t, _reg(swr=4.0))   # crosses at t=100
             mock_time.time.return_value = 103.0
-            _update(t, _reg(swr=2.0))   # dips below — timer resets
+            _update(t, _reg(swr=2.0))   # dips below - timer resets
             mock_time.time.return_value = 104.0
             _update(t, _reg(swr=4.0))   # crosses again at t=104
             mock_time.time.return_value = 108.0  # only 4s since re-crossing
@@ -227,7 +227,7 @@ class TestSensorBelowTriggerForSeconds:
             mock_time.time.return_value = 100.0
             _update(t, _reg(voltage=11.5))   # crosses at t=100
             mock_time.time.return_value = 103.0
-            _update(t, _reg(voltage=13.8))   # rises above — resets timer
+            _update(t, _reg(voltage=13.8))   # rises above - resets timer
             mock_time.time.return_value = 104.0
             _update(t, _reg(voltage=11.5))   # crosses again at t=104
             mock_time.time.return_value = 108.0   # only 4s since re-crossing
@@ -301,7 +301,7 @@ class TestBandEnteredTrigger:
     def test_fires_again_after_leaving_and_reentering(self):
         t = BandEnteredTrigger("20m")
         _update(t, state=_state(freq=7_100_000))    # 40m
-        _update(t, state=_state(freq=14_200_000))   # enters 20m — fires
+        _update(t, state=_state(freq=14_200_000))   # enters 20m - fires
         _update(t, state=_state(freq=7_100_000))    # back to 40m
         td = _update(t, state=_state(freq=14_200_000))
         assert td is not None
@@ -499,7 +499,7 @@ class TestTimeTrigger:
         assert td is not None
 
     def test_day_filter_blocks_non_matching_day(self):
-        # 2024-01-15 is a Monday — trigger restricted to Wednesday
+        # 2024-01-15 is a Monday - trigger restricted to Wednesday
         t = TimeTrigger("16:00", days=["wed"])
         result = self._update_at(t, datetime(2024, 1, 15, 16, 0, 0))
         assert result is None

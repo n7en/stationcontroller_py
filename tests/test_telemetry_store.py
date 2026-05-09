@@ -1,4 +1,4 @@
-"""Tests for telemetry/store.py and telemetry/recorder.py."""
+﻿"""Tests for telemetry/store.py and telemetry/recorder.py."""
 import asyncio
 import math
 import time
@@ -21,7 +21,7 @@ async def store():
 
 
 # ---------------------------------------------------------------------------
-# TelemetryStore — sensor names
+# TelemetryStore - sensor names
 # ---------------------------------------------------------------------------
 
 class TestSensorNames:
@@ -56,7 +56,7 @@ class TestSensorNames:
 
 
 # ---------------------------------------------------------------------------
-# TelemetryStore — sensor readings
+# TelemetryStore - sensor readings
 # ---------------------------------------------------------------------------
 
 class TestSensorReadings:
@@ -92,7 +92,7 @@ class TestSensorReadings:
 
 
 # ---------------------------------------------------------------------------
-# TelemetryStore — device events
+# TelemetryStore - device events
 # ---------------------------------------------------------------------------
 
 class TestDeviceEvents:
@@ -129,7 +129,7 @@ class TestDeviceEvents:
 
 
 # ---------------------------------------------------------------------------
-# TelemetryStore — automation events
+# TelemetryStore - automation events
 # ---------------------------------------------------------------------------
 
 class TestAutomationEvents:
@@ -166,7 +166,7 @@ class TestAutomationEvents:
 
 
 # ---------------------------------------------------------------------------
-# TelemetryStore — application log
+# TelemetryStore - application log
 # ---------------------------------------------------------------------------
 
 class TestApplicationLog:
@@ -185,7 +185,7 @@ class TestApplicationLog:
 
 
 # ---------------------------------------------------------------------------
-# TelemetryStore — prune
+# TelemetryStore - prune
 # ---------------------------------------------------------------------------
 
 class TestPrune:
@@ -242,7 +242,7 @@ class TestSensorRecorder:
         recorder.attach(reg)
         reg.publish("temp", 72.0)
         await asyncio.sleep(0)
-        reg.publish("temp", 72.5)   # delta=0.5 — below threshold, but interval has passed
+        reg.publish("temp", 72.5)   # delta=0.5 - below threshold, but interval has passed
         await asyncio.sleep(0)
         rows = await store.get_sensor_history("temp", since=0)
         assert len(rows) == 1   # second write blocked by min_change

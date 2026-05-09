@@ -1,5 +1,5 @@
-"""
-Tests for comms/transport/base.py — dispatch mechanism and base properties.
+﻿"""
+Tests for comms/transport/base.py - dispatch mechanism and base properties.
 Uses a minimal concrete subclass; no I/O.
 """
 import pytest

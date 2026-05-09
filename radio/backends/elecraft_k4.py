@@ -1,17 +1,17 @@
-"""
-Elecraft K4 direct CAT backend — serial and TCP transports.
+﻿"""
+Elecraft K4 direct CAT backend - serial and TCP transports.
 
 Communicates with the K4 using its native semicolon-terminated command
 protocol over either:
-  serial — USB virtual COM port or RS232 DE9 connector
-  tcp    — Ethernet TCP socket (same CAT protocol over the network)
+  serial - USB virtual COM port or RS232 DE9 connector
+  tcp    - Ethernet TCP socket (same CAT protocol over the network)
 
 No Hamlib or rigctld required.
 
 Protocol summary:
-  GET  — send "<CMD>;"          → radio replies "<CMD><value>;"
-  SET  — send "<CMD><value>;"   → radio executes silently (no ACK)
-  ERR  — malformed command echoed back as "<CMD>?;"
+  GET  - send "<CMD>;"          -> radio replies "<CMD><value>;"
+  SET  - send "<CMD><value>;"   -> radio executes silently (no ACK)
+  ERR  - malformed command echoed back as "<CMD>?;"
 
 PTT state is tracked locally because TX/RX are write-only commands.
 Signal strength (SMH) is returned in dBm and converted to Hamlib
@@ -20,18 +20,18 @@ convention (0 = S9, ±6 dB per S-unit, -54 = S0).
 Config keys (in radio_config.yaml):
 
   Serial transport (transport: serial):
-    port              — Serial device (required): /dev/ttyACM0  or  COM3
-    baud_rate         — Baud rate, 4800–115200 (default 38400)
+    port              - Serial device (required): /dev/ttyACM0  or  COM3
+    baud_rate         - Baud rate, 4800–115200 (default 38400)
 
   TCP transport (transport: tcp):
-    host              — K4 hostname or IP address (required)
-    tcp_port          — TCP port configured on the K4 (default 9204)
-    password          — Remote access password, if RRP is set on the K4 (optional)
+    host              - K4 hostname or IP address (required)
+    tcp_port          - TCP port configured on the K4 (default 9204)
+    password          - Remote access password, if RRP is set on the K4 (optional)
 
   Shared:
-    timeout_s         — Per-command timeout in seconds (default 5.0)
-    max_power_w       — Radio's max TX power for normalisation (default 100)
-    power_range       — PC command power range: H=high/100W, L=QRP/10W (default H)
+    timeout_s         - Per-command timeout in seconds (default 5.0)
+    max_power_w       - Radio's max TX power for normalisation (default 100)
+    power_range       - PC command power range: H=high/100W, L=QRP/10W (default H)
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ from .base import RadioBackend, RadioBackendError
 
 log = logging.getLogger(__name__)
 
-# K4 mode number → string (matches Hamlib naming conventions)
+# K4 mode number -> string (matches Hamlib naming conventions)
 _K4_MODE: dict[int, str] = {
     1: "LSB",
     2: "USB",
@@ -67,9 +67,9 @@ class ElecraftK4Backend(RadioBackend):
     Direct CAT control for the Elecraft K4 transceiver.
 
     Supports two transports:
-      serial — pyserial over USB/RS232; blocking calls run in a thread-pool
+      serial - pyserial over USB/RS232; blocking calls run in a thread-pool
                executor so they do not block the asyncio event loop.
-      tcp    — asyncio StreamReader/StreamWriter over the K4 Ethernet port;
+      tcp    - asyncio StreamReader/StreamWriter over the K4 Ethernet port;
                fully async, no thread executor needed.
     """
 
@@ -127,7 +127,7 @@ class ElecraftK4Backend(RadioBackend):
             self._port, self._baud_rate, self._timeout,
         )
         try:
-            import serial as _serial   # noqa: F401 — verify import before opening
+            import serial as _serial   # noqa: F401 - verify import before opening
         except ImportError as exc:
             raise RadioBackendError(
                 "pyserial not installed.  Run:  pip install pyserial"
@@ -257,7 +257,7 @@ class ElecraftK4Backend(RadioBackend):
         await self._writer.drain()
 
     # ------------------------------------------------------------------
-    # Serial low-level I/O (blocking — call via _run)
+    # Serial low-level I/O (blocking - call via _run)
     # ------------------------------------------------------------------
 
     def _read_until_semi(self) -> str:
@@ -294,7 +294,7 @@ class ElecraftK4Backend(RadioBackend):
             self._ser.flush()
 
     # ------------------------------------------------------------------
-    # Async wrappers — dispatch to TCP or serial
+    # Async wrappers - dispatch to TCP or serial
     # ------------------------------------------------------------------
 
     async def _query(self, cmd: str) -> str:

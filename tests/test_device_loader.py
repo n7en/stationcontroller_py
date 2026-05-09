@@ -1,5 +1,5 @@
-"""
-Tests for devices/loader.py — config-driven device instantiation.
+﻿"""
+Tests for devices/loader.py - config-driven device instantiation.
 Uses real device classes with in-memory DCNNetwork buses.
 """
 import pytest
@@ -92,7 +92,7 @@ class TestLoadDevicesHappyPath:
 
     def test_same_address_on_two_buses_first_wins(self, tmp_path, registry):
         """When address '03' appears on both buses, the first entry in the
-        devices list wins the addr_bus slot — backward-compat routing."""
+        devices list wins the addr_bus slot - backward-compat routing."""
         path = _yaml(
             "devices:\n"
             "  - type: watt_meter\n"

@@ -1,21 +1,21 @@
-"""
-ManagedRigctldBackend — launches and manages a rigctld subprocess, then
+﻿"""
+ManagedRigctldBackend - launches and manages a rigctld subprocess, then
 connects to it exactly like a regular RigctldBackend.
 
 Use this backend when you want the Station Controller to own the rigctld
 process lifecycle instead of requiring you to start it manually.
 
 Config keys (in radio_config.yaml):
-    model_id          — Hamlib rig model number (required)
+    model_id          - Hamlib rig model number (required)
                         Common values: 3073 = IC-7300, 2014 = TS-2000,
                                        135  = FT-991A, 122 = FT-817,
                                        1    = Dummy (no radio attached)
-    serial_port       — Serial device (required): /dev/ttyUSB0 or COM3
-    serial_baud       — CAT baud rate (default 9600)
-    host              — rigctld listen address (default 127.0.0.1)
-    port              — rigctld TCP port; 0 = auto-select (default 0)
-    timeout_s         — per-command TCP timeout in seconds (default 15.0)
-    startup_timeout_s — seconds to wait for rigctld to become ready (default 10.0)
+    serial_port       - Serial device (required): /dev/ttyUSB0 or COM3
+    serial_baud       - CAT baud rate (default 9600)
+    host              - rigctld listen address (default 127.0.0.1)
+    port              - rigctld TCP port; 0 = auto-select (default 0)
+    timeout_s         - per-command TCP timeout in seconds (default 15.0)
+    startup_timeout_s - seconds to wait for rigctld to become ready (default 10.0)
 """
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
-"""
-SensorRecorder — bridges SensorRegistry.on_any() to TelemetryStore.
+﻿"""
+SensorRecorder - bridges SensorRegistry.on_any() to TelemetryStore.
 
 Throttles writes so rapid sensor bursts don't flood the database.
 Per-sensor state tracks last write time and last written value so both
@@ -32,10 +32,10 @@ class SensorRecorder:
     """
     Attach to a SensorRegistry and write throttled readings to a TelemetryStore.
 
-    min_interval_s  — minimum seconds between writes for the same sensor (default 1.0)
-    min_change      — minimum absolute change in value before writing again (default 0.0,
+    min_interval_s  - minimum seconds between writes for the same sensor (default 1.0)
+    min_change      - minimum absolute change in value before writing again (default 0.0,
                       meaning any change triggers a write once the interval has elapsed)
-    exclude         — set of sensor names to never record
+    exclude         - set of sensor names to never record
     """
 
     def __init__(

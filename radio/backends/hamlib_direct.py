@@ -1,4 +1,4 @@
-"""
+﻿"""
 Direct Python hamlib bindings backend.
 
 All blocking hamlib calls run in a thread executor so they do not block
@@ -19,7 +19,7 @@ from .base import RadioBackend, RadioBackendError
 log = logging.getLogger(__name__)
 
 
-# Mode name → Hamlib constant attribute name
+# Mode name -> Hamlib constant attribute name
 _MODE_TO_HAMLIB: dict[str, str] = {
     "USB":    "RIG_MODE_USB",
     "LSB":    "RIG_MODE_LSB",
@@ -36,7 +36,7 @@ _MODE_TO_HAMLIB: dict[str, str] = {
     "PKTFM":  "RIG_MODE_PKTFM",
 }
 
-# Level name → Hamlib constant attribute name
+# Level name -> Hamlib constant attribute name
 _LEVEL_TO_HAMLIB: dict[str, str] = {
     "STRENGTH":  "RIG_LEVEL_STR",
     "RFPOWER":   "RIG_LEVEL_RFPOWER",

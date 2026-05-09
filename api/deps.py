@@ -1,5 +1,5 @@
-"""
-Shared application state — injected into FastAPI routes via Depends().
+﻿"""
+Shared application state - injected into FastAPI routes via Depends().
 
 AppState is populated once at startup (in app.py lifespan) and holds
 references to every live singleton.  Routes receive it via get_state().
@@ -26,12 +26,12 @@ class AppState:
         self.label_registry: Optional["LabelRegistry"] = None
 
         # Multi-bus DCN support.
-        # networks    — all active buses keyed by bus name
-        # devices     — all device instances keyed by device name
-        # device_bus  — DCN address → bus name mapping for outbound routing
+        # networks    - all active buses keyed by bus name
+        # devices     - all device instances keyed by device name
+        # device_bus  - DCN address -> bus name mapping for outbound routing
         self.networks: dict[str, "DCNNetwork"] = {}
         self.devices: dict[str, Any] = {}
-        self.device_bus: dict[str, str] = {}   # address → bus name
+        self.device_bus: dict[str, str] = {}   # address -> bus name
 
         self.radio_state: Optional["RadioState"] = None
         self.radio_interface: Optional[Any] = None
@@ -66,7 +66,7 @@ class AppState:
         return self.control_network
 
 
-# Module-level singleton — created once, mutated at startup
+# Module-level singleton - created once, mutated at startup
 _state = AppState()
 
 

@@ -1,24 +1,24 @@
-"""
+﻿"""
 DCN CX-2 Two Port VHF Coax Relay Module (#332).
 
 Single-pole, double-throw (SPDT) RF relay switch.  The Common port connects
 to either the Normally-Closed (NC) or Normally-Open (NO) antenna port
 depending on relay state:
 
-    Relay OFF (de-energized) → Common connects to NC port
-    Relay ON  (energized)    → Common connects to NO port
+    Relay OFF (de-energized) -> Common connects to NC port
+    Relay ON  (energized)    -> Common connects to NO port
 
-Control commands (master → device):
-    RY1,1   Energize relay    (Common → NO)
-    RY1,0   De-energize relay (Common → NC)
+Control commands (master -> device):
+    RY1,1   Energize relay    (Common -> NO)
+    RY1,0   De-energize relay (Common -> NC)
     RY1,T   Toggle relay state
 
-Status packet (device → master, UPDATE,CX2):
+Status packet (device -> master, UPDATE,CX2):
     args[0]  CX2     module type identifier
-    args[1]  <state> relay state — "1" = energized, "0" = de-energized
+    args[1]  <state> relay state - "1" = energized, "0" = de-energized
 
 Published sensor names (with name="vhf_coax"):
-    vhf_coax_relay   1.0 = energized (Common→NO), 0.0 = de-energized (Common→NC)
+    vhf_coax_relay   1.0 = energized (Common->NO), 0.0 = de-energized (Common->NC)
     vhf_coax_nc      1.0 when NC port is active (relay OFF)
     vhf_coax_no      1.0 when NO port is active (relay ON)
 """
@@ -42,7 +42,7 @@ class VHFCoaxRelayState:
     name: str
     address: str
 
-    relay_on: Optional[bool] = None  # True = energized (Common→NO), False = Common→NC
+    relay_on: Optional[bool] = None  # True = energized (Common->NO), False = Common->NC
 
     updated_at: float = field(default_factory=time.time)
 
@@ -78,8 +78,8 @@ class VHFCoaxRelay:
         sw = VHFCoaxRelay(name="vhf_coax", address="05", registry=registry)
         sw.attach(network)
 
-        await sw.set_relay(network, True)   # Common → NO
-        await sw.set_relay(network, False)  # Common → NC
+        await sw.set_relay(network, True)   # Common -> NO
+        await sw.set_relay(network, False)  # Common -> NC
         await sw.toggle(network)            # flip current state
 
         print(sw.state.relay_on)                       # True/False/None

@@ -1,4 +1,4 @@
-"""Tests for the FastAPI backend."""
+﻿"""Tests for the FastAPI backend."""
 import json
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -172,7 +172,7 @@ class TestDashboardsRouter:
         assert r.status_code == 422
 
     async def test_invalid_dashboard_id_rejected(self, client):
-        # ID with special chars — our regex rejects these with 422
+        # ID with special chars - our regex rejects these with 422
         r = await client.get("/api/dashboards/bad%20id")
         assert r.status_code == 422
 

@@ -1,5 +1,5 @@
-"""
-Tests for comms/dcn_packet.py — packet parsing, building, and properties.
+﻿"""
+Tests for comms/dcn_packet.py - packet parsing, building, and properties.
 No I/O or mocking required; all pure logic.
 """
 import pytest
@@ -15,7 +15,7 @@ from comms.dcn_packet import (
 
 
 # ---------------------------------------------------------------------------
-# parse_packet — valid inputs
+# parse_packet - valid inputs
 # ---------------------------------------------------------------------------
 
 class TestParsePacketValid:
@@ -115,7 +115,7 @@ class TestParsePacketValid:
 
 
 # ---------------------------------------------------------------------------
-# parse_packet — invalid inputs → should return None
+# parse_packet - invalid inputs -> should return None
 # ---------------------------------------------------------------------------
 
 class TestParsePacketInvalid:
@@ -127,7 +127,7 @@ class TestParsePacketInvalid:
         assert parse_packet("0001:STATE:XX") is None
 
     def test_address_too_short(self):
-        # Only 3 address chars — need 4
+        # Only 3 address chars - need 4
         assert parse_packet("/001:STATE:XX") is None
 
     def test_no_delimiter(self):

@@ -1,4 +1,4 @@
-"""Tests for telemetry/dcn_logger.py and DcnMessageLog in the store."""
+﻿"""Tests for telemetry/dcn_logger.py and DcnMessageLog in the store."""
 import asyncio
 import time
 import pytest
@@ -78,7 +78,7 @@ class TestRecordDcnMessage:
 
 
 # ---------------------------------------------------------------------------
-# TelemetryStore.prune — dcn_message_log
+# TelemetryStore.prune - dcn_message_log
 # ---------------------------------------------------------------------------
 
 class TestPruneDcnMessageLog:
@@ -102,7 +102,7 @@ class TestPruneDcnMessageLog:
 
 
 # ---------------------------------------------------------------------------
-# DCNMessageLogger — RX hook
+# DCNMessageLogger - RX hook
 # ---------------------------------------------------------------------------
 
 class TestDCNMessageLoggerRx:
@@ -138,7 +138,7 @@ class TestDCNMessageLoggerRx:
 
 
 # ---------------------------------------------------------------------------
-# DCNNetwork.on_transmit — hook fires on send
+# DCNNetwork.on_transmit - hook fires on send
 # ---------------------------------------------------------------------------
 
 class TestOnTransmitHook:
@@ -196,7 +196,7 @@ class TestOnTransmitHook:
 
 
 # ---------------------------------------------------------------------------
-# DCNMessageLogger — TX via full network path
+# DCNMessageLogger - TX via full network path
 # ---------------------------------------------------------------------------
 
 class TestDCNMessageLoggerTx:

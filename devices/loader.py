@@ -1,4 +1,4 @@
-"""
+﻿"""
 Load device instances from comms_config.yaml.
 
 Reads the 'devices:' section, instantiates each device module, and attaches
@@ -52,8 +52,8 @@ def load_devices(
     """Instantiate and attach all devices declared in *config_path*.
 
     Returns:
-        devices     — dict[name → device instance]
-        addr_bus    — dict[address → bus_name] for API routing
+        devices     - dict[name -> device instance]
+        addr_bus    - dict[address -> bus_name] for API routing
                       When the same address appears on multiple buses (e.g.
                       two streaming watt meters) the first entry wins for
                       backward-compat routing; explicit bus selection
@@ -98,7 +98,7 @@ def load_devices(
                       name, device_type, address, bus_name)
         else:
             log.warning(
-                "Device '%s': bus '%s' not found in loaded networks — "
+                "Device '%s': bus '%s' not found in loaded networks - "
                 "device will not receive packets",
                 name, bus_name,
             )

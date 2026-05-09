@@ -1,5 +1,5 @@
-"""
-AutomationEngine — Home Assistant-style Trigger → Condition → Action engine.
+﻿"""
+AutomationEngine - Home Assistant-style Trigger -> Condition -> Action engine.
 
 Call process(ctx) whenever sensor or radio state changes.  The engine
 updates every trigger; automations whose triggers detect a transition have
@@ -13,10 +13,10 @@ bypass_conditions=True is passed).
 
 Execution modes (AutomationMode)
 ---------------------------------
-SINGLE   — skip if the automation's action is already running (default)
-RESTART  — cancel the running action and start fresh
-QUEUED   — queue up to 10 executions; drain in order after current finishes
-PARALLEL — always run; no concurrency tracking
+SINGLE   - skip if the automation's action is already running (default)
+RESTART  - cancel the running action and start fresh
+QUEUED   - queue up to 10 executions; drain in order after current finishes
+PARALLEL - always run; no concurrency tracking
 """
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ class AutomationEngine:
         return fired
 
     # ------------------------------------------------------------------
-    # Manual trigger — for testing
+    # Manual trigger - for testing
     # ------------------------------------------------------------------
 
     async def trigger(
@@ -108,7 +108,7 @@ class AutomationEngine:
         """
         Manually fire an automation by name.
 
-        Bypasses trigger evaluation — useful for testing rules without
+        Bypasses trigger evaluation - useful for testing rules without
         waiting for real hardware events.  Conditions are still evaluated
         unless bypass_conditions=True.
 
@@ -160,9 +160,9 @@ class AutomationEngine:
                     task.cancel()
                     with contextlib.suppress(asyncio.CancelledError, Exception):
                         await task
-            # PARALLEL: fall through — no concurrency gate
+            # PARALLEL: fall through - no concurrency gate
 
-        # Conditions — all must pass
+        # Conditions - all must pass
         if not bypass_conditions and automation.conditions:
             if not all(c.evaluate(ctx) for c in automation.conditions):
                 log.debug(
@@ -194,7 +194,7 @@ class AutomationEngine:
             return True
 
         if mode == AutomationMode.PARALLEL:
-            # No concurrency tracking — always run
+            # No concurrency tracking - always run
             await self._execute_bare(automation, ctx)
             return True
 

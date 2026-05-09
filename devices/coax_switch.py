@@ -1,19 +1,19 @@
-"""
+﻿"""
 DCN #331 CX-1 4 Port HF Coax Relay Module.
 
 Switches a common RF port to one of four antenna ports using latching relays.
 The currently selected port is retained even when power is removed.
 
-DCN status packet (device → master, UPDATE,CX1):
+DCN status packet (device -> master, UPDATE,CX1):
     args[0]  CX1           module type identifier
     args[1]  <active_port> currently selected port, 0-indexed
 
-Control command (master → device):
+Control command (master -> device):
     CX,<port>              select port 1–4; port 0 = disconnect all
 
 Published sensor names (with name="coax"):
-    coax_active_port       — selected port as float (-1.0 = unknown/pre-connect)
-    coax_port_0 … port_3   — 1.0 if active, 0.0 otherwise
+    coax_active_port       - selected port as float (-1.0 = unknown/pre-connect)
+    coax_port_0 ... port_3   - 1.0 if active, 0.0 otherwise
 """
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ class CoaxSwitchState:
     name: str
     address: str
 
-    n_ports: int = N_PORTS              # fixed hardware — always 4
+    n_ports: int = N_PORTS              # fixed hardware - always 4
     active_port: Optional[int] = None   # 0-indexed; None = unknown
 
     updated_at: float = field(default_factory=time.time)
@@ -61,8 +61,8 @@ class CoaxSwitch:
     configured device address, and publishes port state to a SensorRegistry.
 
     Published sensor names (with name="coax"):
-        coax_active_port       — selected port as float (0.0 = none)
-        coax_port_1 … port_4   — 1.0 if active, 0.0 otherwise
+        coax_active_port       - selected port as float (0.0 = none)
+        coax_port_1 ... port_4   - 1.0 if active, 0.0 otherwise
 
     Usage::
 

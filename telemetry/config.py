@@ -1,4 +1,4 @@
-"""
+﻿"""
 Load TelemetryStore, SensorRecorder, and optionally DCNMessageLogger from config.
 """
 from __future__ import annotations
@@ -47,7 +47,7 @@ def load_telemetry(
     Missing keys fall back to defaults.
 
     Returns (store, recorder, dcn_logger).  dcn_logger is None when
-    dcn_logging.enabled is false — attach it to a DCNNetwork to activate:
+    dcn_logging.enabled is false - attach it to a DCNNetwork to activate:
 
         if dcn_logger:
             dcn_logger.attach(network)
