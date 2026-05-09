@@ -6,6 +6,7 @@
   import LabelEditor      from './lib/LabelEditor.svelte'
   import DashboardView    from './lib/DashboardView.svelte'
   import RadioConfig      from './lib/RadioConfig.svelte'
+  import SystemControls   from './lib/SystemControls.svelte'
   import UpdateChecker    from './lib/UpdateChecker.svelte'
   import ConfigEditor     from './lib/ConfigEditor.svelte'
   import HistoryView      from './lib/HistoryView.svelte'
@@ -218,6 +219,10 @@
 
       <section>
         <UpdateChecker />
+      </section>
+
+      <section>
+        <SystemControls />
       </section>
 
     {:else if page === 'wizard'}
