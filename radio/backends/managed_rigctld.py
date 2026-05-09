@@ -39,6 +39,7 @@ class ManagedRigctldBackend(RigctldBackend):
         port: int = 0,
         timeout_s: float = 15.0,
         startup_timeout_s: float = 10.0,
+        serial_timeout_ms: int = 500,
     ) -> None:
         self._launcher = RigctldLauncher(
             model_id=model_id,
@@ -46,6 +47,7 @@ class ManagedRigctldBackend(RigctldBackend):
             baud_rate=serial_baud,
             listen_host=host,
             port=port,  # launcher picks a free port when port=0
+            serial_timeout_ms=serial_timeout_ms,
         )
         self._startup_timeout = startup_timeout_s
         # Initialise the TCP backend with the port the launcher resolved

@@ -70,6 +70,7 @@
       host: '127.0.0.1',
       port: 0,
       startup_timeout_s: 10.0,
+      serial_timeout_ms: 500,
       timeout_s: 15.0,
       poll_interval_s: 1.0,
       reconnect_delay_s: 5.0,
@@ -128,6 +129,7 @@
         host:              '127.0.0.1',
         port:              0,
         startup_timeout_s: editEntry.startup_timeout_s ?? 10.0,
+        serial_timeout_ms: editEntry.serial_timeout_ms ?? 500,
         timeout_s:         editEntry.timeout_s ?? 15.0,
       }
     } else if (backend === 'rigctld') {
@@ -282,6 +284,11 @@
                 <div class="field narrow">
                   <label>Startup timeout (s)
                     <input type="number" bind:value={editEntry.startup_timeout_s} min="1" max="60" step="1" />
+                  </label>
+                </div>
+                <div class="field narrow">
+                  <label>Serial read timeout (ms)
+                    <input type="number" bind:value={editEntry.serial_timeout_ms} min="1" max="5000" step="50" />
                   </label>
                 </div>
               </div>
@@ -519,6 +526,11 @@
               <div class="field narrow">
                 <label>Startup timeout (s)
                   <input type="number" bind:value={editEntry.startup_timeout_s} min="1" max="60" step="1" />
+                </label>
+              </div>
+              <div class="field narrow">
+                <label>Serial read timeout (ms)
+                  <input type="number" bind:value={editEntry.serial_timeout_ms} min="1" max="5000" step="50" />
                 </label>
               </div>
             </div>

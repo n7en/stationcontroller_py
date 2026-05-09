@@ -25,7 +25,7 @@ _RIGCTLD_KEYS  = {"name", "backend", "host", "port", "timeout_s",
                    "poll_interval_s", "reconnect_delay_s"}
 _MANAGED_KEYS  = {"name", "backend", "model_id", "serial_port", "serial_baud",
                    "host", "port", "timeout_s", "startup_timeout_s",
-                   "poll_interval_s", "reconnect_delay_s"}
+                   "serial_timeout_ms", "poll_interval_s", "reconnect_delay_s"}
 _HAMLIB_KEYS   = {"name", "backend", "model_id", "port", "baud_rate",
                    "data_bits", "stop_bits", "parity", "poll_interval_s", "reconnect_delay_s"}
 _K4_KEYS       = {"name", "backend", "transport",
@@ -37,7 +37,8 @@ _K4_KEYS       = {"name", "backend", "transport",
 _COMMON_DEFAULTS  = {"poll_interval_s": 1.0, "reconnect_delay_s": 5.0}
 _RIGCTLD_DEFAULTS = {"host": "localhost", "port": 4532, "timeout_s": 15.0}
 _MANAGED_DEFAULTS = {"host": "127.0.0.1", "port": 0, "serial_baud": 9600,
-                     "timeout_s": 15.0, "startup_timeout_s": 10.0}
+                     "timeout_s": 15.0, "startup_timeout_s": 10.0,
+                     "serial_timeout_ms": 500}
 _HAMLIB_DEFAULTS  = {"model_id": 1, "baud_rate": 9600, "data_bits": 8,
                      "stop_bits": 1, "parity": "N"}
 _K4_DEFAULTS      = {"baud_rate": 38400, "timeout_s": 5.0,

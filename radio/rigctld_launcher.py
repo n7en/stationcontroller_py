@@ -46,12 +46,14 @@ class RigctldLauncher:
         baud_rate: int = 9600,
         listen_host: str = "127.0.0.1",
         port: int = 0,
+        serial_timeout_ms: int = 500,
         extra_args: Optional[list[str]] = None,
     ) -> None:
-        self.model_id    = model_id
-        self.serial_port = serial_port
-        self.baud_rate   = baud_rate
-        self.listen_host = listen_host
+        self.model_id          = model_id
+        self.serial_port       = serial_port
+        self.baud_rate         = baud_rate
+        self.listen_host       = listen_host
+        self.serial_timeout_ms = serial_timeout_ms
         # Resolve the port now so callers can read it before start()
         self.port        = port if port > 0 else _find_free_port()
         self.extra_args  = extra_args or []
@@ -88,6 +90,7 @@ class RigctldLauncher:
             "-s", str(self.baud_rate),
             "-T", self.listen_host,
             "-t", str(self.port),
+            "-o", f"timeout={self.serial_timeout_ms}",
             *self.extra_args,
         ]
         logger.info("Starting rigctld: %s", " ".join(cmd))
