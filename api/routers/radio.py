@@ -107,6 +107,20 @@ async def _rebuild_radio(state: AppState) -> bool:
         return False
 
 
+@router.get("/serial-ports")
+async def list_serial_ports() -> dict:
+    """Return serial ports currently visible to the OS."""
+    try:
+        from serial.tools import list_ports
+        ports = [
+            {"port": p.device, "description": p.description or p.device}
+            for p in sorted(list_ports.comports(), key=lambda p: p.device)
+        ]
+    except ImportError:
+        ports = []
+    return {"ports": ports}
+
+
 @router.get("")
 async def get_radio(state: AppState = Depends(get_state)) -> dict:
     rs = state.radio_state

@@ -7,6 +7,9 @@
   let saving  = false
   let banner  = null
 
+  /** @type {{port: string, description: string}[]} */
+  let serialPorts = []
+
   let editingBusIdx    = null
   let editingDeviceIdx = null
   let addingBus        = false
@@ -34,7 +37,16 @@
     return { type: 'gpio', name: '', address: '01', bus: '', persona: 'cc_8a' }
   }
 
-  onMount(loadAll)
+  onMount(async () => {
+    await loadAll()
+    try {
+      const r = await fetch('/api/radio/serial-ports')
+      if (r.ok) {
+        const d = await r.json()
+        serialPorts = d.ports ?? []
+      }
+    } catch (_) {}
+  })
 
   async function loadAll() {
     loading = true; banner = null
@@ -246,7 +258,9 @@
               <div class="field-row">
                 <div class="field grow">
                   <label>Serial port
-                    <input bind:value={editBus.transport.port} placeholder="COM3 or /dev/ttyUSB0" />
+                    <input bind:value={editBus.transport.port}
+                           list="comms-port-list"
+                           placeholder="COM3 or /dev/ttyUSB0" />
                   </label>
                 </div>
                 <div class="field narrow">
@@ -600,6 +614,13 @@
 
   {/if}
 </div>
+
+<!-- Detected serial ports — used by RS-485 port inputs via list="comms-port-list" -->
+<datalist id="comms-port-list">
+  {#each serialPorts as p}
+    <option value={p.port}>{p.port} — {p.description}</option>
+  {/each}
+</datalist>
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <style>

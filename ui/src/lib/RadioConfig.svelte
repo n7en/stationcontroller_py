@@ -11,7 +11,19 @@
   /** @type {any} */
   let editEntry   = null   // working copy
 
-  onMount(loadConfig)
+  /** @type {{port: string, description: string}[]} */
+  let serialPorts = []
+
+  onMount(async () => {
+    await loadConfig()
+    try {
+      const r = await fetch('/api/radio/serial-ports')
+      if (r.ok) {
+        const d = await r.json()
+        serialPorts = d.ports ?? []
+      }
+    } catch (_) {}
+  })
 
   async function loadConfig() {
     loading = true
@@ -107,7 +119,7 @@
         port:      editEntry.port || 4532,
         timeout_s: editEntry.timeout_s ?? 15.0,
       }
-    } else {
+    } else if (backend === 'hamlib_direct') {
       editEntry = { ...shared,
         model_id:  editEntry.model_id ?? 1,
         port:      editEntry.serial_port ?? editEntry.port ?? '',
@@ -115,6 +127,18 @@
         data_bits: editEntry.data_bits ?? 8,
         stop_bits: editEntry.stop_bits ?? 1,
         parity:    editEntry.parity    ?? 'N',
+      }
+    } else if (backend === 'elecraft_k4') {
+      editEntry = { ...shared,
+        transport:   editEntry.transport   ?? 'serial',
+        port:        editEntry.port ?? editEntry.serial_port ?? '',
+        baud_rate:   editEntry.baud_rate   ?? 38400,
+        host:        editEntry.host        ?? '',
+        tcp_port:    editEntry.tcp_port    ?? 9204,
+        password:    editEntry.password    ?? '',
+        timeout_s:   editEntry.timeout_s   ?? 5.0,
+        max_power_w: editEntry.max_power_w ?? 100,
+        power_range: editEntry.power_range ?? 'H',
       }
     }
   }
@@ -199,6 +223,7 @@
                   <option value="managed_rigctld">managed rigctld (auto-start, recommended)</option>
                   <option value="rigctld">rigctld (connect to running daemon)</option>
                   <option value="hamlib_direct">hamlib direct (Python bindings)</option>
+                  <option value="elecraft_k4">Elecraft K4 (native CAT)</option>
                 </select>
               </label>
             </div>
@@ -212,7 +237,9 @@
                 </div>
                 <div class="field grow">
                   <label>Serial port
-                    <input bind:value={editEntry.serial_port} placeholder="COM3  or  /dev/ttyUSB0" />
+                    <input bind:value={editEntry.serial_port}
+                           list="port-list"
+                           placeholder="COM3  or  /dev/ttyUSB0" />
                   </label>
                 </div>
                 <div class="field narrow">
@@ -273,7 +300,9 @@
                 </div>
                 <div class="field grow">
                   <label>Device port
-                    <input bind:value={editEntry.port} placeholder="COM3  or  /dev/ttyUSB0" />
+                    <input bind:value={editEntry.port}
+                           list="port-list"
+                           placeholder="COM3  or  /dev/ttyUSB0" />
                   </label>
                 </div>
                 <div class="field narrow">
@@ -307,6 +336,70 @@
                 Model IDs: 1 = Dummy · 351 = IC-7300 · 135 = FT-991A ·
                 <a href="https://hamlib.sourceforge.net/manuals/4.5/supported_radios.html"
                    target="_blank" rel="noopener">full list ↗</a>
+              </p>
+            {/if}
+
+            {#if editEntry.backend === 'elecraft_k4'}
+              <div class="field">
+                <label>Transport
+                  <select bind:value={editEntry.transport}>
+                    <option value="serial">Serial (USB / RS-232)</option>
+                    <option value="tcp">Ethernet (TCP)</option>
+                  </select>
+                </label>
+              </div>
+              {#if editEntry.transport === 'tcp'}
+                <div class="field-row">
+                  <div class="field grow">
+                    <label>K4 IP address
+                      <input bind:value={editEntry.host} placeholder="192.168.1.100" />
+                    </label>
+                  </div>
+                  <div class="field narrow">
+                    <label>TCP port
+                      <input type="number" bind:value={editEntry.tcp_port} min="1" max="65535" />
+                    </label>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Password (optional)
+                    <input bind:value={editEntry.password} placeholder="leave blank if RRP not set" />
+                  </label>
+                </div>
+              {:else}
+                <div class="field-row">
+                  <div class="field grow">
+                    <label>Serial port
+                      <input bind:value={editEntry.port}
+                             list="port-list"
+                             placeholder="COM3  or  /dev/ttyACM0" />
+                    </label>
+                  </div>
+                  <div class="field narrow">
+                    <label>Baud rate
+                      <input type="number" bind:value={editEntry.baud_rate} />
+                    </label>
+                  </div>
+                </div>
+              {/if}
+              <div class="field-row">
+                <div class="field narrow">
+                  <label>Max power (W)
+                    <input type="number" bind:value={editEntry.max_power_w} min="1" max="200" />
+                  </label>
+                </div>
+                <div class="field narrow">
+                  <label>Power range
+                    <select bind:value={editEntry.power_range}>
+                      <option value="H">H — High (100 W)</option>
+                      <option value="L">L — QRP (10 W)</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <p class="hint">
+                Set TCP port on the K4: Front Panel → Config → Network.
+                Baud rate must match Front Panel → XCVR → KIO3 CAT.
               </p>
             {/if}
 
@@ -360,6 +453,7 @@
                 <option value="managed_rigctld">managed rigctld (auto-start, recommended)</option>
                 <option value="rigctld">rigctld (connect to running daemon)</option>
                 <option value="hamlib_direct">hamlib direct (Python bindings)</option>
+                <option value="elecraft_k4">Elecraft K4 (native CAT)</option>
               </select>
             </label>
           </div>
@@ -373,7 +467,9 @@
               </div>
               <div class="field grow">
                 <label>Serial port
-                  <input bind:value={editEntry.serial_port} placeholder="COM3  or  /dev/ttyUSB0" />
+                  <input bind:value={editEntry.serial_port}
+                         list="port-list"
+                         placeholder="COM3  or  /dev/ttyUSB0" />
                 </label>
               </div>
               <div class="field narrow">
@@ -399,6 +495,11 @@
                 </label>
               </div>
             </div>
+            <p class="hint">
+              Model IDs: 351 = IC-7300 · 135 = FT-991A · 122 = IC-7610 ·
+              <a href="https://hamlib.sourceforge.net/manuals/4.5/supported_radios.html"
+                 target="_blank" rel="noopener">full list ↗</a>
+            </p>
           {/if}
 
           {#if editEntry.backend === 'rigctld'}
@@ -414,6 +515,10 @@
                 </label>
               </div>
             </div>
+            <p class="hint">
+              Start the daemon first:
+              <code>rigctld -m &lt;model&gt; -r &lt;device&gt; -s &lt;baud&gt;</code>
+            </p>
           {/if}
 
           {#if editEntry.backend === 'hamlib_direct'}
@@ -425,7 +530,9 @@
               </div>
               <div class="field grow">
                 <label>Device port
-                  <input bind:value={editEntry.port} placeholder="COM3  or  /dev/ttyUSB0" />
+                  <input bind:value={editEntry.port}
+                         list="port-list"
+                         placeholder="COM3  or  /dev/ttyUSB0" />
                 </label>
               </div>
               <div class="field narrow">
@@ -455,6 +562,75 @@
                 </label>
               </div>
             </div>
+            <p class="hint">
+              Model IDs: 1 = Dummy · 351 = IC-7300 · 135 = FT-991A ·
+              <a href="https://hamlib.sourceforge.net/manuals/4.5/supported_radios.html"
+                 target="_blank" rel="noopener">full list ↗</a>
+            </p>
+          {/if}
+
+          {#if editEntry.backend === 'elecraft_k4'}
+            <div class="field">
+              <label>Transport
+                <select bind:value={editEntry.transport}>
+                  <option value="serial">Serial (USB / RS-232)</option>
+                  <option value="tcp">Ethernet (TCP)</option>
+                </select>
+              </label>
+            </div>
+            {#if editEntry.transport === 'tcp'}
+              <div class="field-row">
+                <div class="field grow">
+                  <label>K4 IP address
+                    <input bind:value={editEntry.host} placeholder="192.168.1.100" />
+                  </label>
+                </div>
+                <div class="field narrow">
+                  <label>TCP port
+                    <input type="number" bind:value={editEntry.tcp_port} min="1" max="65535" />
+                  </label>
+                </div>
+              </div>
+              <div class="field">
+                <label>Password (optional)
+                  <input bind:value={editEntry.password} placeholder="leave blank if RRP not set" />
+                </label>
+              </div>
+            {:else}
+              <div class="field-row">
+                <div class="field grow">
+                  <label>Serial port
+                    <input bind:value={editEntry.port}
+                           list="port-list"
+                           placeholder="COM3  or  /dev/ttyACM0" />
+                  </label>
+                </div>
+                <div class="field narrow">
+                  <label>Baud rate
+                    <input type="number" bind:value={editEntry.baud_rate} />
+                  </label>
+                </div>
+              </div>
+            {/if}
+            <div class="field-row">
+              <div class="field narrow">
+                <label>Max power (W)
+                  <input type="number" bind:value={editEntry.max_power_w} min="1" max="200" />
+                </label>
+              </div>
+              <div class="field narrow">
+                <label>Power range
+                  <select bind:value={editEntry.power_range}>
+                    <option value="H">H — High (100 W)</option>
+                    <option value="L">L — QRP (10 W)</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <p class="hint">
+              Set TCP port on the K4: Front Panel → Config → Network.
+              Baud rate must match Front Panel → XCVR → KIO3 CAT.
+            </p>
           {/if}
 
           <div class="field-row">
@@ -503,6 +679,13 @@
     </div>
   {/if}
 </div>
+
+<!-- Detected serial ports — used by all serial port inputs via list="port-list" -->
+<datalist id="port-list">
+  {#each serialPorts as p}
+    <option value={p.port}>{p.port} — {p.description}</option>
+  {/each}
+</datalist>
 
 <style>
   .radio-cfg { max-width: 700px; display: flex; flex-direction: column; gap: 1rem; }
