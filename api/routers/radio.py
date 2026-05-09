@@ -79,6 +79,11 @@ async def _rebuild_radio(state: AppState) -> bool:
         except Exception:
             pass
 
+    # Give the serial port (and any external rigctld) time to flush before
+    # opening a new connection.  Without this, mid-transaction bytes left in
+    # the OS serial buffer cause every subsequent read to return stale data.
+    await asyncio.sleep(2.0)
+
     try:
         manager = RadioManager.from_config(str(RADIO_CFG))
         if not manager.names():
