@@ -22,10 +22,12 @@ class RigctldBackend(RadioBackend):
         host: str = "127.0.0.1",
         port: int = 4532,
         timeout_s: float = 15.0,
+        init_raw_cmds: Optional[list[str]] = None,
     ) -> None:
         self._host = host
         self._port = port
         self._timeout = timeout_s
+        self._init_raw_cmds: list[str] = init_raw_cmds or []
         self._reader: Optional[asyncio.StreamReader] = None
         self._writer: Optional[asyncio.StreamWriter] = None
         self._lock = asyncio.Lock()
@@ -44,6 +46,12 @@ class RigctldBackend(RadioBackend):
             )
             self._connected = True
             log.info("Connected to rigctld at %s:%d", self._host, self._port)
+            for raw_cmd in self._init_raw_cmds:
+                try:
+                    await self._cmd(rf"\w {raw_cmd}")
+                    log.debug("rigctld init cmd sent: %s", raw_cmd)
+                except RadioBackendError as exc:
+                    log.warning("rigctld init cmd %r failed: %s", raw_cmd, exc)
         except (OSError, asyncio.TimeoutError) as exc:
             self._connected = False
             log.debug("rigctld connect failed at %s:%d: %s", self._host, self._port, exc)
