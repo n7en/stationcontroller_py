@@ -50,18 +50,26 @@ class RigctldBackend(RadioBackend):
             )
             self._connected = True
             log.info("Connected to rigctld at %s:%d", self._host, self._port)
-            for raw_cmd in self._init_raw_cmds:
+            all_init = (
+                [(rf"\w {c}", c) for c in self._init_raw_cmds] +
+                [(c, c) for c in self._init_cmds]
+            )
+            for proto_cmd, label in all_init:
                 try:
-                    await self._cmd(rf"\w {raw_cmd}")
-                    log.debug("rigctld raw init sent: %s", raw_cmd)
+                    await self._cmd(proto_cmd)
+                    log.debug("rigctld init sent: %s", label)
                 except RadioBackendError as exc:
-                    log.warning("rigctld raw init %r failed: %s", raw_cmd, exc)
-            for cmd in self._init_cmds:
-                try:
-                    await self._cmd(cmd)
-                    log.debug("rigctld init cmd sent: %s", cmd)
-                except RadioBackendError as exc:
-                    log.warning("rigctld init cmd %r failed: %s", cmd, exc)
+                    log.debug("rigctld init %r failed: %s", label, exc)
+                if not self._connected:
+                    # The init cmd caused a TCP drop (e.g. rig ignores the command
+                    # and rigctld closes the socket after its internal timeout).
+                    # Re-establish so normal polling can proceed.
+                    log.debug("Re-connecting after init cmd dropped socket")
+                    self._reader, self._writer = await asyncio.wait_for(
+                        asyncio.open_connection(self._host, self._port),
+                        timeout=self._timeout,
+                    )
+                    self._connected = True
         except (OSError, asyncio.TimeoutError) as exc:
             self._connected = False
             log.debug("rigctld connect failed at %s:%d: %s", self._host, self._port, exc)
@@ -119,12 +127,6 @@ class RigctldBackend(RadioBackend):
             except asyncio.TimeoutError as exc:
                 self._drop_connection()
                 raise RadioBackendError("rigctld response timed out") from exc
-            except RadioBackendError:
-                # rigctld returns RPRT < 0 and then closes the TCP socket.
-                # Mark disconnected now so the next command in get_full_state()
-                # doesn't hit a broken-pipe surprise on an already-closed socket.
-                self._drop_connection()
-                raise
 
     async def _read_response(self) -> list[str]:
         lines: list[str] = []
