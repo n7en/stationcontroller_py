@@ -22,11 +22,12 @@ RADIO_CFG = Path("config/radio_config.yaml")
 # ---------------------------------------------------------------------------
 
 _RIGCTLD_KEYS  = {"name", "backend", "host", "port", "timeout_s",
-                   "poll_interval_s", "reconnect_delay_s", "init_raw_cmds"}
+                   "poll_interval_s", "reconnect_delay_s",
+                   "init_raw_cmds", "init_cmds"}
 _MANAGED_KEYS  = {"name", "backend", "model_id", "serial_port", "serial_baud",
                    "host", "port", "timeout_s", "startup_timeout_s",
                    "serial_timeout_ms", "poll_interval_s", "reconnect_delay_s",
-                   "init_raw_cmds"}
+                   "init_raw_cmds", "init_cmds"}
 _HAMLIB_KEYS   = {"name", "backend", "model_id", "port", "baud_rate",
                    "data_bits", "stop_bits", "parity", "poll_interval_s", "reconnect_delay_s"}
 _K4_KEYS       = {"name", "backend", "transport",

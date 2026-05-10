@@ -23,11 +23,15 @@ class RigctldBackend(RadioBackend):
         port: int = 4532,
         timeout_s: float = 15.0,
         init_raw_cmds: Optional[list[str]] = None,
+        init_cmds: Optional[list[str]] = None,
     ) -> None:
         self._host = host
         self._port = port
         self._timeout = timeout_s
+        # init_raw_cmds: sent via rigctld \w (raw bytes to rig — rig must respond)
+        # init_cmds:     sent as rigctld protocol commands (e.g. r"\set_trn 0")
         self._init_raw_cmds: list[str] = init_raw_cmds or []
+        self._init_cmds: list[str] = init_cmds or []
         self._reader: Optional[asyncio.StreamReader] = None
         self._writer: Optional[asyncio.StreamWriter] = None
         self._lock = asyncio.Lock()
@@ -49,9 +53,15 @@ class RigctldBackend(RadioBackend):
             for raw_cmd in self._init_raw_cmds:
                 try:
                     await self._cmd(rf"\w {raw_cmd}")
-                    log.debug("rigctld init cmd sent: %s", raw_cmd)
+                    log.debug("rigctld raw init sent: %s", raw_cmd)
                 except RadioBackendError as exc:
-                    log.warning("rigctld init cmd %r failed: %s", raw_cmd, exc)
+                    log.warning("rigctld raw init %r failed: %s", raw_cmd, exc)
+            for cmd in self._init_cmds:
+                try:
+                    await self._cmd(cmd)
+                    log.debug("rigctld init cmd sent: %s", cmd)
+                except RadioBackendError as exc:
+                    log.warning("rigctld init cmd %r failed: %s", cmd, exc)
         except (OSError, asyncio.TimeoutError) as exc:
             self._connected = False
             log.debug("rigctld connect failed at %s:%d: %s", self._host, self._port, exc)
