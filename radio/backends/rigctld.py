@@ -268,19 +268,24 @@ class RigctldBackend(RadioBackend):
 
         try:
             state["frequency_hz"] = await self.get_frequency()
-        except RadioBackendError:
+        except RadioBackendError as exc:
+            log.debug("get_frequency skipped: %s", exc)
             if not self._connected:
                 raise
         try:
             mode, bw = await self.get_mode()
             state["mode"] = mode
             state["bandwidth_hz"] = bw
-        except RadioBackendError:
+        except RadioBackendError as exc:
+            log.debug("get_mode skipped: %s", exc)
             if not self._connected:
                 raise
         try:
             state["ptt"] = await self.get_ptt()
-        except RadioBackendError:
+        except RadioBackendError as exc:
+            log.debug("get_ptt skipped: %s", exc)
             if not self._connected:
                 raise
+        if not state:
+            log.warning("rigctld poll returned no data from %s:%d - all commands failed", self._host, self._port)
         return state
