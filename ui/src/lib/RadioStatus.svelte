@@ -40,6 +40,7 @@
 
   <!-- Frequency + mode row -->
   <div class="freq-row">
+    <span class="vfo-label vfo-label-main">A</span>
     <span class="freq">{fmtFreq(radioState?.frequency_hz)}</span>
     <div class="badges">
       {#if radioState?.mode}
@@ -57,16 +58,30 @@
     </div>
   </div>
 
-  <!-- Sub-band row -->
+  <!-- VFO-B row -->
+  {#if radioState?.connected && radioState?.vfob_frequency_hz}
+    <div class="vfo-row">
+      <span class="vfo-label">B</span>
+      <span class="vfo-freq">{fmtFreq(radioState.vfob_frequency_hz)}</span>
+      {#if radioState.vfob_mode}
+        <span class="badge mode vfo-badge">{radioState.vfob_mode}</span>
+      {/if}
+      {#if fmtBw(radioState.vfob_bandwidth_hz)}
+        <span class="badge bw vfo-badge">{fmtBw(radioState.vfob_bandwidth_hz)}</span>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- VFO-C (sub-receiver) row -->
   {#if radioState?.connected && radioState?.sub_frequency_hz}
-    <div class="sub-row">
-      <span class="sub-label">SUB</span>
-      <span class="sub-freq">{fmtFreq(radioState.sub_frequency_hz)}</span>
+    <div class="vfo-row">
+      <span class="vfo-label">C</span>
+      <span class="vfo-freq">{fmtFreq(radioState.sub_frequency_hz)}</span>
       {#if radioState.sub_mode}
-        <span class="badge mode sub-badge">{radioState.sub_mode}</span>
+        <span class="badge mode vfo-badge">{radioState.sub_mode}</span>
       {/if}
       {#if fmtBw(radioState.sub_bandwidth_hz)}
-        <span class="badge bw sub-badge">{fmtBw(radioState.sub_bandwidth_hz)}</span>
+        <span class="badge bw vfo-badge">{fmtBw(radioState.sub_bandwidth_hz)}</span>
       {/if}
     </div>
   {/if}
@@ -155,29 +170,35 @@
     animation: pulse 0.8s ease-in-out infinite alternate;
   }
 
-  /* ── Sub-band ── */
-  .sub-row {
+  /* ── VFO rows (B and C) ── */
+  .vfo-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
   }
-  .sub-label {
+  .vfo-label {
     font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
+    font-weight: 700;
     letter-spacing: 0.06em;
     color: var(--text-muted);
-    width: 2rem;
+    width: 1rem;
     flex-shrink: 0;
+    text-align: center;
   }
-  .sub-freq {
+  .vfo-label-main {
+    font-size: 0.72rem;
+    color: var(--accent);
+    align-self: flex-end;
+    padding-bottom: 0.2rem;
+  }
+  .vfo-freq {
     font-size: 0.95rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     color: var(--text-muted);
   }
-  .sub-badge { font-size: 0.65rem; }
+  .vfo-badge { font-size: 0.65rem; }
 
   /* ── Meters ── */
   .meters-row {

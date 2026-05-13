@@ -285,11 +285,21 @@ class HamlibDirectBackend(RadioBackend):
         rig, H = self._require()
         state: dict = {}
         try:
-            state["sub_frequency_hz"] = float(await self._run(rig.get_freq, H.RIG_VFO_B))
+            state["vfob_frequency_hz"] = float(await self._run(rig.get_freq, H.RIG_VFO_B))
         except (TypeError, AttributeError, Exception):
             pass
         try:
             mode_val, bw = await self._run(rig.get_mode, H.RIG_VFO_B)
+            state["vfob_mode"] = H.rig_strrmode(mode_val)
+            state["vfob_bandwidth_hz"] = float(bw)
+        except (TypeError, AttributeError, Exception):
+            pass
+        try:
+            state["sub_frequency_hz"] = float(await self._run(rig.get_freq, H.RIG_VFO_C))
+        except (TypeError, AttributeError, Exception):
+            pass
+        try:
+            mode_val, bw = await self._run(rig.get_mode, H.RIG_VFO_C)
             state["sub_mode"] = H.rig_strrmode(mode_val)
             state["sub_bandwidth_hz"] = float(bw)
         except (TypeError, AttributeError, Exception):

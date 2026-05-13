@@ -61,12 +61,38 @@ done
 [[ -z "$PYTHON" ]] && die "Python 3.11+ is required. Install it and re-run."
 echo "  Using: $PYTHON ($($PYTHON --version))"
 
+# ── 1b. System packages (Linux / apt) ────────────────────────────────────
+if [[ "$(uname -s)" == "Linux" ]] && command -v apt-get &>/dev/null; then
+    NEED_APT=()
+    dpkg -s python3-hamlib &>/dev/null 2>&1 || NEED_APT+=(python3-hamlib)
+
+    if [[ ${#NEED_APT[@]} -gt 0 ]]; then
+        info "Installing system packages: ${NEED_APT[*]}…"
+        if [[ "$EUID" -eq 0 ]]; then
+            apt-get install -y "${NEED_APT[@]}"
+        elif command -v sudo &>/dev/null; then
+            sudo apt-get install -y "${NEED_APT[@]}"
+        else
+            warn "Cannot install system packages without root/sudo: ${NEED_APT[*]}"
+            warn "Install manually: sudo apt-get install -y ${NEED_APT[*]}"
+        fi
+    else
+        info "System packages already installed."
+    fi
+fi
+
 # ── 2. Virtual environment ─────────────────────────────────────────────────
 VENV="$SCRIPT_DIR/.venv"
 
+# Rebuild if existing venv lacks --system-site-packages (needed for python3-hamlib)
+if [[ -d "$VENV" ]] && grep -q "include-system-site-packages = false" "$VENV/pyvenv.cfg" 2>/dev/null; then
+    warn "Existing venv lacks --system-site-packages — rebuilding…"
+    rm -rf "$VENV"
+fi
+
 if [[ ! -d "$VENV" ]]; then
     info "Creating virtual environment at .venv…"
-    "$PYTHON" -m venv "$VENV"
+    "$PYTHON" -m venv --system-site-packages "$VENV"
 else
     info "Virtual environment already exists — skipping creation."
 fi

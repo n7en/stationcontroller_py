@@ -58,7 +58,12 @@ class RadioState:
     # Transmit power, normalized 0.0–1.0 (hamlib RFPOWER convention)
     rf_power: Optional[float] = None
 
-    # Sub-receiver / VFO-B
+    # VFO-B (split TX / second VFO)
+    vfob_frequency_hz: Optional[float] = None
+    vfob_mode: Optional[str] = None
+    vfob_bandwidth_hz: Optional[float] = None
+
+    # VFO-C (sub-receiver)
     sub_frequency_hz: Optional[float] = None
     sub_mode: Optional[str] = None
     sub_bandwidth_hz: Optional[float] = None
@@ -74,6 +79,7 @@ class RadioState:
             "frequency_hz", "mode", "bandwidth_hz", "vfo",
             "split", "split_freq_hz", "ptt", "signal_strength",
             "rf_power", "connected",
+            "vfob_frequency_hz", "vfob_mode", "vfob_bandwidth_hz",
             "sub_frequency_hz", "sub_mode", "sub_bandwidth_hz",
         ]
         return {f: getattr(other, f) for f in fields if getattr(self, f) != getattr(other, f)}

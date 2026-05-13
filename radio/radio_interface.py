@@ -245,6 +245,12 @@ def _apply_raw_state(state: RadioState, raw: dict) -> None:
         state.signal_strength = raw["signal_strength"]
     if "rf_power" in raw:
         state.rf_power = raw["rf_power"]
+    if "vfob_frequency_hz" in raw:
+        state.vfob_frequency_hz = raw["vfob_frequency_hz"]
+    if "vfob_mode" in raw:
+        state.vfob_mode = raw["vfob_mode"]
+    if "vfob_bandwidth_hz" in raw:
+        state.vfob_bandwidth_hz = raw["vfob_bandwidth_hz"]
     if "sub_frequency_hz" in raw:
         state.sub_frequency_hz = raw["sub_frequency_hz"]
     if "sub_mode" in raw:

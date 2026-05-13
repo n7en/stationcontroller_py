@@ -299,11 +299,22 @@ class RigctldBackend(RadioBackend):
         state: dict = {}
         try:
             lines = await self._cmd(r"\get_freq VFOB")
-            state["sub_frequency_hz"] = float(lines[0])
+            state["vfob_frequency_hz"] = float(lines[0])
         except (RadioBackendError, IndexError, ValueError):
             pass
         try:
             lines = await self._cmd(r"\get_mode VFOB")
+            state["vfob_mode"] = lines[0]
+            state["vfob_bandwidth_hz"] = float(lines[1]) if len(lines) > 1 else 0.0
+        except (RadioBackendError, IndexError, ValueError):
+            pass
+        try:
+            lines = await self._cmd(r"\get_freq VFOC")
+            state["sub_frequency_hz"] = float(lines[0])
+        except (RadioBackendError, IndexError, ValueError):
+            pass
+        try:
+            lines = await self._cmd(r"\get_mode VFOC")
             state["sub_mode"] = lines[0]
             state["sub_bandwidth_hz"] = float(lines[1]) if len(lines) > 1 else 0.0
         except (RadioBackendError, IndexError, ValueError):
