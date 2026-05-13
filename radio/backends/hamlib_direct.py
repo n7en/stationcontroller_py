@@ -259,16 +259,27 @@ class HamlibDirectBackend(RadioBackend):
         const = getattr(H, attr, None)
         if const is None:
             raise RadioBackendError(f"Hamlib has no constant {attr} for level {level_name}")
-        # Try get_level_f(vfo, level) — pip Hamlib style
-        # Fall back to get_level_f(level) — some system package builds omit the VFO arg
-        # Also handle value_t SWIG objects that expose .f for the float field
-        try:
-            result = await self._run(rig.get_level_f, H.RIG_VFO_CURR, const)
-        except TypeError:
-            result = await self._run(rig.get_level_f, const)
-        if hasattr(result, 'f'):
-            return float(result.f)
-        return float(result)
+        # Try all known calling conventions across pip Hamlib and system python3-hamlib:
+        #   1. get_level_f(vfo, level)  — pip Hamlib, returns float directly
+        #   2. get_level_f(level)       — some system builds omit the VFO arg
+        #   3. get_level(vfo, level)    — system hamlib, returns value_t; use .f for float
+        #   4. get_level(level)         — system hamlib without VFO arg
+        last_exc: Exception = RadioBackendError("no working get_level convention")
+        for call in [
+            (rig.get_level_f, H.RIG_VFO_CURR, const),
+            (rig.get_level_f, const),
+            (rig.get_level,   H.RIG_VFO_CURR, const),
+            (rig.get_level,   const),
+        ]:
+            try:
+                result = await self._run(*call)
+                if hasattr(result, 'f'):
+                    return float(result.f)
+                return float(result)
+            except (TypeError, AttributeError) as exc:
+                last_exc = exc
+                continue
+        raise RadioBackendError(f"get_level failed for {level_name}: {last_exc}")
 
     async def set_level(self, level_name: str, value: float) -> None:
         rig, H = self._require()

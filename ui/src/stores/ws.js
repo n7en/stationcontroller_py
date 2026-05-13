@@ -18,14 +18,24 @@ export const sensors = writable({})
 export const labels = writable({})
 
 /**
+ * @typedef {{
+ *   frequency_hz: number|null, mode: string|null, bandwidth_hz: number|null,
+ *   vfo: string|null, ptt: boolean, signal_strength: number|null,
+ *   rf_power: number|null, connected: boolean, info: string|null,
+ *   vfob_frequency_hz: number|null, vfob_mode: string|null, vfob_bandwidth_hz: number|null,
+ *   sub_frequency_hz: number|null, sub_mode: string|null, sub_bandwidth_hz: number|null,
+ * }} RadioState
+ */
+
+/**
  * Map of radio name → live state for all configured radios.
- * @type {import('svelte/store').Writable<Record<string, {frequency_hz: number|null, mode: string|null, bandwidth_hz: number|null, vfo: string|null, ptt: boolean, signal_strength: number|null, rf_power: number|null, connected: boolean, info: string|null}>>}
+ * @type {import('svelte/store').Writable<Record<string, RadioState>>}
  */
 export const radios = writable({})
 
 /**
  * Primary radio state (first entry in the radios map) — kept for backward compat.
- * @type {import('svelte/store').Readable<{frequency_hz: number|null, mode: string|null, bandwidth_hz: number|null, vfo: string|null, ptt: boolean, signal_strength: number|null, rf_power: number|null, connected: boolean, info: string|null}|null>}
+ * @type {import('svelte/store').Readable<RadioState|null>}
  */
 export const radio = derived(radios, $r => Object.values($r)[0] ?? null)
 
@@ -96,15 +106,21 @@ function connect() {
           ...r,
           [name]: {
             ...(r[name] ?? {}),
-            frequency_hz:    msg.frequency_hz    ?? null,
-            mode:            msg.mode            ?? null,
-            bandwidth_hz:    msg.bandwidth_hz    ?? null,
-            vfo:             msg.vfo             ?? null,
-            ptt:             msg.ptt             ?? false,
-            signal_strength: msg.signal_strength ?? null,
-            rf_power:        msg.rf_power        ?? null,
-            connected:       msg.connected       ?? false,
-            info:            msg.info            ?? null,
+            frequency_hz:     msg.frequency_hz     ?? null,
+            mode:             msg.mode             ?? null,
+            bandwidth_hz:     msg.bandwidth_hz     ?? null,
+            vfo:              msg.vfo              ?? null,
+            ptt:              msg.ptt              ?? false,
+            signal_strength:  msg.signal_strength  ?? null,
+            rf_power:         'rf_power'        in msg ? msg.rf_power        : (r[name]?.rf_power        ?? null),
+            connected:        msg.connected        ?? false,
+            info:             msg.info             ?? null,
+            vfob_frequency_hz:'vfob_frequency_hz' in msg ? msg.vfob_frequency_hz : (r[name]?.vfob_frequency_hz ?? null),
+            vfob_mode:        'vfob_mode'        in msg ? msg.vfob_mode        : (r[name]?.vfob_mode        ?? null),
+            vfob_bandwidth_hz:'vfob_bandwidth_hz' in msg ? msg.vfob_bandwidth_hz : (r[name]?.vfob_bandwidth_hz ?? null),
+            sub_frequency_hz: 'sub_frequency_hz' in msg ? msg.sub_frequency_hz : (r[name]?.sub_frequency_hz  ?? null),
+            sub_mode:         'sub_mode'         in msg ? msg.sub_mode         : (r[name]?.sub_mode          ?? null),
+            sub_bandwidth_hz: 'sub_bandwidth_hz' in msg ? msg.sub_bandwidth_hz : (r[name]?.sub_bandwidth_hz  ?? null),
           }
         }))
       }
