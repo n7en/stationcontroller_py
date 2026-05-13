@@ -38,7 +38,7 @@ _MODE_TO_HAMLIB: dict[str, str] = {
 
 # Level name -> Hamlib constant attribute name
 _LEVEL_TO_HAMLIB: dict[str, str] = {
-    "STRENGTH":  "RIG_LEVEL_STR",
+    "STRENGTH":  "RIG_LEVEL_STRENGTH",
     "RFPOWER":   "RIG_LEVEL_RFPOWER",
     "AF":        "RIG_LEVEL_AF",
     "RF":        "RIG_LEVEL_RF",
@@ -256,7 +256,10 @@ class HamlibDirectBackend(RadioBackend):
         attr = _LEVEL_TO_HAMLIB.get(level_name.upper())
         if attr is None:
             raise RadioBackendError(f"Unknown level: {level_name}")
-        return float(await self._run(rig.get_level_f, H.RIG_VFO_CURR, getattr(H, attr)))
+        const = getattr(H, attr, None)
+        if const is None:
+            raise RadioBackendError(f"Hamlib has no constant {attr} for level {level_name}")
+        return float(await self._run(rig.get_level_f, H.RIG_VFO_CURR, const))
 
     async def set_level(self, level_name: str, value: float) -> None:
         rig, H = self._require()

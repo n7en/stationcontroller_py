@@ -124,34 +124,34 @@ class RadioBackend(ABC):
         state: dict = {}
         try:
             state["frequency_hz"] = await self.get_frequency()
-        except (RadioBackendError, TypeError):
+        except (RadioBackendError, TypeError, AttributeError):
             pass
         try:
             mode, bw = await self.get_mode()
             state["mode"] = mode
             state["bandwidth_hz"] = bw
-        except (RadioBackendError, TypeError):
+        except (RadioBackendError, TypeError, AttributeError):
             pass
         try:
             state["vfo"] = await self.get_vfo()
-        except (RadioBackendError, TypeError):
+        except (RadioBackendError, TypeError, AttributeError):
             pass
         try:
             state["ptt"] = await self.get_ptt()
-        except (RadioBackendError, TypeError):
+        except (RadioBackendError, TypeError, AttributeError):
             pass
         try:
             split, tx_hz = await self.get_split()
             state["split"] = split
             state["split_freq_hz"] = tx_hz
-        except (RadioBackendError, TypeError):
+        except (RadioBackendError, TypeError, AttributeError):
             pass
         try:
             state["signal_strength"] = await self.get_level("STRENGTH")
-        except (RadioBackendError, TypeError):
+        except (RadioBackendError, TypeError, AttributeError):
             pass
         try:
             state["rf_power"] = await self.get_level("RFPOWER")
-        except (RadioBackendError, TypeError):
+        except (RadioBackendError, TypeError, AttributeError):
             pass
         return state
