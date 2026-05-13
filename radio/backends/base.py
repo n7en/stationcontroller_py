@@ -154,4 +154,13 @@ class RadioBackend(ABC):
             state["rf_power"] = await self.get_level("RFPOWER")
         except (RadioBackendError, TypeError, AttributeError):
             pass
+        try:
+            sub = await self.get_sub_state()
+            state.update(sub)
+        except (RadioBackendError, TypeError, AttributeError):
+            pass
         return state
+
+    async def get_sub_state(self) -> dict:
+        """Poll VFO-B / sub-receiver state. Override in backends that support it."""
+        return {}

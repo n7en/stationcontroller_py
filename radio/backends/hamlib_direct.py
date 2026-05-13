@@ -259,7 +259,16 @@ class HamlibDirectBackend(RadioBackend):
         const = getattr(H, attr, None)
         if const is None:
             raise RadioBackendError(f"Hamlib has no constant {attr} for level {level_name}")
-        return float(await self._run(rig.get_level_f, H.RIG_VFO_CURR, const))
+        # Try get_level_f(vfo, level) — pip Hamlib style
+        # Fall back to get_level_f(level) — some system package builds omit the VFO arg
+        # Also handle value_t SWIG objects that expose .f for the float field
+        try:
+            result = await self._run(rig.get_level_f, H.RIG_VFO_CURR, const)
+        except TypeError:
+            result = await self._run(rig.get_level_f, const)
+        if hasattr(result, 'f'):
+            return float(result.f)
+        return float(result)
 
     async def set_level(self, level_name: str, value: float) -> None:
         rig, H = self._require()
@@ -267,6 +276,25 @@ class HamlibDirectBackend(RadioBackend):
         if attr is None:
             raise RadioBackendError(f"Unknown level: {level_name}")
         await self._run(rig.set_level, H.RIG_VFO_CURR, getattr(H, attr), value)
+
+    # ------------------------------------------------------------------
+    # Sub-receiver / VFO-B
+    # ------------------------------------------------------------------
+
+    async def get_sub_state(self) -> dict:
+        rig, H = self._require()
+        state: dict = {}
+        try:
+            state["sub_frequency_hz"] = float(await self._run(rig.get_freq, H.RIG_VFO_B))
+        except (TypeError, AttributeError, Exception):
+            pass
+        try:
+            mode_val, bw = await self._run(rig.get_mode, H.RIG_VFO_B)
+            state["sub_mode"] = H.rig_strrmode(mode_val)
+            state["sub_bandwidth_hz"] = float(bw)
+        except (TypeError, AttributeError, Exception):
+            pass
+        return state
 
     # ------------------------------------------------------------------
     # Info

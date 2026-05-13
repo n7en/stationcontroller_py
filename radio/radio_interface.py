@@ -245,6 +245,12 @@ def _apply_raw_state(state: RadioState, raw: dict) -> None:
         state.signal_strength = raw["signal_strength"]
     if "rf_power" in raw:
         state.rf_power = raw["rf_power"]
+    if "sub_frequency_hz" in raw:
+        state.sub_frequency_hz = raw["sub_frequency_hz"]
+    if "sub_mode" in raw:
+        state.sub_mode = raw["sub_mode"]
+    if "sub_bandwidth_hz" in raw:
+        state.sub_bandwidth_hz = raw["sub_bandwidth_hz"]
 
 
 def _apply_level(state: RadioState, level_name: str, value: float) -> None:

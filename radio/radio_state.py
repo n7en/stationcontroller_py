@@ -58,6 +58,11 @@ class RadioState:
     # Transmit power, normalized 0.0–1.0 (hamlib RFPOWER convention)
     rf_power: Optional[float] = None
 
+    # Sub-receiver / VFO-B
+    sub_frequency_hz: Optional[float] = None
+    sub_mode: Optional[str] = None
+    sub_bandwidth_hz: Optional[float] = None
+
     # Connection meta
     connected: bool = False
     info: Optional[str] = None               # radio model / firmware string
@@ -69,6 +74,7 @@ class RadioState:
             "frequency_hz", "mode", "bandwidth_hz", "vfo",
             "split", "split_freq_hz", "ptt", "signal_strength",
             "rf_power", "connected",
+            "sub_frequency_hz", "sub_mode", "sub_bandwidth_hz",
         ]
         return {f: getattr(other, f) for f in fields if getattr(self, f) != getattr(other, f)}
 

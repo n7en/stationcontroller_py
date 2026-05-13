@@ -57,6 +57,20 @@
     </div>
   </div>
 
+  <!-- Sub-band row -->
+  {#if radioState?.connected && radioState?.sub_frequency_hz}
+    <div class="sub-row">
+      <span class="sub-label">SUB</span>
+      <span class="sub-freq">{fmtFreq(radioState.sub_frequency_hz)}</span>
+      {#if radioState.sub_mode}
+        <span class="badge mode sub-badge">{radioState.sub_mode}</span>
+      {/if}
+      {#if fmtBw(radioState.sub_bandwidth_hz)}
+        <span class="badge bw sub-badge">{fmtBw(radioState.sub_bandwidth_hz)}</span>
+      {/if}
+    </div>
+  {/if}
+
   <!-- Meters row -->
   {#if radioState?.connected}
     <div class="meters-row">
@@ -140,6 +154,30 @@
     color: #fff;
     animation: pulse 0.8s ease-in-out infinite alternate;
   }
+
+  /* ── Sub-band ── */
+  .sub-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .sub-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    width: 2rem;
+    flex-shrink: 0;
+  }
+  .sub-freq {
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+  .sub-badge { font-size: 0.65rem; }
 
   /* ── Meters ── */
   .meters-row {

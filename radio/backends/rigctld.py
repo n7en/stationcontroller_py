@@ -288,4 +288,24 @@ class RigctldBackend(RadioBackend):
                 raise
         if not state:
             log.warning("rigctld poll returned no data from %s:%d - all commands failed", self._host, self._port)
+        try:
+            sub = await self.get_sub_state()
+            state.update(sub)
+        except RadioBackendError as exc:
+            log.debug("get_sub_state skipped: %s", exc)
+        return state
+
+    async def get_sub_state(self) -> dict:
+        state: dict = {}
+        try:
+            lines = await self._cmd(r"\get_freq VFOB")
+            state["sub_frequency_hz"] = float(lines[0])
+        except (RadioBackendError, IndexError, ValueError):
+            pass
+        try:
+            lines = await self._cmd(r"\get_mode VFOB")
+            state["sub_mode"] = lines[0]
+            state["sub_bandwidth_hz"] = float(lines[1]) if len(lines) > 1 else 0.0
+        except (RadioBackendError, IndexError, ValueError):
+            pass
         return state

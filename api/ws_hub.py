@@ -111,6 +111,9 @@ class WSHub:
             "rf_power":        rs.rf_power,
             "connected":       rs.connected,
             "info":            rs.info,
+            "sub_frequency_hz":  rs.sub_frequency_hz,
+            "sub_mode":          rs.sub_mode,
+            "sub_bandwidth_hz":  rs.sub_bandwidth_hz,
         })
 
     async def broadcast_automation(self, name: str, tier: str = "") -> None:
@@ -169,6 +172,9 @@ class WSHub:
                     "rf_power":        rs.rf_power,
                     "connected":       rs.connected,
                     "info":            rs.info,
+                    "sub_frequency_hz":  rs.sub_frequency_hz,
+                    "sub_mode":          rs.sub_mode,
+                    "sub_bandwidth_hz":  rs.sub_bandwidth_hz,
                 }
 
         labels = label_registry.all() if label_registry is not None else {}
