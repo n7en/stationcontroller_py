@@ -118,7 +118,8 @@ class HamlibDirectBackend(RadioBackend):
         self._H = H
 
         def _open():
-            H.rig_set_debug(H.RIG_DEBUG_NONE)
+            if hasattr(H, 'rig_set_debug') and hasattr(H, 'RIG_DEBUG_NONE'):
+                H.rig_set_debug(H.RIG_DEBUG_NONE)
             rig = H.Rig(self._model_id)
             if self._port:
                 rig.state.rigport.pathname = self._port
