@@ -92,15 +92,17 @@ class HamlibDirectBackend(RadioBackend):
         return self._connected
 
     def _load_hamlib(self):
-        try:
-            import Hamlib
-            return Hamlib
-        except ImportError as exc:
-            raise RadioBackendError(
-                "hamlib Python bindings not installed. "
-                "Install via your package manager (e.g. python3-hamlib on Linux) "
-                "or use the rigctld backend instead."
-            ) from exc
+        for mod_name in ("Hamlib", "hamlib"):
+            try:
+                import importlib
+                return importlib.import_module(mod_name)
+            except ImportError:
+                pass
+        raise RadioBackendError(
+            "hamlib Python bindings not installed. "
+            "Install via your package manager (e.g. python3-hamlib on Linux) "
+            "or use the rigctld backend instead."
+        )
 
     async def _run(self, fn, *args):
         loop = asyncio.get_running_loop()
