@@ -21,7 +21,7 @@ _BACKEND_REGISTRY: dict[str, type] = {
     "elecraft_k4":     ElecraftK4Backend,
 }
 
-_INTERFACE_KEYS = {"name", "backend", "poll_interval_s", "reconnect_delay_s"}
+_INTERFACE_KEYS = {"name", "backend", "enabled", "poll_interval_s", "reconnect_delay_s"}
 
 
 class RadioManager:
