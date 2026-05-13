@@ -92,16 +92,19 @@ class HamlibDirectBackend(RadioBackend):
         return self._connected
 
     def _load_hamlib(self):
+        import importlib
         for mod_name in ("Hamlib", "hamlib"):
             try:
-                import importlib
-                return importlib.import_module(mod_name)
+                mod = importlib.import_module(mod_name)
+                if hasattr(mod, "Rig"):
+                    return mod
             except ImportError:
                 pass
         raise RadioBackendError(
-            "hamlib Python bindings not installed. "
-            "Install via your package manager (e.g. python3-hamlib on Linux) "
-            "or use the rigctld backend instead."
+            "hamlib Python bindings not found or not usable. "
+            "Install python3-hamlib and ensure the virtualenv can access system packages "
+            "(rebuild with: python3 -m venv --system-site-packages .venv). "
+            "Alternatively, use the rigctld backend."
         )
 
     async def _run(self, fn, *args):
@@ -222,7 +225,12 @@ class HamlibDirectBackend(RadioBackend):
 
     async def get_split(self) -> tuple[bool, Optional[float]]:
         rig, H = self._require()
-        split_val, _tx_vfo = await self._run(rig.get_split_vfo, H.RIG_VFO_CURR)
+        try:
+            # pip Hamlib: get_split_vfo(vfo) -> (split, tx_vfo)
+            split_val, _tx_vfo = await self._run(rig.get_split_vfo, H.RIG_VFO_CURR)
+        except TypeError:
+            # system python3-hamlib: get_split_vfo(vfo, tx_vfo) -> (split, tx_vfo)
+            split_val, _tx_vfo = await self._run(rig.get_split_vfo, H.RIG_VFO_CURR, H.RIG_VFO_B)
         active = split_val != H.RIG_SPLIT_OFF
         tx_hz: Optional[float] = None
         if active:
