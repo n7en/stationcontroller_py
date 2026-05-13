@@ -21,22 +21,22 @@ RADIO_CFG = Path("config/radio_config.yaml")
 # Helpers
 # ---------------------------------------------------------------------------
 
-_RIGCTLD_KEYS  = {"name", "backend", "host", "port", "timeout_s",
+_RIGCTLD_KEYS  = {"name", "backend", "enabled", "host", "port", "timeout_s",
                    "poll_interval_s", "reconnect_delay_s",
                    "init_raw_cmds", "init_cmds"}
-_MANAGED_KEYS  = {"name", "backend", "model_id", "serial_port", "serial_baud",
+_MANAGED_KEYS  = {"name", "backend", "enabled", "model_id", "serial_port", "serial_baud",
                    "host", "port", "timeout_s", "startup_timeout_s",
                    "serial_timeout_ms", "poll_interval_s", "reconnect_delay_s",
                    "init_raw_cmds", "init_cmds"}
-_HAMLIB_KEYS   = {"name", "backend", "model_id", "port", "baud_rate",
+_HAMLIB_KEYS   = {"name", "backend", "enabled", "model_id", "port", "baud_rate",
                    "data_bits", "stop_bits", "parity", "poll_interval_s", "reconnect_delay_s"}
-_K4_KEYS       = {"name", "backend", "transport",
+_K4_KEYS       = {"name", "backend", "enabled", "transport",
                    "port", "baud_rate",
                    "host", "tcp_port", "password",
                    "timeout_s", "max_power_w", "power_range",
                    "poll_interval_s", "reconnect_delay_s"}
 
-_COMMON_DEFAULTS  = {"poll_interval_s": 1.0, "reconnect_delay_s": 5.0}
+_COMMON_DEFAULTS  = {"enabled": True, "poll_interval_s": 1.0, "reconnect_delay_s": 5.0}
 _RIGCTLD_DEFAULTS = {"host": "localhost", "port": 4532, "timeout_s": 15.0}
 _MANAGED_DEFAULTS = {"host": "127.0.0.1", "port": 0, "serial_baud": 9600,
                      "timeout_s": 15.0, "startup_timeout_s": 10.0,

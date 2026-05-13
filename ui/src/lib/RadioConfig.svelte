@@ -63,6 +63,7 @@
   function defaultEntry() {
     return {
       name: 'radio',
+      enabled: true,
       backend: 'managed_rigctld',
       model_id: 351,
       serial_port: '',
@@ -75,6 +76,12 @@
       poll_interval_s: 1.0,
       reconnect_delay_s: 5.0,
     }
+  }
+
+  function toggleEnabled(i) {
+    if (!config) return
+    config.radios[i] = { ...config.radios[i], enabled: !config.radios[i].enabled }
+    config = config
   }
 
   function startEdit(i) {
@@ -210,14 +217,19 @@
 
       {#each config.radios as radio, i (i)}
         {@const liveState = $radios[radio.name]}
-        <div class="radio-row" class:editing={editIdx === i}>
-          <span class="dot" class:online={liveState?.connected}></span>
+        <div class="radio-row" class:editing={editIdx === i} class:disabled={radio.enabled === false}>
+          <span class="dot" class:online={liveState?.connected && radio.enabled !== false}></span>
           <span class="radio-name">{radio.name}</span>
           <span class="radio-backend">{radio.backend}</span>
-          <span class="radio-status" class:online={liveState?.connected}>
-            {fmtStatus(liveState)}
+          <span class="radio-status" class:online={liveState?.connected && radio.enabled !== false}>
+            {radio.enabled === false ? 'Disabled' : fmtStatus(liveState)}
           </span>
           <div class="row-btns">
+            <button class="toggle-switch" class:on={radio.enabled !== false}
+                    on:click={() => toggleEnabled(i)}
+                    title={radio.enabled !== false ? 'Enabled — click to disable' : 'Disabled — click to enable'}>
+              <span class="toggle-knob"></span>
+            </button>
             <button on:click={() => editIdx === i ? cancelEdit() : startEdit(i)}>
               {editIdx === i ? 'Cancel' : 'Edit'}
             </button>
@@ -755,7 +767,33 @@
   .radio-status { font-size: 0.78rem; color: var(--text-muted); }
   .radio-status.online { color: var(--green); }
 
-  .row-btns { display: flex; gap: 0.4rem; margin-left: auto; }
+  .row-btns { display: flex; gap: 0.4rem; margin-left: auto; align-items: center; }
+
+  .radio-row.disabled .radio-name,
+  .radio-row.disabled .radio-backend { opacity: 0.45; }
+
+  /* ── Toggle switch ── */
+  .toggle-switch {
+    position: relative;
+    width: 36px; height: 20px;
+    padding: 0; border: none;
+    border-radius: 10px;
+    background: var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-switch.on { background: var(--green); }
+  .toggle-knob {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.2s;
+    pointer-events: none;
+  }
+  .toggle-switch.on .toggle-knob { left: 19px; }
 
   /* ── Edit form ── */
   .edit-form {

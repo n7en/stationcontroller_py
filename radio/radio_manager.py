@@ -95,6 +95,9 @@ class RadioManager:
         manager = cls()
 
         for entry in cfg.get("radios", []):
+            if not entry.get("enabled", True):
+                log.info("Radio '%s' is disabled - skipping", entry.get("name", "?"))
+                continue
             name = entry["name"]
             backend_type = entry["backend"]
 
