@@ -19,11 +19,14 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from comms.dcn_network import DCNNetwork
 from comms.dcn_packet import DCNPacket
 from sensors.sensor_registry import SensorRegistry
+
+if TYPE_CHECKING:
+    from sensors.label_registry import LabelRegistry
 
 
 # ---------------------------------------------------------------------------
@@ -99,6 +102,7 @@ class GPIOModule:
         name: str,
         address: str,
         registry: SensorRegistry,
+        label_registry: "Optional[LabelRegistry]" = None,
     ) -> None:
         self.name = name
         self.address = address
@@ -112,6 +116,15 @@ class GPIOModule:
             registry.publish(f"{name}_voltmeter_{_i}", 0.0, "V", src)
         registry.publish(f"{name}_temp_0_f", 0.0, "°F", src)
         registry.publish(f"{name}_temp_1_f", 0.0, "°F", src)
+
+        if label_registry is not None:
+            for _i in range(8):
+                label_registry.set_default(f"{name}_relay_{_i}", f"Relay {_i + 1}")
+            for _i in range(4):
+                label_registry.set_default(f"{name}_input_{_i}", f"Input {_i + 1}")
+                label_registry.set_default(f"{name}_voltmeter_{_i}", f"Voltmeter {_i + 1}")
+            label_registry.set_default(f"{name}_temp_0_f", "Temperature 1")
+            label_registry.set_default(f"{name}_temp_1_f", "Temperature 2")
 
     def attach(self, network: DCNNetwork) -> None:
         """Register the packet handler with a DCN network."""

@@ -7,6 +7,7 @@ import logging
 
 from .backends.elecraft_k4 import ElecraftK4Backend
 from .backends.hamlib_direct import HamlibDirectBackend
+from .backends.icom_lan import IcomLanBackend
 from .backends.managed_rigctld import ManagedRigctldBackend
 from .backends.rigctld import RigctldBackend
 from .config import load_radio_config
@@ -19,6 +20,7 @@ _BACKEND_REGISTRY: dict[str, type] = {
     "hamlib_direct":   HamlibDirectBackend,
     "managed_rigctld": ManagedRigctldBackend,
     "elecraft_k4":     ElecraftK4Backend,
+    "icom_lan":        IcomLanBackend,
 }
 
 _INTERFACE_KEYS = {"name", "backend", "enabled", "poll_interval_s", "reconnect_delay_s"}

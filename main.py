@@ -286,7 +286,7 @@ async def main() -> None:
         for bus_name, net in networks.items():
             log.info("DCN bus '%s': %s", bus_name, net)
 
-        devices, addr_bus = load_devices(COMMS_CFG, sensor_registry, networks)
+        devices, addr_bus = load_devices(COMMS_CFG, sensor_registry, networks, label_registry)
         log.info(
             "Loaded %d device(s) across %d bus(es): %s",
             len(devices), len(networks), list(devices.keys()),

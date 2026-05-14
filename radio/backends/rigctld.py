@@ -289,6 +289,16 @@ class RigctldBackend(RadioBackend):
         if not state:
             log.warning("rigctld poll returned no data from %s:%d - all commands failed", self._host, self._port)
         try:
+            lines = await self._cmd(r"\get_level RFPOWER")
+            state["rf_power"] = float(lines[0])
+        except (RadioBackendError, IndexError, ValueError):
+            pass
+        try:
+            lines = await self._cmd(r"\get_level STRENGTH")
+            state["signal_strength"] = float(lines[0])
+        except (RadioBackendError, IndexError, ValueError):
+            pass
+        try:
             sub = await self.get_sub_state()
             state.update(sub)
         except RadioBackendError as exc:

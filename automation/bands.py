@@ -202,6 +202,33 @@ class BandPlan:
         )
 
     @classmethod
+    def itu_region_1(cls) -> "BandPlan":
+        """
+        IARU Region 1 band plan (Europe, Africa, Middle East, CIS).
+        Key differences from Region 2: narrower 80m (3.5–3.8), 40m (7.0–7.2),
+        shorter 2m (144–146 MHz), 70cm (430–440 MHz), and a 4m allocation.
+        """
+        return cls(
+            name="ITU Region 1 (Europe / Africa)",
+            region="ITU-1",
+            bands=_itu_r1_bands(),
+        )
+
+    @classmethod
+    def itu_region_3(cls) -> "BandPlan":
+        """
+        IARU Region 3 band plan (Asia & Pacific) - September 2019 edition.
+        Key differences from Region 1: 80m extends to 3.900 MHz, 40m NB zone
+        to 7.100 MHz, 20m digital to 14.112 MHz, 2m extends to 148 MHz.
+        Key differences from Region 2: 40m ends at 7.200 MHz, 70cm is 430-440.
+        """
+        return cls(
+            name="ITU Region 3 (Asia / Pacific)",
+            region="ITU-3",
+            bands=_itu_r3_bands(),
+        )
+
+    @classmethod
     def itu_region_2(cls) -> "BandPlan":
         """
         ITU Region 2 generic allocation (Americas) - no licence-class splits.
@@ -221,11 +248,13 @@ class BandPlan:
     @classmethod
     def from_built_in(cls, name: str) -> "BandPlan":
         factories = {
-            "us_extra": cls.us_extra,
-            "us_general": cls.us_general,
-            "ca_amateur": cls.ca_amateur,
+            "us_extra":     cls.us_extra,
+            "us_general":   cls.us_general,
+            "ca_amateur":   cls.ca_amateur,
+            "itu_region_1": cls.itu_region_1,
             "itu_region_2": cls.itu_region_2,
-            "amateur": cls.amateur,
+            "itu_region_3": cls.itu_region_3,
+            "amateur":      cls.amateur,
         }
         key = name.lower().replace(" ", "_").replace("-", "_")
         factory = factories.get(key)
@@ -628,28 +657,458 @@ def _ca_bands() -> list[Band]:
 
 def _itu_r2_bands() -> list[Band]:
     """
-    ITU Region 2 generic HF allocations - Americas, no licence-class splits.
-    Includes digital activity frequencies without mode-segment detail.
+    IARU Region 2 band plan (Americas) - September 2020 edition.
+    Key differences from Region 1: 80m extends to 4.000 MHz, 40m to 7.300 MHz,
+    160m starts at 1.800 MHz, 2m extends to 148 MHz, 70cm is 420-450 MHz.
+    Also includes the North American 1.25m (222-225 MHz) allocation.
     """
-    ft8 = _ft8_activities()
+    ft8  = _ft8_activities()
     wspr = _wspr_activities()
+    js8  = _js8_activities()
+    ft4  = _ft4_activities()
 
     def acts(*dicts_and_key):
-        key = dicts_and_key[-1]
+        key   = dicts_and_key[-1]
         dicts = dicts_and_key[:-1]
         return tuple(d[key] for d in dicts if key in d)
 
     return [
-        Band("160m",  1_800_000,   2_000_000, activities=acts(ft8, wspr, "160m")),
-        Band("80m",   3_500_000,   4_000_000, activities=acts(ft8, wspr, "80m")),
-        Band("40m",   7_000_000,   7_300_000, activities=acts(ft8, wspr, "40m")),
-        Band("30m",  10_100_000,  10_150_000, activities=acts(ft8, wspr, "30m")),
-        Band("20m",  14_000_000,  14_350_000, activities=acts(ft8, wspr, "20m")),
-        Band("17m",  18_068_000,  18_168_000, activities=acts(ft8, wspr, "17m")),
-        Band("15m",  21_000_000,  21_450_000, activities=acts(ft8, wspr, "15m")),
-        Band("12m",  24_890_000,  24_990_000),
-        Band("10m",  28_000_000,  29_700_000, activities=acts(ft8, wspr, "10m")),
-        Band("6m",   50_000_000,  54_000_000),
-        Band("2m",  144_000_000, 148_000_000),
+        Band("160m", 1_800_000, 2_000_000,
+             segments=(
+                 BandSegment("cw",      1_800_000, 1_840_000, ("CW",),
+                             description="CW; Region 2 starts at 1.800 MHz (vs Region 1 at 1.810)"),
+                 BandSegment("digital", 1_838_000, 1_843_000, ("FT8", "WSPR", "PSK31")),
+                 BandSegment("phone",   1_840_000, 2_000_000, ("LSB", "AM")),
+             ),
+             activities=acts(ft8, wspr, "160m")),
+
+        Band("80m", 3_500_000, 4_000_000,
+             segments=(
+                 BandSegment("cw",      3_500_000, 3_570_000, ("CW",)),
+                 BandSegment("digital", 3_570_000, 3_600_000, ("FT8", "WSPR", "JS8", "RTTY")),
+                 # Phone extends to 4.000 MHz in Region 2 (vs 3.800 in Region 1)
+                 BandSegment("phone",   3_600_000, 4_000_000, ("LSB", "AM")),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "80m")),
+
+        Band("40m", 7_000_000, 7_300_000,
+             segments=(
+                 BandSegment("cw",      7_000_000, 7_040_000, ("CW",)),
+                 # FT8 at 7.074 falls here — Region 2 digital zone extends to 7.100
+                 BandSegment("digital", 7_040_000, 7_100_000, ("FT8", "WSPR", "JS8", "RTTY")),
+                 # Phone extends to 7.300 MHz in Region 2 (vs 7.200 in Region 1)
+                 BandSegment("phone",   7_100_000, 7_300_000, ("LSB",)),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "40m")),
+
+        # 60m: WRC-15 allocation, included in 2020 IARU Region 2 plan
+        Band("60m", 5_351_500, 5_366_500,
+             segments=(
+                 BandSegment("mixed", 5_351_500, 5_366_500, ("CW", "USB", "FT8", "WSPR"),
+                             description="WRC-15 allocation; USB recommended; 100W ERP limit"),
+             )),
+
+        Band("30m", 10_100_000, 10_150_000,
+             segments=(
+                 BandSegment("cw",      10_100_000, 10_130_000, ("CW",)),
+                 BandSegment("digital", 10_130_000, 10_150_000, ("FT8", "WSPR", "JS8")),
+             ),
+             activities=acts(ft8, wspr, js8, "30m")),
+
+        Band("20m", 14_000_000, 14_350_000,
+             segments=(
+                 BandSegment("cw",      14_000_000, 14_060_000, ("CW",)),
+                 BandSegment("digital", 14_060_000, 14_099_000, ("FT8", "WSPR", "JS8", "RTTY")),
+                 BandSegment("beacon",  14_099_000, 14_101_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   14_101_000, 14_350_000, ("USB",)),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "20m")),
+
+        Band("17m", 18_068_000, 18_168_000,
+             segments=(
+                 BandSegment("cw",      18_068_000, 18_095_000, ("CW",)),
+                 BandSegment("digital", 18_095_000, 18_109_000, ("FT8", "WSPR")),
+                 BandSegment("beacon",  18_109_000, 18_111_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   18_111_000, 18_168_000, ("USB",)),
+             ),
+             activities=acts(ft8, wspr, "17m")),
+
+        Band("15m", 21_000_000, 21_450_000,
+             segments=(
+                 BandSegment("cw",      21_000_000, 21_070_000, ("CW",)),
+                 BandSegment("digital", 21_070_000, 21_149_000, ("FT8", "WSPR", "RTTY")),
+                 BandSegment("beacon",  21_149_000, 21_151_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   21_151_000, 21_450_000, ("USB",)),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "15m")),
+
+        Band("12m", 24_890_000, 24_990_000,
+             segments=(
+                 BandSegment("cw",      24_890_000, 24_915_000, ("CW",)),
+                 BandSegment("digital", 24_915_000, 24_929_000, ("FT8", "WSPR")),
+                 BandSegment("beacon",  24_929_000, 24_931_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   24_931_000, 24_990_000, ("USB",)),
+             ),
+             activities=acts(ft8, wspr, "12m")),
+
+        Band("10m", 28_000_000, 29_700_000,
+             segments=(
+                 BandSegment("cw",      28_000_000, 28_070_000, ("CW",)),
+                 BandSegment("digital", 28_070_000, 28_190_000, ("FT8", "WSPR", "RTTY")),
+                 BandSegment("beacon",  28_190_000, 28_225_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   28_225_000, 29_300_000, ("USB", "AM")),
+                 BandSegment("mixed",   29_300_000, 29_700_000, ("FM",),
+                             description="Satellite links, FM repeaters/simplex"),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "10m")),
+
+        Band("6m", 50_000_000, 54_000_000,
+             segments=(
+                 BandSegment("cw",    50_000_000, 50_100_000, ("CW",)),
+                 BandSegment("phone", 50_100_000, 54_000_000, ("USB", "FM")),
+             ),
+             activities=(Activity("ft8", 50_313_000, "FT8", 50),)),
+
+        # 1.25m: North American allocation (US, Canada, Mexico within Region 2)
+        Band("1.25m", 222_000_000, 225_000_000,
+             segments=(
+                 BandSegment("cw",    222_000_000, 222_025_000, ("CW",)),
+                 BandSegment("phone", 222_025_000, 225_000_000, ("USB", "FM")),
+             )),
+
+        Band("2m", 144_000_000, 148_000_000,
+             segments=(
+                 BandSegment("cw",      144_000_000, 144_150_000, ("CW",)),
+                 BandSegment("digital", 144_150_000, 144_400_000, ("FT8", "WSPR")),
+                 BandSegment("phone",   144_400_000, 148_000_000, ("USB", "FM")),
+             ),
+             activities=(Activity("ft8", 144_174_000, "FT8", 50),)),
+
         Band("70cm", 420_000_000, 450_000_000),
     ]
+
+
+def _itu_r1_bands() -> list[Band]:
+    """
+    IARU Region 1 band plan (Europe, Africa, Middle East, CIS).
+    Key differences from Region 2: narrower 80m/40m, shorter 2m/70cm, adds 4m.
+    """
+    ft8  = _ft8_activities()
+    wspr = _wspr_activities()
+    js8  = _js8_activities()
+    ft4  = _ft4_activities()
+
+    def acts(*dicts_and_key):
+        key   = dicts_and_key[-1]
+        dicts = dicts_and_key[:-1]
+        return tuple(d[key] for d in dicts if key in d)
+
+    return [
+        Band("160m", 1_810_000, 2_000_000,
+             segments=(
+                 BandSegment("cw",      1_810_000, 1_838_000, ("CW",)),
+                 BandSegment("digital", 1_838_000, 1_843_000, ("FT8", "WSPR", "PSK31")),
+                 BandSegment("phone",   1_843_000, 2_000_000, ("LSB",)),
+             ),
+             activities=acts(ft8, wspr, "160m")),
+
+        Band("80m", 3_500_000, 3_800_000,
+             segments=(
+                 # CW ends at 3.570 — digital starts there (no overlap)
+                 BandSegment("cw",      3_500_000, 3_570_000, ("CW",)),
+                 BandSegment("digital", 3_570_000, 3_600_000, ("FT8", "WSPR", "JS8", "RTTY")),
+                 BandSegment("phone",   3_600_000, 3_800_000, ("LSB",)),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "80m")),
+
+        Band("40m", 7_000_000, 7_200_000,
+             segments=(
+                 BandSegment("cw",      7_000_000, 7_040_000, ("CW",)),
+                 # 7.040-7.060: narrow band / digi modes per IARU R1 plan
+                 # FT8 at 7.074 falls in the phone/all-modes section (correct)
+                 BandSegment("digital", 7_040_000, 7_060_000, ("FT8", "WSPR", "JS8", "RTTY")),
+                 BandSegment("phone",   7_060_000, 7_200_000, ("LSB",)),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "40m")),
+
+        Band("30m", 10_100_000, 10_150_000,
+             segments=(
+                 BandSegment("cw",      10_100_000, 10_130_000, ("CW",)),
+                 BandSegment("digital", 10_130_000, 10_150_000, ("FT8", "WSPR", "JS8")),
+             ),
+             activities=acts(ft8, wspr, js8, "30m")),
+
+        Band("20m", 14_000_000, 14_350_000,
+             segments=(
+                 BandSegment("cw",      14_000_000, 14_070_000, ("CW",)),
+                 BandSegment("digital", 14_070_000, 14_099_000, ("FT8", "WSPR", "JS8", "RTTY")),
+                 BandSegment("beacon",  14_099_000, 14_101_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   14_101_000, 14_350_000, ("USB",)),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "20m")),
+
+        Band("17m", 18_068_000, 18_168_000,
+             segments=(
+                 BandSegment("cw",      18_068_000, 18_095_000, ("CW",)),
+                 BandSegment("digital", 18_095_000, 18_109_000, ("FT8", "WSPR")),
+                 BandSegment("beacon",  18_109_000, 18_111_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   18_111_000, 18_168_000, ("USB",)),
+             ),
+             activities=acts(ft8, wspr, "17m")),
+
+        Band("15m", 21_000_000, 21_450_000,
+             segments=(
+                 BandSegment("cw",      21_000_000, 21_070_000, ("CW",)),
+                 BandSegment("digital", 21_070_000, 21_149_000, ("FT8", "WSPR", "RTTY")),
+                 BandSegment("beacon",  21_149_000, 21_151_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   21_151_000, 21_450_000, ("USB",)),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "15m")),
+
+        Band("12m", 24_890_000, 24_990_000,
+             segments=(
+                 BandSegment("cw",      24_890_000, 24_915_000, ("CW",)),
+                 BandSegment("digital", 24_915_000, 24_929_000, ("FT8", "WSPR")),
+                 BandSegment("beacon",  24_929_000, 24_931_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   24_931_000, 24_990_000, ("USB",)),
+             ),
+             activities=acts(ft8, wspr, "12m")),
+
+        Band("10m", 28_000_000, 29_700_000,
+             segments=(
+                 BandSegment("cw",      28_000_000, 28_070_000, ("CW",)),
+                 BandSegment("digital", 28_070_000, 28_190_000, ("FT8", "WSPR", "RTTY")),
+                 BandSegment("beacon",  28_190_000, 28_225_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   28_225_000, 29_300_000, ("USB", "AM")),
+                 BandSegment("mixed",   29_300_000, 29_700_000, ("FM",),
+                             description="Satellite links, FM repeaters/simplex"),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "10m")),
+
+        Band("6m", 50_000_000, 52_000_000,
+             segments=(
+                 BandSegment("cw",   50_000_000, 50_100_000, ("CW",)),
+                 BandSegment("phone", 50_100_000, 52_000_000, ("USB", "FM")),
+             ),
+             activities=(Activity("ft8", 50_313_000, "FT8", 50),)),
+
+        # 4m: 70.100-70.200 is SSB/CW calling (70.200 = SSB calling, 70.260 = FM calling)
+        # FT8 at 70.154 is used by convention in UK and some countries (not a formal IARU segment)
+        Band("4m", 70_000_000, 70_500_000,
+             segments=(
+                 BandSegment("cw",    70_000_000, 70_100_000, ("CW",),
+                             description="CW, beacons"),
+                 BandSegment("phone", 70_100_000, 70_500_000, ("USB", "FM"),
+                             description="SSB calling 70.200; FM calling 70.260; FT8 by convention 70.154"),
+             ),
+             activities=(Activity("ft8", 70_154_000, "FT8", 50),)),
+
+        Band("2m", 144_000_000, 146_000_000,
+             segments=(
+                 BandSegment("cw",      144_000_000, 144_150_000, ("CW",)),
+                 BandSegment("digital", 144_150_000, 144_400_000, ("FT8", "WSPR")),
+                 BandSegment("phone",   144_400_000, 146_000_000, ("USB", "FM")),
+             ),
+             activities=(Activity("ft8", 144_174_000, "FT8", 50),)),
+
+        Band("70cm", 430_000_000, 440_000_000),
+    ]
+
+
+def _itu_r3_bands() -> list[Band]:
+    """
+    IARU Region 3 band plan (Asia and Pacific) - September 2019 edition.
+
+    Key distinctions:
+      160m  - digital window 1.840-1.850 MHz only (phone from 1.850)
+      80m   - extends to 3.900 MHz (R1 stops at 3.800, R2 at 4.000)
+      40m   - 7.000-7.200 MHz (like R1); NB/digital zone wider: 7.040-7.100
+      20m   - digital to 14.112 MHz; no separate beacon window (IBP at 14.100 inside)
+      17m   - phone from 18.110 MHz (IBP beacon sits at zone boundary)
+      15m   - digital to 21.150 MHz; phone from 21.150 (IBP beacon at boundary)
+      12m   - CW/NB combined to 24.930; phone from 24.930 (no separate digital segment)
+      10m   - same IBP beacon window as R1/R2
+      2m    - 144-148 MHz (wide, same as R2; R1 is 144-146)
+      70cm  - 430-440 MHz (same as R1)
+    """
+    ft8  = _ft8_activities()
+    wspr = _wspr_activities()
+    js8  = _js8_activities()
+    ft4  = _ft4_activities()
+
+    def acts(*dicts_and_key):
+        key   = dicts_and_key[-1]
+        dicts = dicts_and_key[:-1]
+        return tuple(d[key] for d in dicts if key in d)
+
+    return [
+        Band("160m", 1_800_000, 2_000_000,
+             segments=(
+                 # CW from band start; digital window is narrow (only 10 kHz)
+                 BandSegment("cw",      1_800_000, 1_840_000, ("CW",)),
+                 BandSegment("digital", 1_840_000, 1_850_000, ("FT8", "WSPR", "PSK31"),
+                             description="Region 3 digital window 1.840-1.850 MHz (narrower than R1/R2)"),
+                 BandSegment("phone",   1_850_000, 2_000_000, ("LSB", "AM"),
+                             description="Phone from 1.850 MHz (vs R1 1.843, R2 1.840)"),
+             ),
+             activities=acts(ft8, wspr, "160m")),
+
+        Band("80m", 3_500_000, 3_900_000,
+             segments=(
+                 BandSegment("cw",      3_500_000, 3_575_000, ("CW",)),
+                 BandSegment("digital", 3_575_000, 3_600_000, ("FT8", "WSPR", "JS8", "RTTY")),
+                 # Phone extends to 3.900 MHz — unique to Region 3
+                 BandSegment("phone",   3_600_000, 3_900_000, ("LSB", "AM"),
+                             description="80m extends to 3.900 MHz in Region 3 (vs 3.800 in R1)"),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "80m")),
+
+        Band("40m", 7_000_000, 7_200_000,
+             segments=(
+                 BandSegment("cw",      7_000_000, 7_040_000, ("CW",)),
+                 # NB/digital zone is wider than R1 (7.040-7.100 vs R1's 7.040-7.060)
+                 BandSegment("digital", 7_040_000, 7_100_000, ("FT8", "WSPR", "JS8", "RTTY"),
+                             description="Region 3 NB zone 7.040-7.100 MHz (wider than R1's 7.060)"),
+                 BandSegment("phone",   7_100_000, 7_200_000, ("LSB",),
+                             description="40m ends at 7.200 MHz (same as R1, unlike R2's 7.300)"),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "40m")),
+
+        Band("30m", 10_100_000, 10_150_000,
+             segments=(
+                 BandSegment("cw",      10_100_000, 10_130_000, ("CW",)),
+                 BandSegment("digital", 10_130_000, 10_150_000, ("FT8", "WSPR", "JS8"),
+                             description="No phone on 30m"),
+             ),
+             activities=acts(ft8, wspr, js8, "30m")),
+
+        Band("20m", 14_000_000, 14_350_000,
+             segments=(
+                 BandSegment("cw",      14_000_000, 14_070_000, ("CW",)),
+                 # Digital extends to 14.112 in R3 (IBP beacon at 14.100 inside this zone)
+                 BandSegment("digital", 14_070_000, 14_112_000, ("FT8", "WSPR", "JS8", "RTTY"),
+                             description="Digital to 14.112 MHz; IBP beacon at 14.100 within zone"),
+                 BandSegment("phone",   14_112_000, 14_350_000, ("USB",),
+                             description="Phone from 14.112 MHz (vs R1/R2 14.101)"),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "20m")),
+
+        Band("17m", 18_068_000, 18_168_000,
+             segments=(
+                 BandSegment("cw",      18_068_000, 18_095_000, ("CW",)),
+                 # Digital ends at 18.110; IBP beacon at 18.110 sits at the zone boundary
+                 BandSegment("digital", 18_095_000, 18_110_000, ("FT8", "WSPR"),
+                             description="Digital to 18.110; IBP beacon at 18.110 at boundary"),
+                 BandSegment("phone",   18_110_000, 18_168_000, ("USB",)),
+             ),
+             activities=acts(ft8, wspr, "17m")),
+
+        Band("15m", 21_000_000, 21_450_000,
+             segments=(
+                 BandSegment("cw",      21_000_000, 21_070_000, ("CW",)),
+                 # Digital/NB extends to 21.150 in R3 (vs R1/R2 21.149)
+                 BandSegment("digital", 21_070_000, 21_150_000, ("FT8", "WSPR", "RTTY"),
+                             description="Digital to 21.150 MHz; IBP beacon at 21.150 at boundary"),
+                 BandSegment("phone",   21_150_000, 21_450_000, ("USB",),
+                             description="Phone from 21.150 MHz (vs R1/R2 21.151)"),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "15m")),
+
+        Band("12m", 24_890_000, 24_990_000,
+             segments=(
+                 # R3 combines CW and NB; CW/NB to 24.930, phone from 24.930
+                 # IBP beacon at 24.930 sits at the zone boundary
+                 BandSegment("cw",      24_890_000, 24_930_000, ("CW",),
+                             description="CW/NB to 24.930; IBP beacon at 24.930 at boundary"),
+                 BandSegment("phone",   24_930_000, 24_990_000, ("USB",),
+                             description="Phone from 24.930 MHz (no separate digital segment)"),
+             ),
+             activities=acts(ft8, wspr, "12m")),
+
+        Band("10m", 28_000_000, 29_700_000,
+             segments=(
+                 BandSegment("cw",      28_000_000, 28_070_000, ("CW",)),
+                 BandSegment("digital", 28_070_000, 28_190_000, ("FT8", "WSPR", "RTTY")),
+                 BandSegment("beacon",  28_190_000, 28_225_000, (),
+                             description="IBP beacons"),
+                 BandSegment("phone",   28_225_000, 29_300_000, ("USB", "AM")),
+                 BandSegment("mixed",   29_300_000, 29_700_000, ("FM",),
+                             description="Satellite links, FM repeaters/simplex"),
+             ),
+             activities=acts(ft8, wspr, js8, ft4, "10m")),
+
+        Band("6m", 50_000_000, 54_000_000,
+             segments=(
+                 BandSegment("cw",    50_000_000, 50_100_000, ("CW",)),
+                 BandSegment("phone", 50_100_000, 54_000_000, ("USB", "FM"),
+                             description="Many R3 countries have allocation limited to 50.000-50.500 MHz"),
+             ),
+             activities=(Activity("ft8", 50_313_000, "FT8", 50),)),
+
+        Band("2m", 144_000_000, 148_000_000,
+             segments=(
+                 BandSegment("cw",      144_000_000, 144_150_000, ("CW",)),
+                 BandSegment("digital", 144_150_000, 144_400_000, ("FT8", "WSPR")),
+                 BandSegment("phone",   144_400_000, 148_000_000, ("USB", "FM"),
+                             description="2m extends to 148 MHz in Region 3 (same as R2; R1 is 144-146)"),
+             ),
+             activities=(Activity("ft8", 144_174_000, "FT8", 50),)),
+
+        # 70cm: 430-440 MHz (same as R1; Region 2 is 420-450 MHz)
+        Band("70cm", 430_000_000, 440_000_000),
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Serialization
+# ---------------------------------------------------------------------------
+
+def band_plan_to_dict(plan: "BandPlan") -> dict:
+    """Serialize a BandPlan to a JSON-safe dict (mirrors band_plan_from_config input)."""
+    return {
+        "name":    plan.name,
+        "country": plan.country,
+        "region":  plan.region,
+        "bands":   [_band_to_dict(b) for b in plan._bands],
+    }
+
+
+def _band_to_dict(band: Band) -> dict:
+    return {
+        "name":       band.name,
+        "start_hz":   band.start_hz,
+        "end_hz":     band.end_hz,
+        "modes":      list(band.modes),
+        "segments":   [_segment_to_dict(s) for s in band.segments],
+        "activities": [_activity_to_dict(a) for a in band.activities],
+    }
+
+
+def _segment_to_dict(seg: BandSegment) -> dict:
+    return {
+        "name":        seg.name,
+        "start_hz":    seg.start_hz,
+        "end_hz":      seg.end_hz,
+        "modes":       list(seg.modes),
+        "description": seg.description,
+    }
+
+
+def _activity_to_dict(act: Activity) -> dict:
+    return {
+        "name":         act.name,
+        "frequency_hz": act.frequency_hz,
+        "mode":         act.mode,
+        "bandwidth_hz": act.bandwidth_hz,
+        "description":  act.description,
+    }

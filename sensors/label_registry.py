@@ -54,6 +54,11 @@ class LabelRegistry:
         self._by_key[hardware_key] = label
         self._by_label[label] = hardware_key
 
+    def set_default(self, hardware_key: str, label: str) -> None:
+        """Assign *label* to *hardware_key* only if no label is already set."""
+        if hardware_key not in self._by_key:
+            self.set(hardware_key, label)
+
     def remove(self, hardware_key: str) -> None:
         """Remove the label for *hardware_key* (no-op if not labelled)."""
         label = self._by_key.pop(hardware_key, None)

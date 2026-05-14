@@ -19,11 +19,14 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from comms.config import load_config
 from comms.dcn_network import DCNNetwork
 from sensors.sensor_registry import SensorRegistry
+
+if TYPE_CHECKING:
+    from sensors.label_registry import LabelRegistry
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +51,7 @@ def load_devices(
     config_path: str | Path,
     registry: SensorRegistry,
     networks: dict[str, DCNNetwork],
+    label_registry: "Optional[LabelRegistry]" = None,
 ) -> tuple[dict[str, Any], dict[str, str]]:
     """Instantiate and attach all devices declared in *config_path*.
 
@@ -86,6 +90,8 @@ def load_devices(
                 persona = dev_cfg.get("persona")
                 if persona:
                     kwargs["persona"] = persona
+            if device_type == "gpio" and label_registry is not None:
+                kwargs["label_registry"] = label_registry
             device = device_cls(name=name, address=address, registry=registry, **kwargs)
         except Exception:
             log.exception("Failed to create device '%s' (type=%s)", name, device_type)

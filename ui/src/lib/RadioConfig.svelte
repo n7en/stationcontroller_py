@@ -166,6 +166,15 @@
         max_power_w: editEntry.max_power_w ?? 100,
         power_range: editEntry.power_range ?? 'H',
       }
+    } else if (backend === 'icom_lan') {
+      editEntry = { ...shared,
+        host:      editEntry.host     ?? '',
+        port:      editEntry.port     || 50001,
+        username:  editEntry.username ?? '',
+        password:  editEntry.password ?? '',
+        model:     editEntry.model    ?? '',
+        timeout_s: editEntry.timeout_s ?? 15.0,
+      }
     }
   }
 
@@ -256,6 +265,7 @@
                   <option value="rigctld">rigctld (connect to running daemon)</option>
                   <option value="hamlib_direct">hamlib direct (Python bindings)</option>
                   <option value="elecraft_k4">Elecraft K4 (native CAT)</option>
+                  <option value="icom_lan">Icom LAN (native UDP — no rigctld)</option>
                 </select>
               </label>
             </div>
@@ -444,6 +454,43 @@
               <p class="hint">
                 Set TCP port on the K4: Front Panel → Config → Network.
                 Baud rate must match Front Panel → XCVR → KIO3 CAT.
+              </p>
+            {/if}
+
+            {#if editEntry.backend === 'icom_lan'}
+              <div class="field-row">
+                <div class="field grow">
+                  <label>Radio IP address
+                    <input bind:value={editEntry.host} placeholder="192.168.1.50" />
+                  </label>
+                </div>
+                <div class="field narrow">
+                  <label>Port
+                    <input type="number" bind:value={editEntry.port} min="1" max="65535" />
+                  </label>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field grow">
+                  <label>Username (optional)
+                    <input bind:value={editEntry.username} placeholder="leave blank if not set" autocomplete="off" />
+                  </label>
+                </div>
+                <div class="field grow">
+                  <label>Password (optional)
+                    <input type="password" bind:value={editEntry.password} placeholder="leave blank if not set" autocomplete="off" />
+                  </label>
+                </div>
+              </div>
+              <div class="field">
+                <label>Model hint (optional — enables sub-receiver routing)
+                  <input bind:value={editEntry.model} placeholder="IC-7300  IC-7610  IC-9700  IC-705" />
+                </label>
+              </div>
+              <p class="hint">
+                Connects using Icom's native LAN protocol (RS-BA1 / wfview compatible).
+                No rigctld required. Install rigplane first:
+                <code>pip install git+https://github.com/rigplane/rigplane-core.git</code>
               </p>
             {/if}
 
@@ -686,6 +733,43 @@
             <p class="hint">
               Set TCP port on the K4: Front Panel → Config → Network.
               Baud rate must match Front Panel → XCVR → KIO3 CAT.
+            </p>
+          {/if}
+
+          {#if editEntry.backend === 'icom_lan'}
+            <div class="field-row">
+              <div class="field grow">
+                <label>Radio IP address
+                  <input bind:value={editEntry.host} placeholder="192.168.1.50" />
+                </label>
+              </div>
+              <div class="field narrow">
+                <label>Port
+                  <input type="number" bind:value={editEntry.port} min="1" max="65535" />
+                </label>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field grow">
+                <label>Username (optional)
+                  <input bind:value={editEntry.username} placeholder="leave blank if not set" autocomplete="off" />
+                </label>
+              </div>
+              <div class="field grow">
+                <label>Password (optional)
+                  <input type="password" bind:value={editEntry.password} placeholder="leave blank if not set" autocomplete="off" />
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label>Model hint (optional — enables sub-receiver routing)
+                <input bind:value={editEntry.model} placeholder="IC-7300  IC-7610  IC-9700  IC-705" />
+              </label>
+            </div>
+            <p class="hint">
+              Connects using Icom's native LAN protocol (RS-BA1 / wfview compatible).
+              No rigctld required. Install rigplane first:
+              <code>pip install git+https://github.com/rigplane/rigplane-core.git</code>
             </p>
           {/if}
 

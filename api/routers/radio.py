@@ -35,29 +35,36 @@ _K4_KEYS       = {"name", "backend", "enabled", "transport",
                    "host", "tcp_port", "password",
                    "timeout_s", "max_power_w", "power_range",
                    "poll_interval_s", "reconnect_delay_s"}
+_ICOM_LAN_KEYS = {"name", "backend", "enabled", "host", "port",
+                   "username", "password", "model", "timeout_s",
+                   "poll_interval_s", "reconnect_delay_s"}
 
-_COMMON_DEFAULTS  = {"enabled": True, "poll_interval_s": 1.0, "reconnect_delay_s": 5.0}
-_RIGCTLD_DEFAULTS = {"host": "localhost", "port": 4532, "timeout_s": 15.0}
-_MANAGED_DEFAULTS = {"host": "127.0.0.1", "port": 0, "serial_baud": 9600,
-                     "timeout_s": 15.0, "startup_timeout_s": 10.0,
-                     "serial_timeout_ms": 500}
-_HAMLIB_DEFAULTS  = {"model_id": 1, "baud_rate": 9600, "data_bits": 8,
-                     "stop_bits": 1, "parity": "N"}
-_K4_DEFAULTS      = {"baud_rate": 38400, "timeout_s": 5.0,
-                     "max_power_w": 100, "power_range": "H"}
+_COMMON_DEFAULTS    = {"enabled": True, "poll_interval_s": 1.0, "reconnect_delay_s": 5.0}
+_RIGCTLD_DEFAULTS   = {"host": "localhost", "port": 4532, "timeout_s": 15.0}
+_MANAGED_DEFAULTS   = {"host": "127.0.0.1", "port": 0, "serial_baud": 9600,
+                        "timeout_s": 15.0, "startup_timeout_s": 10.0,
+                        "serial_timeout_ms": 500}
+_HAMLIB_DEFAULTS    = {"model_id": 1, "baud_rate": 9600, "data_bits": 8,
+                        "stop_bits": 1, "parity": "N"}
+_K4_DEFAULTS        = {"baud_rate": 38400, "timeout_s": 5.0,
+                        "max_power_w": 100, "power_range": "H"}
+_ICOM_LAN_DEFAULTS  = {"port": 50001, "username": "", "password": "",
+                        "model": "", "timeout_s": 15.0}
 
 
 def _clean_radio_entry(entry: dict) -> dict:
     """Strip keys irrelevant to the chosen backend and fill in missing defaults."""
     backend = entry.get("backend", "rigctld")
     if backend == "managed_rigctld":
-        allowed, defaults = _MANAGED_KEYS, {**_COMMON_DEFAULTS, **_MANAGED_DEFAULTS}
+        allowed, defaults = _MANAGED_KEYS,  {**_COMMON_DEFAULTS, **_MANAGED_DEFAULTS}
     elif backend == "hamlib_direct":
-        allowed, defaults = _HAMLIB_KEYS,  {**_COMMON_DEFAULTS, **_HAMLIB_DEFAULTS}
+        allowed, defaults = _HAMLIB_KEYS,   {**_COMMON_DEFAULTS, **_HAMLIB_DEFAULTS}
     elif backend == "elecraft_k4":
-        allowed, defaults = _K4_KEYS,      {**_COMMON_DEFAULTS, **_K4_DEFAULTS}
+        allowed, defaults = _K4_KEYS,       {**_COMMON_DEFAULTS, **_K4_DEFAULTS}
+    elif backend == "icom_lan":
+        allowed, defaults = _ICOM_LAN_KEYS, {**_COMMON_DEFAULTS, **_ICOM_LAN_DEFAULTS}
     else:
-        allowed, defaults = _RIGCTLD_KEYS, {**_COMMON_DEFAULTS, **_RIGCTLD_DEFAULTS}
+        allowed, defaults = _RIGCTLD_KEYS,  {**_COMMON_DEFAULTS, **_RIGCTLD_DEFAULTS}
     cleaned = {k: v for k, v in entry.items() if k in allowed}
     for k, v in defaults.items():
         cleaned.setdefault(k, v)
