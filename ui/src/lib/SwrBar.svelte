@@ -92,7 +92,8 @@
     padding: 0.5rem 0.75rem;
     background: var(--surface);
     border-radius: 6px;
-    display: flex; flex-direction: column; gap: 0.4rem;
+    display: flex; flex-direction: column; justify-content: center; gap: 0.4rem;
+    height: 100%; box-sizing: border-box;
   }
   .swr-header { display: flex; justify-content: space-between; align-items: baseline; }
   .swr-label  { font-size: 0.78rem; color: var(--text-muted); }

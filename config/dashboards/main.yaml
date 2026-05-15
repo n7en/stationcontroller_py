@@ -8,12 +8,16 @@ cards:
     sensor: watt_meter_port_0_forward_power_w
     max_w: 1500
     color: "#4ade80"
+    row_span: 2
 
   - type: power_meter
     title: "Reflected Power"
     sensor: watt_meter_port_0_reflected_power_w
     max_w: 1500
     color: "#f87171"
+    row_span: 2
+
+  - type: blank
 
   - type: blank
 

@@ -80,6 +80,7 @@
     padding: 0.5rem 0.75rem;
     background: var(--surface);
     border-radius: 6px;
+    height: 100%; box-sizing: border-box;
   }
   .s-label { font-size: 0.78rem; color: var(--text-muted); }
   .s-val   { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }

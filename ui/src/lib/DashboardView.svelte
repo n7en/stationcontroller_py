@@ -116,6 +116,17 @@
     config = { ...config, cards }
   }
 
+  function setRowSpan(i, rows) {
+    const cards = [...config.cards]
+    if (rows === 1) {
+      const { row_span: _r, ...rest } = cards[i]
+      cards[i] = rest
+    } else {
+      cards[i] = { ...cards[i], row_span: rows }
+    }
+    config = { ...config, cards }
+  }
+
   // ── Card picker ───────────────────────────────────────────────────────────
   function openPicker(idx = null) {
     editingIdx = idx
@@ -132,10 +143,10 @@
 
   function mkDefault(type) {
     switch (type) {
-      case 'radio_status': return { type, span: 2 }
+      case 'radio_status': return { type, span: 2, row_span: 2 }
       case 'sensor':       return { type, title: '', sensor: '', unit: '' }
       case 'relay':        return { type, title: '', relay_key: '', device_addr: '01', relay_num: 1 }
-      case 'power_meter':  return { type, title: 'Power', sensor: '', max_w: 1500 }
+      case 'power_meter':  return { type, title: 'Power', sensor: '', max_w: 1500, row_span: 2 }
       case 'swr_bar':      return { type, title: 'SWR', sensor: '', span: 2,
                                     thresholds: { good: 1.5, warning: 2.0, critical: 3.0 } }
       case 'blank':        return { type }
@@ -209,7 +220,7 @@
         class="card-wrap"
         class:is-dragging={dragIdx === i}
         class:drop-target={dropIdx === i && dragIdx !== i}
-        style="grid-column: span {card.span ?? 1}"
+        style="grid-column: span {card.span ?? 1}; grid-row: span {card.row_span ?? 1}"
         draggable={editMode}
         on:dragstart={e => onDragStart(e, i)}
         on:dragover={e  => onDragOver(e, i)}
@@ -230,6 +241,15 @@
                   class:active={(card.span ?? 1) === s}
                   title="Width {s}"
                   on:click={() => setSpan(i, s)}
+                >{s}</button>
+              {/each}
+              <span class="span-label span-label-h">H</span>
+              {#each [1, 2, 3] as s}
+                <button
+                  class="span-btn"
+                  class:active={(card.row_span ?? 1) === s}
+                  title="Height {s}"
+                  on:click={() => setRowSpan(i, s)}
                 >{s}</button>
               {/each}
               <button class="ov-btn" title="Edit card"   on:click={() => openPicker(i)}>✏</button>
@@ -413,6 +433,7 @@
   .card-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 80px;
     gap: 0.5rem;
   }
   .card-grid.edit-mode { gap: 0.75rem; }
@@ -463,6 +484,7 @@
 
   .overlay-actions { display: flex; align-items: center; gap: 0.2rem; }
   .span-label { font-size: 0.6rem; color: var(--text-muted); margin-right: 0.05rem; }
+  .span-label-h { margin-left: 0.2rem; }
 
   .span-btn {
     background: var(--surface); border: 1px solid var(--border);

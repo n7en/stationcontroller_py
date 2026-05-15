@@ -128,8 +128,10 @@
     padding: 0.85rem 1rem;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 0.55rem;
     transition: border-color 0.2s;
+    height: 100%; box-sizing: border-box;
   }
   .radio-panel.ptt    { border-color: var(--red); }
   .radio-panel.offline { border-color: var(--border); opacity: 0.75; }
