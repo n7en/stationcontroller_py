@@ -34,7 +34,7 @@ Optional but recommended:
 ### Linux / Raspberry Pi / macOS
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.sh | bash
 ```
 
 This clones the repository into `~/StationController_Py`, creates a Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, scans for serial ports — prompting you to assign each DCN bus — and optionally installs a systemd service so the app starts at boot. On the `dev` branch the script also offers to configure the [DCN simulator](#dcn-simulator).
@@ -42,14 +42,14 @@ This clones the repository into `~/StationController_Py`, creates a Python virtu
 To include development tools (pytest, etc.) as well:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.sh | bash -s -- --dev
+curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.sh | bash -s -- --dev
 ```
 
 To clone to a custom location, set `STATIONCONTROLLER_DIR` before running:
 
 ```bash
 STATIONCONTROLLER_DIR=/opt/stationcontroller \
-  curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.sh | bash
 ```
 
 ### Windows
@@ -57,7 +57,7 @@ STATIONCONTROLLER_DIR=/opt/stationcontroller \
 Open **PowerShell** and run:
 
 ```powershell
-irm https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.ps1 | iex
 ```
 
 This clones the repository into `~\StationController_Py`, sets up the Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for COM ports — prompting you to assign each DCN bus. On the `dev` branch the script also offers to configure the [DCN simulator](#dcn-simulator).
@@ -65,14 +65,14 @@ This clones the repository into `~\StationController_Py`, sets up the Python vir
 To include development tools as well:
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.ps1))) -Dev
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.ps1))) -Dev
 ```
 
 To clone to a custom location, set `STATIONCONTROLLER_DIR` before running:
 
 ```powershell
 $env:STATIONCONTROLLER_DIR = "C:\station"
-irm https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.ps1 | iex
 ```
 
 > **Note:** If PowerShell blocks script execution, run this first:

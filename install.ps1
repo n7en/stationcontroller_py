@@ -19,11 +19,11 @@
 
 .EXAMPLE
     # Bootstrap directly from GitHub (no prior clone needed):
-    irm https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.ps1 | iex
+    irm https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.ps1 | iex
 
 .EXAMPLE
     # Bootstrap with -Dev flag:
-    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/n7en/stationcontroller_py/main/install.ps1))) -Dev
+    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.ps1))) -Dev
 #>
 
 param([switch]$Dev)

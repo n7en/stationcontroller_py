@@ -1,8 +1,10 @@
-name: Strip simulator from main
+name: Main branch cleanup
 
 # Runs when a PR is merged into main.
-# If the simulator/ directory was included in the merge, this job removes it
-# and pushes a cleanup commit so main stays free of dev-only tooling.
+# Performs two cleanup tasks in a single commit:
+#   1. Removes simulator/ (dev-only tooling that should not ship in main)
+#   2. Rewrites branch-specific install URLs from /dev/ to /main/ in README
+#      and install scripts, so one-liner instructions are always correct.
 
 'on':
   pull_request:
@@ -13,7 +15,7 @@ permissions:
   contents: write
 
 jobs:
-  strip:
+  cleanup:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
@@ -25,19 +27,38 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Remove simulator/ if present
-        id: strip
+      - name: Strip simulator and fix branch refs
+        id: cleanup
         run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          changed=false
+
+          # 1. Remove simulator/ if present
           if [ -d simulator ]; then
-            git config user.name  "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
             git rm -r simulator/
-            git commit -m "chore: strip dev-only simulator from main [skip ci]"
-            echo "removed=true" >> "$GITHUB_OUTPUT"
+            changed=true
+          fi
+
+          # 2. Rewrite /dev/install → /main/install in docs and scripts
+          for f in README.md install.sh install.ps1; do
+            if [ -f "$f" ]; then
+              sed -i 's|stationcontroller_py/dev/install\.|stationcontroller_py/main/install.|g' "$f"
+              if ! git diff --quiet "$f"; then
+                git add "$f"
+                changed=true
+              fi
+            fi
+          done
+
+          if [ "$changed" = true ]; then
+            git commit -m "chore: post-merge cleanup (strip simulator, fix branch refs) [skip ci]"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "removed=false" >> "$GITHUB_OUTPUT"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Push cleanup commit
-        if: steps.strip.outputs.removed == 'true'
+        if: steps.cleanup.outputs.changed == 'true'
         run: git push origin main
