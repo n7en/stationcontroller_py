@@ -434,6 +434,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-auto-rows: 80px;
+    grid-auto-flow: row dense;
     gap: 0.5rem;
   }
   .card-grid.edit-mode { gap: 0.75rem; }
