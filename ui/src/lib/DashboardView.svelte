@@ -28,6 +28,7 @@
     { id: 'relay',        label: 'Relay Button' },
     { id: 'power_meter',  label: 'Power Meter'  },
     { id: 'swr_bar',      label: 'SWR Bar'      },
+    { id: 'blank',        label: 'Blank Space'  },
   ]
 
   onMount(async () => {
@@ -137,6 +138,7 @@
       case 'power_meter':  return { type, title: 'Power', sensor: '', max_w: 1500 }
       case 'swr_bar':      return { type, title: 'SWR', sensor: '', span: 2,
                                     thresholds: { good: 1.5, warning: 2.0, critical: 3.0 } }
+      case 'blank':        return { type }
       default: return { type }
     }
   }
@@ -346,6 +348,9 @@
               <label>Warning &lt; <input type="number" step="0.1" bind:value={pickerConfig.thresholds.warning}  /></label>
               <label>Critical &lt;<input type="number" step="0.1" bind:value={pickerConfig.thresholds.critical} /></label>
             </div>
+
+          {:else if pickerType === 'blank'}
+            <p class="form-hint">Holds an empty grid cell. Use the width buttons (W 1 2 3) to size it, then drag it into position. Edit it later to replace it with a real card.</p>
           {/if}
         </div>
 

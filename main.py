@@ -53,10 +53,11 @@ def _ensure_default_configs() -> None:
     that is missing.  Runs before logging is configured so it uses print().
     """
     import shutil
-    for cfg in (COMMS_CFG, RADIO_CFG, LOGGING_CFG):
+    for cfg in (COMMS_CFG, RADIO_CFG, LOGGING_CFG, CFG / "dashboards" / "main.yaml"):
         if not cfg.exists():
             example = Path(str(cfg) + ".example")
             if example.exists():
+                cfg.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(example, cfg)
                 print(
                     f"[setup] Created {cfg.name} from {example.name}. "

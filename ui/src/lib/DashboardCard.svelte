@@ -61,11 +61,20 @@
 {:else if card.type === 'radio_status'}
   <RadioStatus radioState={radio} />
 
+{:else if card.type === 'blank'}
+  <div class="blank-card"></div>
+
 {:else}
   <div class="unknown-card">Unknown card type: {card.type}</div>
 {/if}
 
 <style>
+  .blank-card {
+    /* Invisible in view mode — just holds the grid cell open.
+       min-height prevents row collapse when an entire row is blanks. */
+    min-height: 48px;
+  }
+
   .sensor-card {
     display: flex; justify-content: space-between; align-items: center;
     padding: 0.5rem 0.75rem;
