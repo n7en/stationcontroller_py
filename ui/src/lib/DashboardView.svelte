@@ -127,6 +127,15 @@
     config = { ...config, cards }
   }
 
+  function parseBoard(card) {
+    if (card.type === 'radio_status') return 'Radio'
+    const key = card.sensor || card.relay_key || ''
+    if (key.startsWith('watt_meter')) return 'Watt Meter'
+    if (key.startsWith('gpio_'))      return 'GPIO'
+    const seg = key.split('_')[0]
+    return seg ? seg.charAt(0).toUpperCase() + seg.slice(1) : '—'
+  }
+
   // ── Card picker ───────────────────────────────────────────────────────────
   function openPicker(idx = null) {
     editingIdx = idx
@@ -143,7 +152,7 @@
 
   function mkDefault(type) {
     switch (type) {
-      case 'radio_status': return { type, span: 2, row_span: 2 }
+      case 'radio_status': return { type, span: 2, row_span: 3 }
       case 'sensor':       return { type, title: '', sensor: '', unit: '' }
       case 'relay':        return { type, title: '', relay_key: '', device_addr: '01', relay_num: 1 }
       case 'power_meter':  return { type, title: 'Power', sensor: '', max_w: 1500, row_span: 2 }
@@ -220,6 +229,7 @@
         class="card-wrap"
         class:is-dragging={dragIdx === i}
         class:drop-target={dropIdx === i && dragIdx !== i}
+        class:card-filled={card.type !== 'blank'}
         style="grid-column: span {card.span ?? 1}; grid-row: span {card.row_span ?? 1}"
         draggable={editMode}
         on:dragstart={e => onDragStart(e, i)}
@@ -228,7 +238,18 @@
         on:drop={e      => onDrop(e, i)}
         on:dragend={onDragEnd}
       >
-        <DashboardCard {card} sensors={$sensors} labels={$labels} radio={$radio} />
+        {#if card.type !== 'blank'}
+          <div class="card-header">
+            <span class="ch-board">{parseBoard(card)}</span>
+            {#if card.title && card.type !== 'radio_status'}
+              <span class="ch-sep">·</span>
+              <span class="ch-entity">{card.title}</span>
+            {/if}
+          </div>
+        {/if}
+        <div class="card-body">
+          <DashboardCard {card} sensors={$sensors} labels={$labels} radio={$radio} />
+        </div>
 
         {#if editMode}
           <div class="edit-overlay">
@@ -448,7 +469,41 @@
   }
 
   /* ── Card wrap ────────────────────────────────────────────────────────── */
-  .card-wrap { position: relative; transition: opacity 0.15s; }
+  .card-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: opacity 0.15s;
+  }
+  .card-filled { background: var(--surface); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.18rem 0.6rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    flex-shrink: 0;
+  }
+  .ch-board {
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+  .ch-sep    { font-size: 0.58rem; color: var(--border); }
+  .ch-entity {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-body { flex: 1; min-height: 0; overflow: hidden; }
+
   .card-wrap.is-dragging { opacity: 0.35; cursor: grabbing; }
   /* Left-edge insertion line — shows WHERE the card will land */
   .card-wrap.drop-target::before {
@@ -462,7 +517,7 @@
   .card-wrap.drop-target::after { display: none; }
   .edit-mode .card-wrap {
     outline: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
-    border-radius: 8px; cursor: grab;
+    cursor: grab;
   }
 
   /* ── Edit overlay ─────────────────────────────────────────────────────── */

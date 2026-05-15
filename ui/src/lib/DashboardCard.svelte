@@ -52,7 +52,6 @@
 
 {:else if card.type === 'sensor'}
   <div class="sensor-card">
-    <span class="s-label">{card.title}</span>
     <span class="s-val" style="color:{thresholdColor}">
       {(+sensorVal).toFixed(1)}{card.unit ?? ''}
     </span>
@@ -76,14 +75,13 @@
   }
 
   .sensor-card {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: center; align-items: center;
     padding: 0.5rem 0.75rem;
     background: var(--surface);
     border-radius: 6px;
     height: 100%; box-sizing: border-box;
   }
-  .s-label { font-size: 0.78rem; color: var(--text-muted); }
-  .s-val   { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .s-val { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .unknown-card {
     padding: 0.5rem 0.75rem;
     background: var(--surface);

@@ -58,3 +58,4 @@ cards:
 
   - type: radio_status
     span: 2
+    row_span: 3
