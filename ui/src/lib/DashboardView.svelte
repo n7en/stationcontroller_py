@@ -471,8 +471,8 @@
   /* ── Card wrap ────────────────────────────────────────────────────────── */
   .card-wrap {
     position: relative;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: auto 1fr;
     border-radius: 8px;
     overflow: hidden;
     transition: opacity 0.15s;
@@ -505,14 +505,16 @@
   .card-body {
     display: flex;
     flex-direction: column;
-    flex: 1;
     min-height: 0;
     overflow: hidden;
   }
-  /* Push flex-grow into whatever card component renders inside */
+  /* Grid track gives card-body a definite height; flex:1 fills it.
+     height:auto overrides the height:100% inside each card component
+     so the flex algorithm is the sole height source — no conflicts. */
   .card-body > :global(*) {
     flex: 1;
     min-height: 0;
+    height: auto !important;
   }
 
   .card-wrap.is-dragging { opacity: 0.35; cursor: grabbing; }
