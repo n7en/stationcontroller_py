@@ -505,10 +505,10 @@
   .card-body {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    overflow: hidden;
   }
-  /* Non-blank cards have a 22px header; push body down to clear it */
-  .card-filled .card-body { top: 22px; }
+  /* Non-blank cards have a 22px header; push body down to clear it.
+     4px bottom inset prevents border-radius from clipping content at very bottom edge. */
+  .card-filled .card-body { top: 22px; bottom: 4px; }
 
   .card-wrap.is-dragging { opacity: 0.35; cursor: grabbing; }
   /* Left-edge insertion line — shows WHERE the card will land */
