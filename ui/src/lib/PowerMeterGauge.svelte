@@ -72,7 +72,7 @@
     padding: 0.5rem 0.75rem;
     background: var(--surface);
     border-radius: 6px;
-    height: 100%; box-sizing: border-box;
+    box-sizing: border-box;
   }
   svg { width: 100%; max-width: 180px; overflow: visible; }
   .val   { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }

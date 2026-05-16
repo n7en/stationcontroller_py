@@ -79,7 +79,7 @@
     padding: 0.5rem 0.75rem;
     background: var(--surface);
     border-radius: 6px;
-    height: 100%; box-sizing: border-box;
+    box-sizing: border-box;
   }
   .s-val { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .unknown-card {
