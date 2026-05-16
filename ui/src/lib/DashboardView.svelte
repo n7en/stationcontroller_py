@@ -471,8 +471,6 @@
   /* ── Card wrap ────────────────────────────────────────────────────────── */
   .card-wrap {
     position: relative;
-    display: flex;
-    flex-direction: column;
     border-radius: 8px;
     overflow: hidden;
     transition: opacity 0.15s;
@@ -480,12 +478,14 @@
   .card-filled { background: var(--surface); }
 
   .card-header {
+    position: relative;
+    height: 22px;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.18rem 0.6rem;
+    padding: 0 0.6rem;
     border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-    flex-shrink: 0;
   }
   .ch-board {
     font-size: 0.58rem;
@@ -503,12 +503,12 @@
     white-space: nowrap;
   }
   .card-body {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
     overflow: hidden;
   }
+  /* Non-blank cards have a 22px header; push body down to clear it */
+  .card-filled .card-body { top: 22px; }
 
   .card-wrap.is-dragging { opacity: 0.35; cursor: grabbing; }
   /* Left-edge insertion line — shows WHERE the card will land */

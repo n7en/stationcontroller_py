@@ -73,7 +73,7 @@
     background: var(--surface);
     border-radius: 6px;
     box-sizing: border-box;
-    flex: 1;
+    height: 100%;
   }
   svg { width: 100%; max-width: 180px; overflow: visible; }
   .val   { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }

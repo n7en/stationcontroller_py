@@ -94,7 +94,7 @@
     border-radius: 6px;
     display: flex; flex-direction: column; justify-content: center; gap: 0.4rem;
     box-sizing: border-box;
-    flex: 1;
+    height: 100%;
   }
   .swr-header { display: flex; justify-content: space-between; align-items: baseline; }
   .swr-label  { font-size: 0.78rem; color: var(--text-muted); }

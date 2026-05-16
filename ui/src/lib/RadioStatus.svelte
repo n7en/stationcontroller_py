@@ -132,7 +132,7 @@
     gap: 0.55rem;
     transition: border-color 0.2s;
     box-sizing: border-box;
-    flex: 1;
+    height: 100%;
   }
   .radio-panel.ptt    { border-color: var(--red); }
   .radio-panel.offline { border-color: var(--border); opacity: 0.75; }
