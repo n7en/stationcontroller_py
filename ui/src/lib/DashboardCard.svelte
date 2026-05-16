@@ -30,7 +30,6 @@
     value={sensorVal}
     max={card.max_w ?? 1500}
     color={card.color ?? 'var(--accent)'}
-    title={card.title}
     unit="W"
   />
 

@@ -25,6 +25,7 @@ cards:
     title: "SWR"
     sensor: watt_meter_port_0_swr
     span: 2
+    row_span: 2
     thresholds:
       good: 1.5
       warning: 2.0
