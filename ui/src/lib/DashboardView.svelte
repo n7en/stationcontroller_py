@@ -509,10 +509,6 @@
     min-height: 0;
     overflow: hidden;
   }
-  .card-body > :global(*) {
-    flex: 1;
-    min-height: 0;
-  }
 
   .card-wrap.is-dragging { opacity: 0.35; cursor: grabbing; }
   /* Left-edge insertion line — shows WHERE the card will land */

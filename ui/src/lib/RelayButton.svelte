@@ -33,7 +33,7 @@
     cursor: pointer;
     font-size: 0.85rem;
     transition: border-color 0.15s, background 0.15s;
-    width: 100%; box-sizing: border-box;
+    width: 100%; box-sizing: border-box; flex: 1;
     text-align: left;
   }
   .relay-btn.active { border-color: var(--accent); background: var(--accent-dim); }

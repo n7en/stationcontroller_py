@@ -79,6 +79,7 @@
     background: var(--surface);
     border-radius: 6px;
     box-sizing: border-box;
+    flex: 1;
   }
   .s-val { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .unknown-card {
