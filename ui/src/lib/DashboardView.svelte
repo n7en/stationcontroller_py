@@ -454,7 +454,7 @@
   .card-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    grid-auto-rows: 90px;
+    grid-auto-rows: 94px;
     grid-auto-flow: row dense;
     gap: 0.5rem;
   }
