@@ -502,7 +502,18 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .card-body { flex: 1; min-height: 0; overflow: hidden; }
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  /* Push flex-grow into whatever card component renders inside */
+  .card-body > :global(*) {
+    flex: 1;
+    min-height: 0;
+  }
 
   .card-wrap.is-dragging { opacity: 0.35; cursor: grabbing; }
   /* Left-edge insertion line — shows WHERE the card will land */
