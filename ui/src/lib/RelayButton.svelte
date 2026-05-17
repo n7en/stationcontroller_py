@@ -2,10 +2,11 @@
   import { sendCmd } from '../stores/ws.js'
 
   export let hardwareKey
-  export let label = ''
-  export let value = 0
+  export let label      = ''
+  export let value      = 0
   export let deviceAddr = '01'
-  export let relayNum = 1
+  export let relayNum   = 1
+  export let standalone = true   // false when hosted inside a dashboard card
 
   const TIMEOUT_MS   = 3000   // wait up to 3 s for device confirmation
   const FAIL_SHOW_MS = 4000   // show failure indicator for 4 s then reset
@@ -53,6 +54,7 @@
   class:active
   class:pending
   class:failed
+  class:embedded={!standalone}
   disabled={pending}
   on:click={toggle}
   title={hardwareKey}
@@ -78,10 +80,19 @@
     width: 100%; height: 100%; box-sizing: border-box;
     text-align: left;
   }
-  .relay-btn.active   { border-color: var(--accent); background: var(--accent-dim); }
+  .relay-btn.active            { border-color: var(--accent); background: var(--accent-dim); }
   .relay-btn:hover:not(:disabled) { border-color: var(--accent); }
-  .relay-btn.pending  { cursor: wait; opacity: 0.8; }
-  .relay-btn.failed   { border-color: var(--red); }
+  .relay-btn.pending           { cursor: wait; opacity: 0.8; }
+  .relay-btn.failed            { border-color: var(--red); }
+
+  /* Inside a dashboard card — card provides border/background/radius */
+  .relay-btn.embedded {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+  .relay-btn.embedded.active { background: var(--accent-dim); }
+  .relay-btn.embedded.failed { background: rgba(204, 51, 51, 0.08); }
 
   .dot {
     width: 10px; height: 10px;
