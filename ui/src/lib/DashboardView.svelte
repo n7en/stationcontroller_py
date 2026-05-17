@@ -181,7 +181,9 @@
     showPicker = false
   }
 
-  $: sensorKeys = Object.keys($sensors).sort()
+  $: sensorKeys      = Object.keys($sensors).sort()
+  $: relayKeys       = sensorKeys.filter(k =>  k.toLowerCase().includes('relay'))
+  $: nonRelayKeys    = sensorKeys.filter(k => !k.toLowerCase().includes('relay'))
 </script>
 
 {#if loading}
@@ -334,7 +336,7 @@
               <input bind:value={pickerConfig.title} placeholder="e.g. Temperature" />
             </label>
             <label>Sensor key
-              <input bind:value={pickerConfig.sensor} list="dv-sensor-keys" placeholder="hardware_key" />
+              <input bind:value={pickerConfig.sensor} list="dv-nonrelay-keys" placeholder="hardware_key" />
             </label>
             <label>Unit
               <input bind:value={pickerConfig.unit} placeholder="e.g. °F, V, A" />
@@ -354,7 +356,7 @@
               <input bind:value={pickerConfig.title} placeholder="e.g. Antenna A" />
             </label>
             <label>Relay key
-              <input bind:value={pickerConfig.relay_key} list="dv-sensor-keys" placeholder="hardware_key" />
+              <input bind:value={pickerConfig.relay_key} list="dv-relay-keys" placeholder="hardware_key" />
             </label>
             <div class="form-row">
               <label>Device addr
@@ -370,7 +372,7 @@
               <input bind:value={pickerConfig.title} placeholder="e.g. Forward Power" />
             </label>
             <label>Sensor key
-              <input bind:value={pickerConfig.sensor} list="dv-sensor-keys" placeholder="hardware_key" />
+              <input bind:value={pickerConfig.sensor} list="dv-nonrelay-keys" placeholder="hardware_key" />
             </label>
             <label>Max watts
               <input type="number" bind:value={pickerConfig.max_w} min="1" />
@@ -381,7 +383,7 @@
               <input bind:value={pickerConfig.title} placeholder="e.g. SWR" />
             </label>
             <label>Sensor key
-              <input bind:value={pickerConfig.sensor} list="dv-sensor-keys" placeholder="hardware_key" />
+              <input bind:value={pickerConfig.sensor} list="dv-nonrelay-keys" placeholder="hardware_key" />
             </label>
             <div class="form-subhead">Thresholds</div>
             <div class="form-row">
@@ -399,6 +401,16 @@
 
       <datalist id="dv-sensor-keys">
         {#each sensorKeys as k}
+          <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
+        {/each}
+      </datalist>
+      <datalist id="dv-relay-keys">
+        {#each relayKeys as k}
+          <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
+        {/each}
+      </datalist>
+      <datalist id="dv-nonrelay-keys">
+        {#each nonRelayKeys as k}
           <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
         {/each}
       </datalist>
