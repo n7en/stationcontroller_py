@@ -56,7 +56,6 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
             log.warning("WS relay_cmd: no network for device addr %s", device_addr)
             return
         await network.send(device_addr, f"RY{relay_num},{relay_state}")
-        await state.ws_hub.broadcast_relay(key, relay_state)
 
     elif kind == "coax_select":
         device_addr: str = msg.get("device_addr", "02")

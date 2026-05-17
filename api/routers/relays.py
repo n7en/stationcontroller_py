@@ -42,6 +42,4 @@ async def set_relay(
     if network is None:
         raise HTTPException(status_code=503, detail="No DCN network connected")
     await network.send(cmd.device_addr, f"RY{cmd.relay_num},{cmd.state}")
-    if state.ws_hub:
-        await state.ws_hub.broadcast_relay(key, cmd.state)
     return {"ok": True, "key": key, "state": cmd.state}
