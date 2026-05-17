@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte'
   import { connected, sensors, labels, radio, updateAvailable } from './stores/ws.js'
+  import { theme } from './stores/theme.js'
   import CoaxPortSelector from './lib/CoaxPortSelector.svelte'
   import RelayButton      from './lib/RelayButton.svelte'
   import LabelEditor      from './lib/LabelEditor.svelte'
@@ -18,12 +19,19 @@
 
   let page        = 'dashboard'
   let configTab   = 'comms'
-  let sidebarOpen = true
+  let sidebarOpen = !window.matchMedia('(max-width: 640px)').matches
 
   // null = checking auth; {auth_enabled, username} once resolved
   let authState = null
 
   $: authRequired = authState?.auth_enabled === true && !authState?.username
+
+  onMount(() => {
+    const mq = window.matchMedia('(max-width: 640px)')
+    const onMQChange = (e) => { if (e.matches) sidebarOpen = false }
+    mq.addEventListener('change', onMQChange)
+    return () => mq.removeEventListener('change', onMQChange)
+  })
 
   onMount(async () => {
     // Resolve auth state before loading anything else
@@ -58,6 +66,9 @@
 
   const ICONS = {
     menu:       'M3 12h18M3 6h18M3 18h18',
+    sun:        'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 100 10 5 5 0 000-10z',
+    moon:       'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z',
+    auto:       'M12 3v1m0 16v1m9-9h-1M4 12H3M12 7a5 5 0 100 10 5 5 0 000-10z',
     wizard:     'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12l2 2 4-4',
     history:    'M3 3v18h18M9 17V9M13 17V5M17 17v-3',
     dashboard:  'M10 3H3v7h7V3zm11 0h-7v7h7V3zm0 11h-7v7h7v-7zm-11 0H3v7h7v-7z',
@@ -68,6 +79,16 @@
     bandplan:   'M3 6h18M3 10h18M3 14h10M3 18h6M15 16l2 2 4-4',
     config:     'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
     settings:   'M12 15a3 3 0 100-6 3 3 0 000 6zm6.36-1.5a1.5 1.5 0 00.3 1.66l.05.05a2 2 0 010 2.83 2 2 0 01-2.83 0l-.05-.05a1.5 1.5 0 00-1.66-.3 1.5 1.5 0 00-.91 1.37V19a2 2 0 01-4 0v-.09a1.5 1.5 0 00-.98-1.38 1.5 1.5 0 00-1.66.3l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.5 1.5 0 00.3-1.66 1.5 1.5 0 00-1.37-.91H3a2 2 0 010-4h.09a1.5 1.5 0 001.38-.98 1.5 1.5 0 00-.3-1.66l-.06-.06a2 2 0 012.83-2.83l.06.06a1.5 1.5 0 001.66.3H9a1.5 1.5 0 00.91-1.37V3a2 2 0 014 0v.09a1.5 1.5 0 00.91 1.37 1.5 1.5 0 001.66-.3l.06-.06a2 2 0 012.83 2.83l-.06.06a1.5 1.5 0 00-.3 1.66V9a1.5 1.5 0 001.37.91H21a2 2 0 010 4h-.09a1.5 1.5 0 00-1.37.91z',
+  }
+
+  function cycleTheme() {
+    const order = ['system', 'dark', 'light']
+    theme.set(order[(order.indexOf($theme) + 1) % order.length])
+  }
+
+  function navigate(id) {
+    page = id
+    if (window.matchMedia('(max-width: 640px)').matches) sidebarOpen = false
   }
 
   $: antennaRelays = Array.from({length: 8}, (_, i) => {
@@ -106,7 +127,7 @@
         <button
           class="nav-btn"
           class:active={page === item.id}
-          on:click={() => page = item.id}
+          on:click={() => navigate(item.id)}
           title={!sidebarOpen ? item.label : undefined}
         >
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -123,6 +144,14 @@
     </nav>
 
     <div class="sidebar-footer">
+      <button class="nav-btn theme-cycle" title="Theme: {$theme}" on:click={cycleTheme}>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+             width="18" height="18" aria-hidden="true">
+          <path d={$theme === 'light' ? ICONS.sun : $theme === 'dark' ? ICONS.moon : ICONS.auto}/>
+        </svg>
+        <span class="nav-label">{$theme === 'system' ? 'Auto' : $theme === 'light' ? 'Light' : 'Dark'}</span>
+      </button>
       <div class="ws-status" class:ok={$connected} title={$connected ? 'Live' : 'Connecting…'}>
         <span class="ws-dot"></span>
         <span class="nav-label">{$connected ? 'Live' : 'Connecting…'}</span>
@@ -139,6 +168,15 @@
     </div>
 
   </aside>
+
+  <!-- Mobile sidebar backdrop -->
+  <div
+    class="mobile-backdrop"
+    class:visible={sidebarOpen}
+    role="presentation"
+    on:click={() => sidebarOpen = false}
+    on:keydown={() => {}}
+  ></div>
 
   <!-- ── Main content ── -->
   <main class="content">
@@ -217,6 +255,27 @@
     {:else if page === 'settings'}
 
       <section>
+        <div class="section-title">Appearance</div>
+        <div class="theme-picker">
+          {#each [
+            { id: 'system', label: 'System', desc: 'Follows your browser / OS preference' },
+            { id: 'dark',   label: 'Dark',   desc: 'Dark background, light text'          },
+            { id: 'light',  label: 'Light',  desc: 'Light background, dark text'          },
+          ] as opt}
+            <button class="theme-opt" class:active={$theme === opt.id} on:click={() => theme.set(opt.id)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   width="16" height="16" aria-hidden="true">
+                <path d={opt.id === 'light' ? ICONS.sun : opt.id === 'dark' ? ICONS.moon : ICONS.auto}/>
+              </svg>
+              <span class="theme-opt-label">{opt.label}</span>
+              <span class="theme-opt-desc">{opt.desc}</span>
+            </button>
+          {/each}
+        </div>
+      </section>
+
+      <section>
         <RadioConfig />
       </section>
 
@@ -259,6 +318,17 @@
     --green:      #3ecf8e;
     --red:        #e96262;
     --sidebar-w:  200px;
+  }
+  :global([data-theme="light"]) {
+    --bg:         #f2f4f8;
+    --surface:    #ffffff;
+    --border:     #d8dce8;
+    --text:       #1a1e2e;
+    --text-muted: #5c6480;
+    --accent:     #2472d4;
+    --accent-dim: rgba(36,114,212,0.10);
+    --green:      #1a9e6a;
+    --red:        #cc3333;
   }
   :global(*, *::before, *::after) { box-sizing: border-box; }
   :global(body) {
@@ -456,4 +526,78 @@
   }
   .tab-btn:hover { color: var(--text); }
   .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Theme cycle button (sidebar footer) ─────────────────────────────── */
+  .theme-cycle { font-size: 0.8rem; color: var(--text-muted); }
+  .theme-cycle:hover { color: var(--accent); background: var(--border); }
+
+  /* ── Theme picker (settings page) ────────────────────────────────────── */
+  .theme-picker {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .theme-opt {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    padding: 0.6rem 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    min-width: 120px;
+    flex: 1;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .theme-opt svg { color: var(--text-muted); margin-bottom: 0.15rem; }
+  .theme-opt:hover { border-color: var(--accent); }
+  .theme-opt.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .theme-opt.active svg { color: var(--accent); }
+  .theme-opt-label { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+  .theme-opt-desc  { font-size: 0.7rem; color: var(--text-muted); }
+
+  /* ── Mobile ───────────────────────────────────────────────────────────── */
+  .mobile-backdrop { display: none; }
+
+  @media (max-width: 640px) {
+    /* Sidebar becomes a fixed overlay that slides in from the left */
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      z-index: 100;
+      width: 220px;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+    }
+    /* "not collapsed" = sidebarOpen=true = slide in */
+    .sidebar:not(.collapsed) {
+      transform: translateX(0);
+      box-shadow: 6px 0 24px rgba(0, 0, 0, 0.6);
+    }
+    /* Override the 52px collapsed width so we slide off-screen at full width */
+    .sidebar.collapsed { width: 220px; }
+    /* Labels always visible when sidebar slides in (not collapsed) */
+    .sidebar:not(.collapsed) .nav-label { opacity: 1; width: auto; pointer-events: auto; }
+    .sidebar:not(.collapsed) .brand    { opacity: 1; pointer-events: auto; }
+
+    /* Backdrop darkens content when sidebar is open */
+    .mobile-backdrop.visible {
+      display: block;
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 99;
+    }
+
+    /* Content takes full viewport width */
+    .content { padding: 0.75rem; }
+
+    /* Larger touch targets for nav */
+    .nav-btn { min-height: 44px; }
+    .toggle-btn { min-width: 44px; min-height: 44px; }
+  }
 </style>

@@ -30,6 +30,7 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--surface);
+    color: var(--text);
     cursor: pointer;
     font-size: 0.85rem;
     transition: border-color 0.15s, background 0.15s;

@@ -468,6 +468,13 @@
     .card-grid { grid-template-columns: 1fr; }
   }
 
+  /* Touch devices: edit overlay always visible (no hover) */
+  @media (hover: none) {
+    .edit-mode .card-wrap .edit-overlay { opacity: 1; pointer-events: all; }
+    .span-btn { width: 1.75rem; height: 1.75rem; font-size: 0.7rem; }
+    .ov-btn   { padding: 0.28rem 0.5rem; font-size: 0.8rem; }
+  }
+
   /* ── Card wrap ────────────────────────────────────────────────────────── */
   .card-wrap {
     position: relative;
@@ -663,4 +670,20 @@
     padding: 0.35rem 0.9rem; cursor: pointer; font-weight: 600;
   }
   .btn-commit:hover { opacity: 0.88; }
+
+  /* Picker modal: stack on narrow screens */
+  @media (max-width: 500px) {
+    .picker-modal { width: 95vw; max-height: 90vh; }
+    .picker-body  { flex-direction: column; overflow-y: auto; }
+    .type-list {
+      flex-direction: row;
+      flex-wrap: wrap;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      min-width: auto;
+      padding: 0.35rem;
+    }
+    .type-btn { flex: 1; min-width: 80px; text-align: center; }
+    .picker-form { padding: 0.6rem 0.75rem; }
+  }
 </style>
