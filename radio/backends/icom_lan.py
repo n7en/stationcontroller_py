@@ -365,6 +365,7 @@ class IcomLanBackend(RadioBackend):
             if s is not None:
                 result["signal_strength"] = float(s)
 
+
             # Sub-receiver state (dual-watch radios: IC-7610, IC-9700)
             try:
                 sub = rs.sub
@@ -380,6 +381,12 @@ class IcomLanBackend(RadioBackend):
 
         except Exception as exc:
             log.debug("get_full_state: %s", exc)
+
+        # RF power is not in the rigplane state cache — query it directly.
+        try:
+            result["rf_power"] = await self.get_level("RFPOWER")
+        except Exception:
+            pass
 
         return result
 
