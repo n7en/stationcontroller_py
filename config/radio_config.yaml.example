@@ -102,3 +102,25 @@ radios:
   #   power_range: H
   #   poll_interval_s: 1.0
   #   reconnect_delay_s: 5.0
+
+# ------------------------------------------------------------------------------
+# rigctld server — built-in rigctld-compatible TCP server
+#
+# When enabled, Station Controller listens on a TCP port and speaks the Hamlib
+# network protocol.  Any Hamlib-compatible application — WSJT-X, JS8Call,
+# Winlink/Pat, fldigi, flrig, Ham Radio Deluxe — can connect by pointing its
+# radio selection to "rigctld" at 127.0.0.1:4532 (or the machine's LAN IP).
+#
+# This runs entirely within Station Controller; no separate rigctld process
+# is needed or launched.
+#
+# radio: name of the radio entry (above) to expose.  Defaults to the first
+#        configured radio if omitted.
+# host:  "0.0.0.0" allows LAN access; "127.0.0.1" restricts to localhost.
+# port:  4532 is the rigctld default; change it if another rigctld is running.
+# ------------------------------------------------------------------------------
+rigctld_server:
+  enabled: true
+  host: "0.0.0.0"
+  port: 4532
+  # radio: ic7300    # uncomment to target a specific radio by name

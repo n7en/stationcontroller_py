@@ -461,6 +461,37 @@ async def main() -> None:
                 log.warning("Radio '%s' connect failed - poll loop will retry", _iface.name)
             await _iface.start()
 
+    # ── 9b. rigctld server ────────────────────────────────────────────────
+    # Exposes the primary radio as a rigctld-compatible TCP service so that
+    # WSJT-X, JS8Call, Winlink, fldigi, flrig, etc. can connect without a
+    # separate rigctld process.
+    rigctld_task = None
+    if radio_interface is not None and RADIO_CFG.exists():
+        from radio.rigctld_server import RigctldServer
+        try:
+            with open(RADIO_CFG, encoding="utf-8") as _fh:
+                _radio_raw = yaml.safe_load(_fh) or {}
+        except Exception:
+            _radio_raw = {}
+        _srv_cfg = _radio_raw.get("rigctld_server", {})
+        if _srv_cfg.get("enabled", True):
+            _srv_host = _srv_cfg.get("host", "0.0.0.0")
+            _srv_port = int(_srv_cfg.get("port", 4532))
+            _srv_radio_name = _srv_cfg.get("radio", "")
+            _srv_iface = (
+                radio_manager[_srv_radio_name]
+                if _srv_radio_name and radio_manager and _srv_radio_name in radio_manager.names()
+                else radio_interface
+            )
+            _rig_server = RigctldServer(_srv_iface, host=_srv_host, port=_srv_port)
+            rigctld_task = asyncio.create_task(
+                _rig_server.serve(), name="rigctld_server"
+            )
+            log.info(
+                "rigctld server started on %s:%d  (radio: %s)",
+                _srv_host, _srv_port, _srv_iface.name,
+            )
+
     # ── 10. Serve ─────────────────────────────────────────────────────────
     config = uvicorn.Config(
         app,
@@ -481,6 +512,12 @@ async def main() -> None:
         await server.serve()
     finally:
         log.info("Shutting down...")
+        if rigctld_task is not None:
+            rigctld_task.cancel()
+            try:
+                await rigctld_task
+            except asyncio.CancelledError:
+                pass
         if radio_manager is not None:
             await radio_manager.stop_all()
         for bus_name, net in networks.items():

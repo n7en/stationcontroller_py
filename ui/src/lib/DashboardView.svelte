@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte'
-  import { sensors, labels, radio } from '../stores/ws.js'
+  import { sensors, labels, radio, radios } from '../stores/ws.js'
   import DashboardCard from './DashboardCard.svelte'
 
   export let dashboardId = 'main'
@@ -128,7 +128,7 @@
   }
 
   function parseBoard(card) {
-    if (card.type === 'radio_status') return 'Radio'
+    if (card.type === 'radio_status') return card.radio_name || 'Radio'
     const key = card.sensor || card.relay_key || ''
     if (key.startsWith('watt_meter')) return 'Watt Meter'
     if (key.startsWith('gpio_'))      return 'GPIO'
@@ -152,7 +152,7 @@
 
   function mkDefault(type) {
     switch (type) {
-      case 'radio_status': return { type, span: 2, row_span: 3 }
+      case 'radio_status': return { type, span: 2, row_span: 3, radio_name: '' }
       case 'sensor':       return { type, title: '', sensor: '', unit: '' }
       case 'relay':        return { type, title: '', relay_key: '', device_addr: '01', relay_num: 1 }
       case 'power_meter':  return { type, title: 'Power', sensor: '', max_w: 1500, row_span: 2 }
@@ -176,6 +176,15 @@
       cards[editingIdx] = card
     } else {
       cards.push(card)
+      // Auto-add a blank card to fill the column(s) left unused by wide/tall cards.
+      // radio_status is 2-wide in a 3-col grid → 1 column × row_span rows left empty.
+      if (pickerType === 'radio_status') {
+        const fillerCols = 3 - (card.span ?? 2)
+        const fillerRows = card.row_span ?? 1
+        if (fillerCols > 0 && fillerRows > 1) {
+          cards.push({ type: 'blank', span: fillerCols, row_span: fillerRows })
+        }
+      }
     }
     config     = { ...config, cards }
     showPicker = false
@@ -250,7 +259,7 @@
           </div>
         {/if}
         <div class="card-body">
-          <DashboardCard {card} sensors={$sensors} labels={$labels} radio={$radio} />
+          <DashboardCard {card} sensors={$sensors} labels={$labels} radio={$radio} radios={$radios} />
         </div>
 
         {#if editMode}
@@ -329,7 +338,18 @@
 
         <div class="picker-form">
           {#if pickerType === 'radio_status'}
-            <p class="form-hint">Shows the radio's frequency, mode, signal level and PTT state in real time. No configuration needed.</p>
+            {#if Object.keys($radios).length > 1}
+              <label>Radio
+                <select bind:value={pickerConfig.radio_name}>
+                  <option value="">Auto (first configured)</option>
+                  {#each Object.keys($radios) as name}
+                    <option value={name}>{name}</option>
+                  {/each}
+                </select>
+              </label>
+            {:else}
+              <p class="form-hint">Shows the radio's frequency, mode, signal level and PTT state in real time. No configuration needed.</p>
+            {/if}
 
           {:else if pickerType === 'sensor'}
             <label>Title

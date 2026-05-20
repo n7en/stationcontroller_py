@@ -26,11 +26,14 @@
 #   and / or / not
 #
 # -- Action types -------------------------------------------------------------
-#   log            (message, [level])
-#   sequence       (actions: list)
-#   conditional    (condition, if_true, [if_false])
-#   set_radio_power (watts)         - requires radio_interface in context
-#   set_relay      (dcn_address, relay_num, state: 0|1)
+#   log             (message, [level])
+#   sequence        (actions: list)
+#   conditional     (condition, if_true, [if_false])
+#   set_relay       (dcn_address, relay_num, state: 0|1)
+#   set_frequency   (frequency_hz)                    - tune to a frequency
+#   set_mode        (mode, [bandwidth_hz])            - change operating mode
+#   tune_radio      (frequency_hz, [mode], [bandwidth_hz]) - freq + mode in one step
+#   set_radio_power (watts)                           - set TX power level
 #
 # -- Execution modes ----------------------------------------------------------
 #   single   (default) - skip if action is already running
@@ -126,6 +129,38 @@ automations:
   #   action:
   #     type: set_radio_power
   #     watts: 5.0
+
+  # Example: switch to 40m WSPR frequency when the clock sensor crosses midnight.
+  #
+  # - name: "switch_40m_wspr"
+  #   tier: configuration
+  #   priority: 40
+  #   description: "Tune to 40m WSPR at midnight"
+  #   trigger:
+  #     - type: manual
+  #   action:
+  #     type: tune_radio
+  #     frequency_hz: 7038600
+  #     mode: USB
+  #     bandwidth_hz: 3000
+
+  # Example: sequence of actions — engage amp relay, then reduce TX power.
+  #
+  # - name: "engage_amp"
+  #   tier: configuration
+  #   priority: 70
+  #   description: "Close amp relay and drop radio drive to 5 W"
+  #   trigger:
+  #     - type: manual
+  #   action:
+  #     type: sequence
+  #     actions:
+  #       - type: set_relay
+  #         dcn_address: "01"
+  #         relay_num: 3
+  #         state: 1
+  #       - type: set_radio_power
+  #         watts: 5.0
 
   # -- Advisory ---------------------------------------------------------------
 

@@ -107,6 +107,62 @@
 
   $: busNames = buses.map(b => b.name)
 
+  // ── DCN Auto-discovery ────────────────────────────────────────────────────
+  let scanBus      = ''         // bus name to scan (defaults to first live bus)
+  let scanning     = false
+  let scanResults  = null       // null = not run yet, [] = ran but nothing found
+  let scanError    = null
+  let liveBuses    = []         // bus names known to the running app
+
+  // Keep scan-bus default in sync with available buses
+  $: if (!scanBus && liveBuses.length) scanBus = liveBuses[0]
+  $: if (!scanBus && busNames.length)  scanBus = busNames[0]
+
+  async function loadLiveBuses() {
+    try {
+      const r = await fetch('/api/comms/buses')
+      if (r.ok) liveBuses = (await r.json()).buses ?? []
+    } catch (_) { liveBuses = [] }
+  }
+
+  async function scanForDevices() {
+    if (scanning) return
+    scanning    = true
+    scanResults = null
+    scanError   = null
+    try {
+      const bus = scanBus || liveBuses[0] || busNames[0] || 'control'
+      const r   = await fetch(`/api/comms/discover?bus=${encodeURIComponent(bus)}&timeout=3`, { method: 'POST' })
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}))
+        scanError = d.detail ?? `HTTP ${r.status}`
+      } else {
+        scanResults = (await r.json()).devices ?? []
+      }
+    } catch (e) { scanError = e.message }
+    scanning = false
+  }
+
+  const DEVICE_TYPE_LABELS = {
+    gpio:          'GPIO (#321)',
+    antenna_relay: 'Antenna Relay (#361)',
+    coax_switch:   'Coax Switch (#331)',
+    vhf_coax_relay:'VHF Relay (#332)',
+    watt_meter:    'Watt Meter (#351)',
+  }
+
+  function addDiscovered(d) {
+    const bus = scanBus || busNames[0] || ''
+    const defaultName = (d.device_type ?? d.raw_type ?? 'device') + '_' + d.address
+    devices = [...devices, {
+      type:    d.device_type ?? 'gpio',
+      name:    defaultName,
+      address: d.address,
+      bus,
+      persona: 'cc_8a',
+    }]
+  }
+
   // ── Telemetry ─────────────────────────────────────────────────────────────
   let telemetry = {
     enabled:               true,
@@ -226,6 +282,7 @@
       }
 
       await loadUsers()
+      await loadLiveBuses()
     } catch (e) { console.error('Wizard load error:', e) }
     loading = false
   }
@@ -675,11 +732,58 @@
       <div class="section">
         <div class="section-hdr">
           <span class="section-title">Devices</span>
-          <button class="btn-add" disabled={!buses.length}
-            on:click={() => { addingDevice = true; addingBus = false; if (busNames[0]) newDevice.bus = busNames[0] }}>
-            + Add Device
-          </button>
+          <div class="hdr-actions">
+            <div class="scan-row">
+              <select class="scan-bus-sel" bind:value={scanBus}
+                disabled={scanning || (!liveBuses.length && !busNames.length)}>
+                {#each liveBuses as b}
+                  <option value={b}>{b}</option>
+                {/each}
+                {#each busNames.filter(b => !liveBuses.includes(b)) as b}
+                  <option value={b}>{b} (not live)</option>
+                {/each}
+                {#if !liveBuses.length && !busNames.length}
+                  <option value="">— no buses —</option>
+                {/if}
+              </select>
+              <button class="btn-scan"
+                disabled={scanning || (!liveBuses.length && !busNames.length)}
+                on:click={scanForDevices}>
+                {scanning ? 'Scanning…' : 'Scan Bus'}
+              </button>
+            </div>
+            <button class="btn-add" disabled={!buses.length}
+              on:click={() => { addingDevice = true; addingBus = false; if (busNames[0]) newDevice.bus = busNames[0] }}>
+              + Add Device
+            </button>
+          </div>
         </div>
+
+        {#if scanError}
+          <div class="banner">{scanError}</div>
+        {/if}
+
+        {#if scanResults !== null}
+          {#if scanResults.length === 0}
+            <p class="empty">No devices responded to PING on bus <strong>{scanBus}</strong>.</p>
+          {:else}
+            <div class="scan-results">
+              <p class="scan-header">Found {scanResults.length} device{scanResults.length !== 1 ? 's' : ''} — click to add:</p>
+              {#each scanResults as d}
+                {@const alreadyAdded = devices.some(x => x.address === d.address)}
+                <div class="scan-result-row" class:added={alreadyAdded}>
+                  <span class="scan-addr">#{d.address}</span>
+                  <span class="scan-type">{DEVICE_TYPE_LABELS[d.device_type] ?? d.raw_type ?? 'Unknown'}</span>
+                  {#if alreadyAdded}
+                    <span class="scan-tag">added</span>
+                  {:else}
+                    <button class="btn-add" on:click={() => addDiscovered(d)}>+ Add</button>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/if}
+        {/if}
 
         {#each devices as dev, i (i)}
           <div class="item-row">
@@ -1299,4 +1403,71 @@
     padding-top: 0.25rem;
   }
   .spacer { flex: 1; }
+
+  /* ── Discovery / scan ── */
+  .hdr-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .scan-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .scan-bus-sel {
+    width: auto;
+    min-width: 90px;
+    font-size: 0.75rem;
+    padding: 0.18rem 0.4rem;
+    height: auto;
+  }
+  .btn-scan {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    color: var(--text-muted);
+    border-color: var(--border);
+    white-space: nowrap;
+  }
+  .btn-scan:not(:disabled):hover { background: var(--border); color: var(--text); }
+  .scan-results {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
+  }
+  .scan-header {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0 0 0.1rem;
+  }
+  .scan-result-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.3rem 0;
+    border-top: 1px solid var(--border);
+    font-size: 0.83rem;
+  }
+  .scan-result-row:first-of-type { border-top: none; }
+  .scan-result-row.added { opacity: 0.6; }
+  .scan-addr {
+    font-family: monospace;
+    font-weight: 700;
+    min-width: 36px;
+    color: var(--accent);
+  }
+  .scan-type { flex: 1; }
+  .scan-tag {
+    font-size: 0.7rem;
+    color: var(--green);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    background: rgba(62,207,142,0.12);
+  }
 </style>

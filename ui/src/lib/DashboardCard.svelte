@@ -8,6 +8,12 @@
   export let sensors = {}
   export let labels  = {}
   export let radio   = null
+  export let radios  = {}
+
+  // Resolve the radio this card should display: by name if specified, else first available
+  $: cardRadio = card.radio_name && radios[card.radio_name]
+                   ? radios[card.radio_name]
+                   : radio
 
   $: val = (key) => sensors[key]?.value ?? 0
   $: lbl = (key) => labels[key] || card.title || key
@@ -58,7 +64,7 @@
   </div>
 
 {:else if card.type === 'radio_status'}
-  <RadioStatus radioState={radio} />
+  <RadioStatus radioState={cardRadio} />
 
 {:else if card.type === 'blank'}
   <div class="blank-card"></div>
