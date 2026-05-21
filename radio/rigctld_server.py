@@ -387,12 +387,12 @@ def _smeter_to_dbm(raw: float) -> float:
     pass it through unchanged so back-ends that return real dBm work too.
     """
     if raw < -10:
-        return raw
+        return raw                               # already a dBm value
     if raw <= 0:
-        return -54.0
+        return -127.0                            # S0 ≈ -127 dBm (no signal)
     if raw <= 120:
-        return -127.0 + (raw / 120.0) * 54.0   # 0 → -127, 120 → -73
-    return -73.0 + ((raw - 120) / 121.0) * 60.0 # 120 → -73, 241 → -13
+        return -127.0 + (raw / 120.0) * 54.0   # 0 → -127, 120 → -73 (S9)
+    return -73.0 + ((raw - 120) / 121.0) * 60.0 # 120 → -73, 241 → -13 (S9+60)
 
 
 def _dump_state() -> str:
