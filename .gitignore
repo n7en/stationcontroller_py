@@ -58,8 +58,15 @@ logs/
 .env.*
 !.env.example
 
-# TLS — private key must not be committed; cert is safe to share
-config/certs/key.pem
+# TLS certificates and keys
+certs/
+config/certs/
+*.pem
+*.crt
+*.cer
+*.key
+*.p12
+*.pfx
 
 # ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store
