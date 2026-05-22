@@ -330,3 +330,70 @@ class RigctldBackend(RadioBackend):
         except (RadioBackendError, IndexError, ValueError):
             pass
         return state
+
+    # ------------------------------------------------------------------
+    # RIT / XIT  (Receive / Transmit Incremental Tuning)
+    # ------------------------------------------------------------------
+
+    async def get_rit(self) -> int:
+        lines = await self._cmd(r"\get_rit")
+        try:
+            return int(lines[0])
+        except (IndexError, ValueError) as exc:
+            raise RadioBackendError(f"Unexpected get_rit response: {lines}") from exc
+
+    async def set_rit(self, offset_hz: int) -> None:
+        log.debug("set_rit: %+d Hz", offset_hz)
+        await self._cmd(rf"\set_rit {int(offset_hz)}")
+
+    async def get_xit(self) -> int:
+        lines = await self._cmd(r"\get_xit")
+        try:
+            return int(lines[0])
+        except (IndexError, ValueError) as exc:
+            raise RadioBackendError(f"Unexpected get_xit response: {lines}") from exc
+
+    async def set_xit(self, offset_hz: int) -> None:
+        log.debug("set_xit: %+d Hz", offset_hz)
+        await self._cmd(rf"\set_xit {int(offset_hz)}")
+
+    # ------------------------------------------------------------------
+    # Rig functions  (NB, NR, VOX, TUNER, LOCK, …)
+    # ------------------------------------------------------------------
+
+    async def get_func(self, func_name: str) -> bool:
+        lines = await self._cmd(rf"\get_func {func_name.upper()}")
+        try:
+            return lines[0].strip() != "0"
+        except IndexError as exc:
+            raise RadioBackendError(f"Unexpected get_func response for {func_name}: {lines}") from exc
+
+    async def set_func(self, func_name: str, value: bool) -> None:
+        log.debug("set_func: %s = %s", func_name, value)
+        await self._cmd(rf"\set_func {func_name.upper()} {1 if value else 0}")
+
+    # ------------------------------------------------------------------
+    # CTCSS / DCS tones
+    # ------------------------------------------------------------------
+
+    async def get_ctcss_tone(self) -> int:
+        lines = await self._cmd(r"\get_ctcss_tone")
+        try:
+            return int(lines[0])
+        except (IndexError, ValueError) as exc:
+            raise RadioBackendError(f"Unexpected get_ctcss_tone response: {lines}") from exc
+
+    async def set_ctcss_tone(self, tone: int) -> None:
+        log.debug("set_ctcss_tone: %d (%.1f Hz)", tone, tone / 10.0)
+        await self._cmd(rf"\set_ctcss_tone {int(tone)}")
+
+    async def get_dcs_code(self) -> int:
+        lines = await self._cmd(r"\get_dcs_code")
+        try:
+            return int(lines[0])
+        except (IndexError, ValueError) as exc:
+            raise RadioBackendError(f"Unexpected get_dcs_code response: {lines}") from exc
+
+    async def set_dcs_code(self, code: int) -> None:
+        log.debug("set_dcs_code: %d", code)
+        await self._cmd(rf"\set_dcs_code {int(code)}")

@@ -1,0 +1,38 @@
+# Logbook Integration Configuration
+#
+# StationController can listen passively to popular logging software and
+# maintain a live copy of your log.  This allows automations to know
+# what stations you have already worked, and the dashboard to show
+# recently logged contacts.
+#
+# Supported backends (enable one or both):
+#
+#   n1mm  — N1MM+ Logger Plus
+#            N1MM+ must have "Broadcast contacts to network" enabled:
+#            Tools → Configure Ports → Network → Enable Contacts Broadcasting
+#            No changes required in StationController beyond enabling this.
+#
+#   n3fjp — N3FJP Software (Amateur Contact Log, WS-FT8, etc.)
+#            N3FJP must have its TCP network interface enabled and accessible.
+#            StationController connects as a TCP client and polls for new QSOs.
+# ------------------------------------------------------------------------------
+
+logbook:
+
+  # --------------------------------------------------------------------------
+  # N1MM+ Logger Plus — UDP broadcast listener
+  # --------------------------------------------------------------------------
+  n1mm:
+    enabled: false
+    host: "0.0.0.0"    # interface to listen on (0.0.0.0 = all interfaces)
+    port: 12060         # UDP port N1MM+ broadcasts to (default 12060)
+
+  # --------------------------------------------------------------------------
+  # N3FJP Software — TCP polling client
+  # --------------------------------------------------------------------------
+  n3fjp:
+    enabled: false
+    host: "localhost"   # hostname/IP where N3FJP is running
+    port: 1100          # N3FJP network interface port (default 1100)
+    poll_interval_s: 5.0       # how often to check for new QSOs
+    reconnect_delay_s: 15.0    # delay before reconnecting after disconnect

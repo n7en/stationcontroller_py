@@ -39,6 +39,7 @@ class TriggerData:
     to_band: Optional[str] = None
     manual: bool = False
     timestamp: float = field(default_factory=time.time)
+    dx_spot: Optional[dict] = None     # populated by DXSpotTrigger
 
 
 class Trigger(ABC):
@@ -445,6 +446,69 @@ class ManualTrigger(Trigger):
 
 
 # ---------------------------------------------------------------------------
+# DX Cluster trigger
+# ---------------------------------------------------------------------------
+
+class DXSpotTrigger(Trigger):
+    """
+    Fires when a new DX spot arrives that matches optional band/mode/continent filters.
+
+    The DXClusterManager pushes new spots by calling DXSpotTrigger.push_spots().
+    Each trigger instance drains its own queue on the next update() call.
+
+    Config::
+
+        - type: dx_spot
+          band: "20m"          # optional - only fire for spots on this band
+          mode: "CW"           # optional - only fire for spots of this mode/mode_type
+          continent: "AF"      # optional - only fire for DX on this continent
+    """
+
+    _all_triggers: list["DXSpotTrigger"] = []   # class-level registry
+
+    def __init__(
+        self,
+        band: Optional[str] = None,
+        mode: Optional[str] = None,
+        continent: Optional[str] = None,
+    ) -> None:
+        self._band = band
+        self._mode = mode.upper() if mode else None
+        self._continent = continent
+        self._pending: list[dict] = []
+        DXSpotTrigger._all_triggers.append(self)
+
+    @classmethod
+    def push_spots(cls, spots) -> None:
+        """Called by DXClusterManager when new spots arrive."""
+        for trigger in cls._all_triggers:
+            for spot in spots:
+                trigger._pending.append(spot if isinstance(spot, dict) else spot.as_dict())
+
+    def update(self, registry, radio_state, band_registry) -> Optional[TriggerData]:
+        while self._pending:
+            spot = self._pending.pop(0)
+            if self._matches(spot):
+                return TriggerData(trigger_type="dx_spot", dx_spot=spot)
+        return None
+
+    def _matches(self, spot: dict) -> bool:
+        if self._band and spot.get("band") != self._band:
+            return False
+        if self._mode:
+            spot_mode = (spot.get("mode") or "").upper()
+            spot_mode_type = (spot.get("mode_type") or "").upper()
+            if self._mode not in (spot_mode, spot_mode_type):
+                return False
+        if self._continent and spot.get("dx_continent") != self._continent:
+            return False
+        return True
+
+    def reset(self) -> None:
+        self._pending.clear()
+
+
+# ---------------------------------------------------------------------------
 # Config factory
 # ---------------------------------------------------------------------------
 
@@ -474,4 +538,10 @@ def trigger_from_config(cfg: dict) -> Trigger:
         return ManualTrigger()
     if kind == "time":
         return TimeTrigger(cfg["time"], cfg.get("days"))
+    if kind == "dx_spot":
+        return DXSpotTrigger(
+            band=cfg.get("band"),
+            mode=cfg.get("mode"),
+            continent=cfg.get("continent"),
+        )
     raise ValueError(f"Unknown trigger type: {kind!r}")

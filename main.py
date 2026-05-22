@@ -39,6 +39,8 @@ AUTOMATION_CFG = CFG / "automation_config.yaml"
 TELEMETRY_CFG  = CFG / "telemetry_config.yaml"
 LABELS_CFG     = CFG / "labels.yaml"
 LOGGING_CFG    = CFG / "logging_config.yaml"
+LOGBOOK_CFG    = CFG / "logbook_config.yaml"
+DX_CFG         = CFG / "dx_config.yaml"
 
 TLS_CERT = CFG / "certs" / "cert.pem"
 TLS_KEY  = CFG / "certs" / "key.pem"
@@ -370,6 +372,34 @@ async def main() -> None:
     state.telemetry        = store
     state.log_buffer       = log_buffer
 
+    # ── 7b. Logbook integration ───────────────────────────────────────────
+    logbook_manager = None
+    if LOGBOOK_CFG.exists():
+        try:
+            from logging_integration.manager import LogbookManager
+            with open(LOGBOOK_CFG, encoding="utf-8") as _fh:
+                _lb_raw = yaml.safe_load(_fh) or {}
+            logbook_manager = LogbookManager.from_config(_lb_raw.get("logbook", {}))
+            state.logbook_manager = logbook_manager
+            log.info("Logbook integration loaded")
+        except Exception:
+            log.exception("Failed to load logbook config - logbook integration disabled")
+
+    # ── 7c. DX cluster ────────────────────────────────────────────────────
+    dx_manager = None
+    if DX_CFG.exists():
+        try:
+            from dx_cluster.manager import DXClusterManager
+            with open(DX_CFG, encoding="utf-8") as _fh:
+                _dx_raw = yaml.safe_load(_fh) or {}
+            _dx_cfg = _dx_raw.get("dx_cluster", {})
+            if _dx_cfg.get("enabled", True):
+                dx_manager = DXClusterManager.from_config(_dx_cfg)
+                state.dx_manager = dx_manager
+                log.info("DX cluster manager loaded (Spothole)")
+        except Exception:
+            log.exception("Failed to load DX cluster config - DX cluster disabled")
+
     app    = create_app(state)
     ws_hub = state.ws_hub  # populated by create_app()
     log_buffer.attach_ws_hub(ws_hub)
@@ -492,6 +522,16 @@ async def main() -> None:
                 _srv_host, _srv_port, _srv_iface.name,
             )
 
+    # ── 9c. Start logbook + DX cluster ───────────────────────────────────
+    if logbook_manager is not None:
+        await logbook_manager.start()
+
+    if dx_manager is not None:
+        # Wire new spots into the automation trigger class-level registry.
+        from automation.trigger import DXSpotTrigger
+        dx_manager.add_spots_callback(DXSpotTrigger.push_spots)
+        await dx_manager.start()
+
     # ── 10. Serve ─────────────────────────────────────────────────────────
     config = uvicorn.Config(
         app,
@@ -525,6 +565,10 @@ async def main() -> None:
                 await net.disconnect_all()
             except Exception:
                 log.exception("Error disconnecting bus '%s'", bus_name)
+        if logbook_manager is not None:
+            await logbook_manager.stop()
+        if dx_manager is not None:
+            await dx_manager.stop()
         if store:
             await store.close()
         log.info("Stopped.")

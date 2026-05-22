@@ -3,6 +3,8 @@
   import SwrBar          from './SwrBar.svelte'
   import RelayButton     from './RelayButton.svelte'
   import RadioStatus     from './RadioStatus.svelte'
+  import DXSpotsPanel    from './DXSpotsPanel.svelte'
+  import SolarPanel      from './SolarPanel.svelte'
 
   export let card    // card config object from dashboard YAML
   export let sensors = {}
@@ -65,6 +67,12 @@
 
 {:else if card.type === 'radio_status'}
   <RadioStatus radioState={cardRadio} />
+
+{:else if card.type === 'dx_spots'}
+  <DXSpotsPanel {card} />
+
+{:else if card.type === 'solar'}
+  <SolarPanel />
 
 {:else if card.type === 'blank'}
   <div class="blank-card"></div>

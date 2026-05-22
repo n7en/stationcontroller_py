@@ -221,6 +221,41 @@ class RadioInterface:
         await self._backend.set_level(level_name, value)
         _apply_level(self.state, level_name, value)
 
+    # ------------------------------------------------------------------
+    # Optional capabilities — delegate to backend; caller handles
+    # NotImplementedError when the backend does not support the feature.
+    # ------------------------------------------------------------------
+
+    async def get_rit(self) -> int:
+        return await self._backend.get_rit()
+
+    async def set_rit(self, offset_hz: int) -> None:
+        await self._backend.set_rit(offset_hz)
+
+    async def get_xit(self) -> int:
+        return await self._backend.get_xit()
+
+    async def set_xit(self, offset_hz: int) -> None:
+        await self._backend.set_xit(offset_hz)
+
+    async def get_func(self, func_name: str) -> bool:
+        return await self._backend.get_func(func_name)
+
+    async def set_func(self, func_name: str, value: bool) -> None:
+        await self._backend.set_func(func_name, value)
+
+    async def get_ctcss_tone(self) -> int:
+        return await self._backend.get_ctcss_tone()
+
+    async def set_ctcss_tone(self, tone: int) -> None:
+        await self._backend.set_ctcss_tone(tone)
+
+    async def get_dcs_code(self) -> int:
+        return await self._backend.get_dcs_code()
+
+    async def set_dcs_code(self, code: int) -> None:
+        await self._backend.set_dcs_code(code)
+
 
 # ------------------------------------------------------------------
 # Helpers (module-level to keep the class lean)

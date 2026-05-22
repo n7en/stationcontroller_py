@@ -51,6 +51,60 @@ _LEVEL_TO_HAMLIB: dict[str, str] = {
     "VOXGAIN":   "RIG_LEVEL_VOXGAIN",
     "SWR":       "RIG_LEVEL_SWR",
     "ALC":       "RIG_LEVEL_ALC",
+    # Extended levels
+    "PREAMP":    "RIG_LEVEL_PREAMP",
+    "ATT":       "RIG_LEVEL_ATT",
+    "BALANCE":   "RIG_LEVEL_BALANCE",
+    "BKINDL":    "RIG_LEVEL_BKINDL",
+    "NOTCHF":    "RIG_LEVEL_NOTCHF",
+    "CWPITCH":   "RIG_LEVEL_CWPITCH",
+    "VOXDELAY":  "RIG_LEVEL_VOXDELAY",
+    "ANTIVOX":   "RIG_LEVEL_ANTIVOX",
+    "RAWSTR":    "RIG_LEVEL_RAWSTR",
+    "SLOPE_LOW": "RIG_LEVEL_SLOPE_LOW",
+    "SLOPE_HIGH":"RIG_LEVEL_SLOPE_HIGH",
+}
+
+# Rig function name -> Hamlib constant attribute name
+_FUNC_TO_HAMLIB: dict[str, str] = {
+    "NB":      "RIG_FUNC_NB",
+    "COMP":    "RIG_FUNC_COMP",
+    "VOX":     "RIG_FUNC_VOX",
+    "TONE":    "RIG_FUNC_TONE",    # CTCSS encode
+    "TSQL":    "RIG_FUNC_TSQL",    # CTCSS squelch
+    "SBKIN":   "RIG_FUNC_SBKIN",   # Semi-break-in CW
+    "FBKIN":   "RIG_FUNC_FBKIN",   # Full break-in CW
+    "ANF":     "RIG_FUNC_ANF",     # Automatic Notch Filter
+    "NR":      "RIG_FUNC_NR",      # Noise Reduction
+    "AIP":     "RIG_FUNC_AIP",
+    "APF":     "RIG_FUNC_APF",     # Audio Peak Filter
+    "MON":     "RIG_FUNC_MON",     # TX monitor
+    "MN":      "RIG_FUNC_MN",      # Manual Notch
+    "RF":      "RIG_FUNC_RF",      # RTTY Filter
+    "ARO":     "RIG_FUNC_ARO",     # Auto Repeater Offset
+    "LOCK":    "RIG_FUNC_LOCK",
+    "MUTE":    "RIG_FUNC_MUTE",
+    "VSC":     "RIG_FUNC_VSC",
+    "REV":     "RIG_FUNC_REV",     # Reverse sideband
+    "SQL":     "RIG_FUNC_SQL",
+    "ABM":     "RIG_FUNC_ABM",
+    "BC":      "RIG_FUNC_BC",
+    "MBC":     "RIG_FUNC_MBC",
+    "AFC":     "RIG_FUNC_AFC",     # Auto Frequency Control
+    "SATMODE": "RIG_FUNC_SATMODE",
+    "SCOPE":   "RIG_FUNC_SCOPE",
+    "RESUME":  "RIG_FUNC_RESUME",
+    "TBURST":  "RIG_FUNC_TBURST",  # 1750 Hz tone burst
+    "TUNER":   "RIG_FUNC_TUNER",
+    "XIT":     "RIG_FUNC_XIT",
+    "NIT":     "RIG_FUNC_NIT",
+    "RIT":     "RIG_FUNC_RIT",
+    "DSQL":    "RIG_FUNC_DSQL",    # Digital squelch
+    "AFLT":    "RIG_FUNC_AFLT",    # AF filter
+    "BL":      "RIG_FUNC_BL",      # Beat lock
+    "SEND":    "RIG_FUNC_SEND",
+    "CATPTT":  "RIG_FUNC_CATPTT",
+    "RPTR_SHIFT": "RIG_FUNC_RPTR_SHIFT",
 }
 
 _PARITY_TO_HAMLIB: dict[str, str] = {
@@ -324,3 +378,114 @@ class HamlibDirectBackend(RadioBackend):
     async def get_info(self) -> str:
         rig, _ = self._require()
         return str(await self._run(rig.get_info))
+
+    # ------------------------------------------------------------------
+    # RIT / XIT  (Receive / Transmit Incremental Tuning)
+    # ------------------------------------------------------------------
+
+    async def get_rit(self) -> int:
+        rig, H = self._require()
+        try:
+            return int(await self._run(rig.get_rit, H.RIG_VFO_CURR))
+        except (TypeError, AttributeError):
+            return int(await self._run(rig.get_rit))
+
+    async def set_rit(self, offset_hz: int) -> None:
+        log.debug("set_rit: %+d Hz", offset_hz)
+        rig, H = self._require()
+        try:
+            await self._run(rig.set_rit, H.RIG_VFO_CURR, int(offset_hz))
+        except (TypeError, AttributeError):
+            await self._run(rig.set_rit, int(offset_hz))
+
+    async def get_xit(self) -> int:
+        rig, H = self._require()
+        try:
+            return int(await self._run(rig.get_xit, H.RIG_VFO_CURR))
+        except (TypeError, AttributeError):
+            return int(await self._run(rig.get_xit))
+
+    async def set_xit(self, offset_hz: int) -> None:
+        log.debug("set_xit: %+d Hz", offset_hz)
+        rig, H = self._require()
+        try:
+            await self._run(rig.set_xit, H.RIG_VFO_CURR, int(offset_hz))
+        except (TypeError, AttributeError):
+            await self._run(rig.set_xit, int(offset_hz))
+
+    # ------------------------------------------------------------------
+    # Rig functions  (NB, NR, VOX, TUNER, LOCK, …)
+    # ------------------------------------------------------------------
+
+    async def get_func(self, func_name: str) -> bool:
+        rig, H = self._require()
+        attr = _FUNC_TO_HAMLIB.get(func_name.upper())
+        if attr is None:
+            raise RadioBackendError(f"Unknown rig function: {func_name}")
+        const = getattr(H, attr, None)
+        if const is None:
+            raise RadioBackendError(f"Hamlib has no constant {attr} for function {func_name}")
+        for call in [
+            (rig.get_func, H.RIG_VFO_CURR, const),
+            (rig.get_func, const),
+        ]:
+            try:
+                result = await self._run(*call)
+                return bool(result)
+            except (TypeError, AttributeError):
+                continue
+        raise RadioBackendError(f"get_func failed for {func_name}: no working calling convention")
+
+    async def set_func(self, func_name: str, value: bool) -> None:
+        log.debug("set_func: %s = %s", func_name, value)
+        rig, H = self._require()
+        attr = _FUNC_TO_HAMLIB.get(func_name.upper())
+        if attr is None:
+            raise RadioBackendError(f"Unknown rig function: {func_name}")
+        const = getattr(H, attr, None)
+        if const is None:
+            raise RadioBackendError(f"Hamlib has no constant {attr} for function {func_name}")
+        for call in [
+            (rig.set_func, H.RIG_VFO_CURR, const, int(value)),
+            (rig.set_func, const, int(value)),
+        ]:
+            try:
+                await self._run(*call)
+                return
+            except (TypeError, AttributeError):
+                continue
+        raise RadioBackendError(f"set_func failed for {func_name}: no working calling convention")
+
+    # ------------------------------------------------------------------
+    # CTCSS / DCS tones
+    # ------------------------------------------------------------------
+
+    async def get_ctcss_tone(self) -> int:
+        rig, H = self._require()
+        try:
+            return int(await self._run(rig.get_ctcss_tone, H.RIG_VFO_CURR))
+        except (TypeError, AttributeError):
+            return int(await self._run(rig.get_ctcss_tone))
+
+    async def set_ctcss_tone(self, tone: int) -> None:
+        log.debug("set_ctcss_tone: %d (%.1f Hz)", tone, tone / 10.0)
+        rig, H = self._require()
+        try:
+            await self._run(rig.set_ctcss_tone, H.RIG_VFO_CURR, int(tone))
+        except (TypeError, AttributeError):
+            await self._run(rig.set_ctcss_tone, int(tone))
+
+    async def get_dcs_code(self) -> int:
+        rig, H = self._require()
+        try:
+            return int(await self._run(rig.get_dcs_code, H.RIG_VFO_CURR))
+        except (TypeError, AttributeError):
+            return int(await self._run(rig.get_dcs_code))
+
+    async def set_dcs_code(self, code: int) -> None:
+        log.debug("set_dcs_code: %d", code)
+        rig, H = self._require()
+        try:
+            await self._run(rig.set_dcs_code, H.RIG_VFO_CURR, int(code))
+        except (TypeError, AttributeError):
+            await self._run(rig.set_dcs_code, int(code))

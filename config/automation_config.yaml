@@ -16,6 +16,7 @@
 #   ptt_off                                 - PTT becomes inactive
 #   radio_connected                         - radio comes online
 #   radio_disconnected                      - radio goes offline
+#   dx_spot    (band, mode, continent)      - new DX cluster spot (optional filters)
 #   manual                                  - documents manual-test support
 #
 # -- Condition types ----------------------------------------------------------
@@ -34,6 +35,10 @@
 #   set_mode        (mode, [bandwidth_hz])            - change operating mode
 #   tune_radio      (frequency_hz, [mode], [bandwidth_hz]) - freq + mode in one step
 #   set_radio_power (watts)                           - set TX power level
+#   set_func        (func, [value: true])             - toggle rig function (NB, NR, VOX, TUNER, LOCK…)
+#   set_rit         (offset_hz)                       - set RIT offset (0 = off)
+#   set_xit         (offset_hz)                       - set XIT offset (0 = off)
+#   set_ctcss_tone  (tone)                            - CTCSS tone in tenths of Hz (670=67.0Hz, 0=off)
 #
 # -- Execution modes ----------------------------------------------------------
 #   single   (default) - skip if action is already running

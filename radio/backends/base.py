@@ -164,3 +164,52 @@ class RadioBackend(ABC):
     async def get_sub_state(self) -> dict:
         """Poll VFO-B / sub-receiver state. Override in backends that support it."""
         return {}
+
+    # ------------------------------------------------------------------
+    # Optional capabilities — raise NotImplementedError by default so
+    # callers can test support with a try/except.  Backends implement
+    # whichever subset their hardware or protocol supports.
+    # ------------------------------------------------------------------
+
+    async def get_rit(self) -> int:
+        """Return RIT (Receive Incremental Tuning) offset in Hz."""
+        raise NotImplementedError
+
+    async def set_rit(self, offset_hz: int) -> None:
+        """Set RIT offset in Hz (0 to disable)."""
+        raise NotImplementedError
+
+    async def get_xit(self) -> int:
+        """Return XIT (Transmit Incremental Tuning) offset in Hz."""
+        raise NotImplementedError
+
+    async def set_xit(self, offset_hz: int) -> None:
+        """Set XIT offset in Hz (0 to disable)."""
+        raise NotImplementedError
+
+    async def get_func(self, func_name: str) -> bool:
+        """
+        Return the state of a named rig function.
+        Common names: NB, NR, ANF, VOX, COMP, TUNER, LOCK, MUTE, REV, AFC.
+        """
+        raise NotImplementedError
+
+    async def set_func(self, func_name: str, value: bool) -> None:
+        """Enable or disable a named rig function."""
+        raise NotImplementedError
+
+    async def get_ctcss_tone(self) -> int:
+        """Return the CTCSS tone code (tenths of Hz, e.g. 670 = 67.0 Hz)."""
+        raise NotImplementedError
+
+    async def set_ctcss_tone(self, tone: int) -> None:
+        """Set the CTCSS encode tone (tenths of Hz; 0 = off)."""
+        raise NotImplementedError
+
+    async def get_dcs_code(self) -> int:
+        """Return the DCS (Digital Coded Squelch) code."""
+        raise NotImplementedError
+
+    async def set_dcs_code(self, code: int) -> None:
+        """Set the DCS code."""
+        raise NotImplementedError

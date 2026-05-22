@@ -203,6 +203,59 @@ class SetRelay(Action):
         )
 
 
+class SetFunc(Action):
+    """Enable or disable a named rig function (NB, NR, VOX, TUNER, LOCK, …)."""
+
+    def __init__(self, func: str, value: bool) -> None:
+        self.func  = func.upper()
+        self.value = value
+
+    async def execute(self, ctx: AutomationContext) -> None:
+        if ctx.radio_interface is None:
+            raise RuntimeError("SetFunc requires radio_interface on AutomationContext")
+        await ctx.radio_interface.set_func(self.func, self.value)
+        log.info("SetFunc: %s = %s", self.func, self.value)
+
+
+class SetRit(Action):
+    """Set the RIT (Receive Incremental Tuning) offset in Hz.  0 = off."""
+
+    def __init__(self, offset_hz: int) -> None:
+        self.offset_hz = int(offset_hz)
+
+    async def execute(self, ctx: AutomationContext) -> None:
+        if ctx.radio_interface is None:
+            raise RuntimeError("SetRit requires radio_interface on AutomationContext")
+        await ctx.radio_interface.set_rit(self.offset_hz)
+        log.info("SetRit: %+d Hz", self.offset_hz)
+
+
+class SetXit(Action):
+    """Set the XIT (Transmit Incremental Tuning) offset in Hz.  0 = off."""
+
+    def __init__(self, offset_hz: int) -> None:
+        self.offset_hz = int(offset_hz)
+
+    async def execute(self, ctx: AutomationContext) -> None:
+        if ctx.radio_interface is None:
+            raise RuntimeError("SetXit requires radio_interface on AutomationContext")
+        await ctx.radio_interface.set_xit(self.offset_hz)
+        log.info("SetXit: %+d Hz", self.offset_hz)
+
+
+class SetCtcssTone(Action):
+    """Set the CTCSS encode tone.  Tone is in tenths of Hz (e.g. 670 = 67.0 Hz); 0 = off."""
+
+    def __init__(self, tone: int) -> None:
+        self.tone = int(tone)
+
+    async def execute(self, ctx: AutomationContext) -> None:
+        if ctx.radio_interface is None:
+            raise RuntimeError("SetCtcssTone requires radio_interface on AutomationContext")
+        await ctx.radio_interface.set_ctcss_tone(self.tone)
+        log.info("SetCtcssTone: %d (%.1f Hz)", self.tone, self.tone / 10.0)
+
+
 # ---------------------------------------------------------------------------
 # Config factory
 # ---------------------------------------------------------------------------
@@ -246,4 +299,12 @@ def action_from_config(cfg: dict) -> Action:
             int(cfg["relay_num"]),
             int(cfg["state"]),
         )
+    if kind == "set_func":
+        return SetFunc(str(cfg["func"]), bool(cfg.get("value", True)))
+    if kind == "set_rit":
+        return SetRit(int(cfg.get("offset_hz", 0)))
+    if kind == "set_xit":
+        return SetXit(int(cfg.get("offset_hz", 0)))
+    if kind == "set_ctcss_tone":
+        return SetCtcssTone(int(cfg.get("tone", 0)))
     raise ValueError(f"Unknown action type: {kind!r}")

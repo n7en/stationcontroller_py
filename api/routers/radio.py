@@ -40,7 +40,7 @@ _ICOM_LAN_KEYS = {"name", "backend", "enabled", "host", "port",
                    "poll_interval_s", "reconnect_delay_s"}
 
 _COMMON_DEFAULTS    = {"enabled": True, "poll_interval_s": 1.0, "reconnect_delay_s": 5.0}
-_RIGCTLD_DEFAULTS   = {"host": "localhost", "port": 4532, "timeout_s": 15.0}
+_RIGCTLD_DEFAULTS   = {"host": "localhost", "port": 4532, "timeout_s": 15.0, "poll_interval_s": 0.5}
 _MANAGED_DEFAULTS   = {"host": "127.0.0.1", "port": 0, "serial_baud": 9600,
                         "timeout_s": 15.0, "startup_timeout_s": 10.0,
                         "serial_timeout_ms": 500}
@@ -201,6 +201,139 @@ async def save_radio_config(
 
     reconnected = await _rebuild_radio(state)
     return {"ok": True, "reconnected": reconnected}
+
+
+def _radio_iface(state: AppState):
+    if state.radio_interface is None:
+        raise HTTPException(status_code=503, detail="Radio interface not connected")
+    return state.radio_interface
+
+
+def _cap_error(feature: str):
+    raise HTTPException(
+        status_code=501,
+        detail=f"Connected radio backend does not support {feature}",
+    )
+
+
+# ---------------------------------------------------------------------------
+# RIT / XIT
+# ---------------------------------------------------------------------------
+
+@router.get("/rit")
+async def get_rit(state: AppState = Depends(get_state)) -> dict:
+    iface = _radio_iface(state)
+    try:
+        return {"offset_hz": await iface.get_rit()}
+    except NotImplementedError:
+        _cap_error("RIT")
+
+
+@router.post("/rit")
+async def set_rit(body: dict, state: AppState = Depends(get_state)) -> dict:
+    iface = _radio_iface(state)
+    offset = int(body.get("offset_hz", 0))
+    try:
+        await iface.set_rit(offset)
+        return {"ok": True, "offset_hz": offset}
+    except NotImplementedError:
+        _cap_error("RIT")
+
+
+@router.get("/xit")
+async def get_xit(state: AppState = Depends(get_state)) -> dict:
+    iface = _radio_iface(state)
+    try:
+        return {"offset_hz": await iface.get_xit()}
+    except NotImplementedError:
+        _cap_error("XIT")
+
+
+@router.post("/xit")
+async def set_xit(body: dict, state: AppState = Depends(get_state)) -> dict:
+    iface = _radio_iface(state)
+    offset = int(body.get("offset_hz", 0))
+    try:
+        await iface.set_xit(offset)
+        return {"ok": True, "offset_hz": offset}
+    except NotImplementedError:
+        _cap_error("XIT")
+
+
+# ---------------------------------------------------------------------------
+# Rig functions  (NB, NR, VOX, TUNER, LOCK, …)
+# ---------------------------------------------------------------------------
+
+@router.get("/func/{func_name}")
+async def get_func(func_name: str, state: AppState = Depends(get_state)) -> dict:
+    iface = _radio_iface(state)
+    try:
+        return {"func": func_name.upper(), "value": await iface.get_func(func_name)}
+    except NotImplementedError:
+        _cap_error(f"function {func_name}")
+
+
+class FuncRequest(BaseModel):
+    value: bool
+
+
+@router.post("/func/{func_name}")
+async def set_func(
+    func_name: str,
+    body: FuncRequest,
+    state: AppState = Depends(get_state),
+) -> dict:
+    iface = _radio_iface(state)
+    try:
+        await iface.set_func(func_name, body.value)
+        return {"ok": True, "func": func_name.upper(), "value": body.value}
+    except NotImplementedError:
+        _cap_error(f"function {func_name}")
+
+
+# ---------------------------------------------------------------------------
+# CTCSS / DCS tones
+# ---------------------------------------------------------------------------
+
+@router.get("/ctcss")
+async def get_ctcss(state: AppState = Depends(get_state)) -> dict:
+    iface = _radio_iface(state)
+    try:
+        tone = await iface.get_ctcss_tone()
+        return {"tone": tone, "freq_hz": tone / 10.0}
+    except NotImplementedError:
+        _cap_error("CTCSS")
+
+
+@router.post("/ctcss")
+async def set_ctcss(body: dict, state: AppState = Depends(get_state)) -> dict:
+    iface = _radio_iface(state)
+    tone = int(body.get("tone", 0))
+    try:
+        await iface.set_ctcss_tone(tone)
+        return {"ok": True, "tone": tone, "freq_hz": tone / 10.0}
+    except NotImplementedError:
+        _cap_error("CTCSS")
+
+
+@router.get("/dcs")
+async def get_dcs(state: AppState = Depends(get_state)) -> dict:
+    iface = _radio_iface(state)
+    try:
+        return {"code": await iface.get_dcs_code()}
+    except NotImplementedError:
+        _cap_error("DCS")
+
+
+@router.post("/dcs")
+async def set_dcs(body: dict, state: AppState = Depends(get_state)) -> dict:
+    iface = _radio_iface(state)
+    code = int(body.get("code", 0))
+    try:
+        await iface.set_dcs_code(code)
+        return {"ok": True, "code": code}
+    except NotImplementedError:
+        _cap_error("DCS")
 
 
 @router.post("/reconnect")

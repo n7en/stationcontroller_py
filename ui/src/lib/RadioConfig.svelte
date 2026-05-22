@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { radios } from '../stores/ws.js'
   import SerialPortPicker from './SerialPortPicker.svelte'
+  import HamlibModelPicker from './HamlibModelPicker.svelte'
 
   /** @type {{radios: any[]}|null} */
   let config      = null
@@ -271,6 +272,11 @@
             </div>
 
             {#if editEntry.backend === 'managed_rigctld'}
+              <div class="field">
+                <label>Radio Model
+                  <HamlibModelPicker bind:value={editEntry.model_id} />
+                </label>
+              </div>
               <div class="field-row">
                 <div class="field narrow">
                   <label>Model ID
@@ -315,9 +321,8 @@
                 </div>
               </div>
               <p class="hint">
-                Model IDs: 351 = IC-7300 · 135 = FT-991A · 122 = IC-7610 ·
-                <a href="https://hamlib.sourceforge.net/manuals/4.5/supported_radios.html"
-                   target="_blank" rel="noopener">full list ↗</a>
+                Search above or enter the model ID directly.
+                Popular: 351 = IC-7300 · 135 = FT-991A · 122 = IC-7610
               </p>
             {/if}
 
@@ -341,6 +346,11 @@
             {/if}
 
             {#if editEntry.backend === 'hamlib_direct'}
+              <div class="field">
+                <label>Radio Model
+                  <HamlibModelPicker bind:value={editEntry.model_id} />
+                </label>
+              </div>
               <div class="field-row">
                 <div class="field narrow">
                   <label>Model ID
@@ -384,9 +394,8 @@
                 </div>
               </div>
               <p class="hint">
-                Model IDs: 1 = Dummy · 351 = IC-7300 · 135 = FT-991A ·
-                <a href="https://hamlib.sourceforge.net/manuals/4.5/supported_radios.html"
-                   target="_blank" rel="noopener">full list ↗</a>
+                Search above or enter the model ID directly.
+                Popular: 1 = Dummy · 351 = IC-7300 · 135 = FT-991A
               </p>
             {/if}
 

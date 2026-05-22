@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     from telemetry.store import TelemetryStore
     from .log_buffer import LogBuffer
     from .ws_hub import WSHub
+    from logging_integration.manager import LogbookManager
+    from dx_cluster.manager import DXClusterManager
 
 
 class AppState:
@@ -38,9 +40,11 @@ class AppState:
         self.radio_manager: Optional[Any] = None   # holds all RadioInterface instances
         self.engine: Optional["AutomationEngine"] = None
         self.band_registry: Optional["BandRegistry"] = None
-        self.telemetry:   Optional["TelemetryStore"] = None
-        self.ws_hub:      Optional["WSHub"]          = None
-        self.log_buffer:  Optional["LogBuffer"]      = None
+        self.telemetry:        Optional["TelemetryStore"]    = None
+        self.ws_hub:           Optional["WSHub"]             = None
+        self.log_buffer:       Optional["LogBuffer"]         = None
+        self.logbook_manager:  Optional["LogbookManager"]    = None
+        self.dx_manager:       Optional["DXClusterManager"]  = None
 
     # ------------------------------------------------------------------
     # Convenience helpers

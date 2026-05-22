@@ -1,0 +1,57 @@
+# DX Cluster Configuration
+#
+# StationController polls the Spothole DX cluster aggregator for live spots
+# and solar/propagation data.  Spothole aggregates data from traditional DX
+# clusters, RBN (Reverse Beacon Network), POTA, SOTA, and other sources.
+#
+# API documentation: https://spothole.app/apidocs/
+# Base URL: https://spothole.app/api/v1  (public, no API key required)
+#
+# Data is used for:
+#   - Dashboard DX spots widget (live spot list with band/mode/continent filter)
+#   - Dashboard solar panel (SFI, K-index, HF band conditions)
+#   - "Tune to spot" — click a spot in the dashboard to QSY the radio
+#   - Automation trigger: dx_spot (fire when a new spot matches criteria)
+#
+# -- Automation trigger examples -------------------------------------------
+#
+#   - name: "dx_af_20m"
+#     trigger:
+#       - type: dx_spot
+#         band: "20m"
+#         continent: "AF"     # new Africa spot on 20m
+#     action:
+#       type: log
+#       message: "New African station spotted on 20m"
+#
+#   - name: "dx_pota"
+#     trigger:
+#       - type: dx_spot      # any new POTA/SOTA spot (no filters = all spots)
+#     action:
+#       type: log
+#       message: "New DX spot received"
+# ------------------------------------------------------------------------------
+
+dx_cluster:
+  enabled: true
+
+  # Spothole server URL (use default unless self-hosting)
+  base_url: "https://spothole.app/api/v1"
+
+  # How often to fetch new spots (seconds).  60s is a good default.
+  # The Spothole API keeps spots for up to 1 hour.
+  spot_interval_s: 60
+
+  # How often to refresh solar/propagation data (seconds).  10 minutes.
+  solar_interval_s: 600
+
+  # Maximum number of spots to keep in memory.
+  max_spots: 200
+
+  # Optional server-side filters applied to every spot fetch.
+  # Leave blank to receive all bands and continents.
+  # band_filter: "20m"         # e.g. only fetch 20m spots
+  # continent_filter: "AF"     # e.g. only fetch African DX
+
+  # HTTP request timeout in seconds.
+  timeout_s: 10.0

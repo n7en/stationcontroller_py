@@ -70,10 +70,22 @@ async def save_dashboard(dashboard_id: str, request: Request) -> dict:
         raise HTTPException(status_code=422, detail="Dashboard config must be a JSON object")
     path = _dashboard_path(dashboard_id)
     DASHBOARDS_DIR.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        yaml.dump(body, default_flow_style=False, allow_unicode=True),
-        encoding="utf-8", newline="\n",
-    )
+    if set(body.keys()) == {"yaml"}:
+        # Raw YAML envelope sent by editor ({"yaml": "..."})
+        raw = body["yaml"]
+        if not isinstance(raw, str):
+            raise HTTPException(status_code=422, detail="'yaml' field must be a string")
+        try:
+            yaml.safe_load(raw)
+        except yaml.YAMLError as e:
+            raise HTTPException(status_code=422, detail=f"YAML parse error: {e}")
+        path.write_text(raw, encoding="utf-8", newline="\n")
+    else:
+        # Config dict sent by dashboard UI
+        path.write_text(
+            yaml.dump(body, default_flow_style=False, allow_unicode=True),
+            encoding="utf-8", newline="\n",
+        )
     return {"ok": True, "id": dashboard_id}
 
 

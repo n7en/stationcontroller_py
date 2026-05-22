@@ -1,25 +1,22 @@
 <script>
-  import { tick } from 'svelte'
+  import { afterUpdate } from 'svelte'
   import { logEntries, dcnEntries } from '../stores/ws.js'
 
-  let tab      = $state('general')
-  let paused   = $state(false)
-  let logEl    = $state(null)
-  let dcnEl    = $state(null)
-  let clearedAt = $state({ general: 0, dcn: 0 })
+  let tab      = 'general'
+  let paused   = false
+  let logEl    = null
+  let dcnEl    = null
+  let clearedAt = { general: 0, dcn: 0 }
 
-  let visibleLogs = $derived($logEntries.filter(e => e.ts > clearedAt.general))
-  let visibleDcn  = $derived($dcnEntries.filter(e => e.ts > clearedAt.dcn))
+  $: visibleLogs = $logEntries.filter(e => e.ts > clearedAt.general)
+  $: visibleDcn  = $dcnEntries.filter(e => e.ts > clearedAt.dcn)
 
-  $effect(() => {
+  afterUpdate(() => {
     if (!paused && tab === 'general' && visibleLogs.length && logEl) {
-      tick().then(() => { if (logEl) logEl.scrollTop = logEl.scrollHeight })
+      logEl.scrollTop = logEl.scrollHeight
     }
-  })
-
-  $effect(() => {
     if (!paused && tab === 'dcn' && visibleDcn.length && dcnEl) {
-      tick().then(() => { if (dcnEl) dcnEl.scrollTop = dcnEl.scrollHeight })
+      dcnEl.scrollTop = dcnEl.scrollHeight
     }
   })
 
@@ -42,18 +39,18 @@
 <div class="log-view">
   <div class="toolbar">
     <div class="tabs">
-      <button class="tab" class:active={tab === 'general'} onclick={() => tab = 'general'}>
+      <button class="tab" class:active={tab === 'general'} on:click={() => tab = 'general'}>
         General <span class="badge">{visibleLogs.length}</span>
       </button>
-      <button class="tab" class:active={tab === 'dcn'} onclick={() => tab = 'dcn'}>
+      <button class="tab" class:active={tab === 'dcn'} on:click={() => tab = 'dcn'}>
         DCN <span class="badge">{visibleDcn.length}</span>
       </button>
     </div>
     <div class="actions">
-      <button class="act-btn" class:paused onclick={() => paused = !paused}>
+      <button class="act-btn" class:paused on:click={() => paused = !paused}>
         {paused ? 'Resume' : 'Pause'}
       </button>
-      <button class="act-btn" onclick={clear}>Clear</button>
+      <button class="act-btn" on:click={clear}>Clear</button>
     </div>
   </div>
 
@@ -93,7 +90,7 @@
   .log-view {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
     min-height: 0;
     gap: 0;
   }

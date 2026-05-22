@@ -25,7 +25,7 @@ from .auth import COOKIE_NAME, auth_enabled, decode_token, _is_revoked, load_aut
 import jwt as _jwt
 from .deps import AppState, get_state, _state
 from .ws_hub import WSHub
-from .routers import automations, auth, band_plan, comms, config, dashboards, devices, history, labels, notifications, radio, relays, sensors, system, update, ws
+from .routers import automations, auth, band_plan, comms, config, dashboards, devices, dx, hamlib, history, labels, logbook, notifications, radio, relays, sensors, system, update, ws
 
 UI_DIST = Path("ui_dist")
 _log    = logging.getLogger(__name__)
@@ -136,12 +136,15 @@ def create_app(app_state: Optional[AppState] = None) -> FastAPI:
     app.include_router(sensors.router)
     app.include_router(labels.router)
     app.include_router(radio.router)
+    app.include_router(hamlib.router)
     app.include_router(relays.router)
     app.include_router(dashboards.router)
     app.include_router(automations.router)
     app.include_router(notifications.router)
     app.include_router(update.router)
     app.include_router(comms.router)
+    app.include_router(logbook.router)
+    app.include_router(dx.router)
     app.include_router(config.router)
     app.include_router(history.router)
     app.include_router(system.router)

@@ -28,6 +28,8 @@
     { id: 'relay',        label: 'Relay Button' },
     { id: 'power_meter',  label: 'Power Meter'  },
     { id: 'swr_bar',      label: 'SWR Bar'      },
+    { id: 'dx_spots',     label: 'DX Spots'     },
+    { id: 'solar',        label: 'Solar / Propagation' },
     { id: 'blank',        label: 'Blank Space'  },
   ]
 

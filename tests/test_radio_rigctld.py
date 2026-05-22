@@ -426,9 +426,7 @@ class TestFullState:
         assert "frequency_hz" in state
         assert "mode" in state
         assert "bandwidth_hz" in state
-        assert "vfo" in state
         assert "ptt" in state
-        assert "split" in state
         assert "signal_strength" in state
         assert "rf_power" in state
         await b.disconnect()

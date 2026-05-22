@@ -37,7 +37,7 @@ def _make_hamlib_mock():
     H.RIG_MODE_USB = 1
     H.RIG_MODE_LSB = 2
     H.RIG_MODE_CW = 3
-    H.RIG_LEVEL_STR = 1
+    H.RIG_LEVEL_STRENGTH = 1
     H.RIG_LEVEL_RFPOWER = 2
     H.RIG_LEVEL_AF = 3
     H.RIG_LEVEL_SQL = 4
@@ -115,7 +115,7 @@ class TestConnect:
     async def test_connect_import_error_raises(self, monkeypatch):
         monkeypatch.delitem(sys.modules, "Hamlib", raising=False)
         b = _backend()
-        with pytest.raises(RadioBackendError, match="not installed"):
+        with pytest.raises(RadioBackendError, match="not found or not usable"):
             await b.connect()
         assert not b.connected
 
@@ -268,7 +268,7 @@ class TestLevels:
         await b.connect()
         val = await b.get_level("STRENGTH")
         assert val == -14.0
-        mock_rig.get_level_f.assert_called_with(H.RIG_VFO_CURR, H.RIG_LEVEL_STR)
+        mock_rig.get_level_f.assert_called_with(H.RIG_VFO_CURR, H.RIG_LEVEL_STRENGTH)
         await b.disconnect()
 
     async def test_get_level_rfpower(self, hamlib):
