@@ -1,4 +1,4 @@
-﻿"""
+"""
 DCN hardware simulator - publishes realistic device UPDATE packets over MQTT,
 and responds to commands (relay set, coax select, etc.) exactly as firmware would.
 
@@ -83,8 +83,11 @@ class SimGPIO(_SimDevice):
         self.interval = float(cfg.get("update_interval_s", 1.0))
         raw = cfg.get("relay_states", "00000000")
         self._relays  = list(str(raw).ljust(8, "0")[:8])
-        self._v       = [12.0, 13.8, 5.0, 3.3]
-        self._temps   = [72.0, 74.0]
+        # Voltages wander in 11.5–14.5 V
+        self._v = [random.uniform(12.5, 13.5) for _ in range(4)]
+        # Temps wander in 75.0–80.0 °F; step by 0.1 or 0.2 every 3–6 ticks
+        self._temps       = [random.uniform(76.0, 79.0) for _ in range(2)]
+        self._temp_ticks  = [random.randint(3, 6) for _ in range(2)]
 
     def handle(self, cmd: str, args: list) -> None:
         m = re.match(r"^RY(\d)$", cmd)
@@ -105,10 +108,16 @@ class SimGPIO(_SimDevice):
                         self._relays[i] = c
 
     def update_packet(self) -> str:
+        # Voltages: slow random walk clamped to 11.5–14.5 V
         for i in range(4):
-            self._v[i] = max(0.0, self._v[i] + random.uniform(-0.005, 0.005))
+            self._v[i] = max(11.5, min(14.5, self._v[i] + random.uniform(-0.05, 0.05)))
+        # Temps: step by 0.1 or 0.2 every 3–6 ticks, clamped to 75.0–80.0 °F
         for i in range(2):
-            self._temps[i] += random.uniform(-0.05, 0.05)
+            self._temp_ticks[i] -= 1
+            if self._temp_ticks[i] <= 0:
+                step = random.choice([-0.2, -0.1, 0.1, 0.2])
+                self._temps[i] = max(75.0, min(80.0, self._temps[i] + step))
+                self._temp_ticks[i] = random.randint(3, 6)
         v = ",".join(f"{x:.3f}" for x in self._v)
         t = ",".join(f"{x:.2f}" for x in self._temps)
         relay_str = "".join(self._relays)
@@ -143,22 +152,39 @@ class SimCoaxSwitch(_SimDevice):
 
 class SimWattMeter(_SimDevice):
     def __init__(self, cfg: dict, master: str) -> None:
-        self.address    = cfg["address"]
-        self.master     = master
-        self.interval   = float(cfg.get("update_interval_s", 0.1))
-        self.tx_enabled = bool(cfg.get("tx_enabled", False))
-        self._fwd_nom   = float(cfg.get("forward_power_w", 100.0))
-        self._ref_nom   = float(cfg.get("reflected_power_w", 2.0))
-        self._t         = 0.0
+        self.address  = cfg["address"]
+        self.master   = master
+        self.interval = float(cfg.get("update_interval_s", 0.1))
+        self._fwd_nom = float(cfg.get("forward_power_w", 100.0))
+        self._t       = 0.0
+
+        # Auto-cycle: TX on for 10–15 s, then off for 5–10 s
+        self._tx_active = True
+        self._ref_target = random.uniform(1.0, 5.0)
+        self._ticks_left = self._tx_ticks()
+
+    def _tx_ticks(self) -> int:
+        return max(1, int(random.uniform(10.0, 15.0) / self.interval))
+
+    def _off_ticks(self) -> int:
+        return max(1, int(random.uniform(5.0, 10.0) / self.interval))
 
     def update_packet(self) -> str:
+        self._ticks_left -= 1
+        if self._ticks_left <= 0:
+            self._tx_active = not self._tx_active
+            if self._tx_active:
+                self._ref_target = random.uniform(1.0, 5.0)
+                self._ticks_left = self._tx_ticks()
+            else:
+                self._ticks_left = self._off_ticks()
+
         self._t += self.interval
-        if self.tx_enabled:
-            # Slight ripple to simulate real RF envelope
+        if self._tx_active:
             fwd = self._fwd_nom * (1 + 0.015 * math.sin(self._t * 2 * math.pi))
-            fwd = max(0.0, fwd + random.uniform(-0.3, 0.3))
+            fwd = max(0.0, fwd + random.uniform(-0.5, 0.5))
             ref = max(0.0, min(
-                self._ref_nom + random.uniform(-0.05, 0.05),
+                self._ref_target + random.uniform(-0.2, 0.2),
                 fwd * 0.9,
             ))
         else:
@@ -326,13 +352,21 @@ class DCNSimulator:
         to_addr, cmd, args = parsed
         logger.debug("CMD  to=%-4s  %s %s", to_addr or "ALL", cmd, args)
 
+        affected: list[_SimDevice] = []
         if to_addr == "":
             for dev in self._devices.values():
                 dev.handle(cmd, args)
+                affected.append(dev)
         else:
             dev = self._devices.get(to_addr)
             if dev:
                 dev.handle(cmd, args)
+                affected.append(dev)
+
+        for dev in affected:
+            pkt = dev.update_packet()
+            self._client.publish(self._topic_rx, pkt)
+            logger.debug("ACK  %s", pkt)
 
     # ------------------------------------------------------------------
     # Async device loops
