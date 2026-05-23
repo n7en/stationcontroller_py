@@ -58,7 +58,7 @@ devices:
     address: "02"
     name: coax
     update_interval_s: 1.0
-    active_port: 1                # initially selected port (1-4, 0 = none)
+    active_port: 0                # initially selected port (0-3, 0-indexed)
 
   # RF watt meter (#351) - forward / reflected power at 10 Hz
   # Auto-cycles TX on/off.  Reflected power varies randomly within reflected_min/max.

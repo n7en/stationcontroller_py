@@ -82,6 +82,7 @@
     border: 1px solid var(--border);
     border-radius: 5px;
     background: var(--surface);
+    color: var(--text);
     cursor: pointer;
     font-size: 0.8rem;
     text-align: center;

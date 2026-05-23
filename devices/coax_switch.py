@@ -9,7 +9,7 @@ DCN status packet (device -> master, UPDATE,CX1):
     args[1]  <active_port> currently selected port, 0-indexed
 
 Control command (master -> device):
-    CX,<port>              select port 1–4; port 0 = disconnect all
+    CX,<port>              select port 0–3 (0-indexed)
 
 Published sensor names (with name="coax"):
     coax_active_port       - selected port as float (-1.0 = unknown/pre-connect)

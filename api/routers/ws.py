@@ -59,11 +59,11 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
 
     elif kind == "coax_select":
         device_addr: str = msg.get("device_addr", "02")
-        port: int = int(msg.get("port", 0))   # 0-based from client
+        port: int = int(msg.get("port", 0))   # 0-indexed port number
         # Optimistic update first so the UI responds even without hardware.
         for dev in state.devices.values():
             if getattr(dev, "address", None) == device_addr and hasattr(dev, "optimistic_select"):
-                dev.optimistic_select(port)   # passes 0-based; optimistic_select adds +1 for DCN
+                dev.optimistic_select(port)
                 break
         network = state.network_for_addr(device_addr)
         if network is None:
