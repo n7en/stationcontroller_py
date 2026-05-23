@@ -51,7 +51,7 @@
 {:else if card.type === 'relay'}
   <RelayButton
     hardwareKey={card.relay_key}
-    label={labels[card.relay_key] ?? card.title}
+    label={lbl(card.relay_key)}
     value={val(card.relay_key)}
     deviceAddr={card.device_addr ?? '01'}
     relayNum={card.relay_num ?? 1}
