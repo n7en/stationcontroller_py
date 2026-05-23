@@ -164,11 +164,23 @@ Re-running the install scripts at any time is safe — they skip steps already d
 .venv\Scripts\python main.py
 ```
 
-The app is available at **http://localhost:8080**. On first run the `data/` directory is created and Alembic applies the database migrations automatically.
+The app is available at **https://localhost:8080**. On first run the `data/` directory is created, Alembic applies the database migrations automatically, and a self-signed TLS certificate is generated in `config/certs/`. Your browser will show a security warning the first time — accept the exception to proceed. The certificate is local-only and is regenerated each install.
+
+### Navigating the UI
+
+| Tab | What's there |
+|---|---|
+| **Dashboard** | Configurable cards — power meters, SWR bar, relay toggles, sensor readouts, radio status, DX spots. Defined in `config/dashboards/main.yaml`. |
+| **Relays** | All relay outputs in one place — toggle individually or by group. Labels are editable inline. |
+| **Labels** | Edit friendly names for any sensor or relay key. Changes apply immediately across the whole UI. |
+| **Settings** | Radio connection settings — backend, host/port, poll interval. Changes take effect without restarting the app. |
+| **Log** | Live log stream from the backend (general app log and raw DCN packet log on separate tabs). |
+
+The **Dashboard** tab is the main operating view. Open `config/dashboards/main.yaml` to add, remove, or rearrange cards — the changes are picked up the next time you switch to the Dashboards tab, no restart required.
 
 ### Network access
 
-The server binds to `0.0.0.0:8080`, so any device on the same network can reach the UI at `http://<machine-ip>:8080` — useful for phones, tablets, or a second computer in the shack.
+The server binds to `0.0.0.0:8080`, so any device on the same network can reach the UI at `https://<machine-ip>:8080` — useful for phones, tablets, or a second computer in the shack. Each browser connecting for the first time will need to accept the self-signed certificate warning.
 
 **Windows:** the firewall may block port 8080 the first time Python tries to bind to it. To open it:
 
@@ -243,7 +255,7 @@ cd ui
 npm run dev
 ```
 
-Then open `http://localhost:5173`.
+Then open `https://localhost:5173`.
 
 ---
 
@@ -540,23 +552,35 @@ topic_tx: dcn/control/tx  # simulator subscribes here (app sends commands)
 master_addr: "00"
 
 devices:
-  - type: watt_meter
-    address: "03"
-    name: watt_meter
-    update_interval_s: 0.1   # 10 Hz — matches streaming-mode firmware
-    tx_enabled: false         # set true to simulate a transmitting radio
-    forward_power_w: 100.0
-    reflected_power_w: 2.0
-
   - type: gpio
     address: "01"
     name: gpio
     update_interval_s: 1.0
-    relay_states: "00000000"
+    relay_states: "00000000"   # initial state (8 chars, 0=off 1=on)
+    voltage_min: 11.5          # V — lower bound for all voltmeter channels
+    voltage_max: 14.5          # V — upper bound
+    voltage_drift: 0.05        # max V change per update tick
+    temp_min: 75.0             # °F — lower bound for both temp probes
+    temp_max: 80.0             # °F — upper bound
+    temp_steps: [0.1, 0.2]    # step sizes applied randomly up or down
+    temp_tick_min: 3           # min ticks between temp changes
+    temp_tick_max: 6           # max ticks between temp changes
 
-  # coax_switch  address "02"  — selects antenna port 1–4
-  # vhf_relay    address "05"  — single SPDT relay
-  # antenna_relay address "06" — 8-relay bank with POS / pulse support
+  - type: watt_meter
+    address: "03"
+    name: watt_meter
+    update_interval_s: 0.1    # 10 Hz — matches streaming-mode firmware
+    forward_power_w: 100.0    # nominal forward power (W) during TX
+    tx_duration_min: 10.0     # s — minimum TX-on duration per cycle
+    tx_duration_max: 15.0     # s — maximum TX-on duration per cycle
+    off_duration_min: 5.0     # s — minimum TX-off duration per cycle
+    off_duration_max: 10.0    # s — maximum TX-off duration per cycle
+    reflected_min: 1.0        # W — minimum reflected power target during TX
+    reflected_max: 5.0        # W — maximum reflected power target during TX
+
+  # coax_switch   address "02"  — selects antenna port 1–4
+  # vhf_relay     address "05"  — single SPDT relay
+  # antenna_relay address "06"  — 8-relay bank with POS / pulse / mask support
 ```
 
 The app must have a `nodered_mqtt` transport configured in `config/comms_config.yaml` with matching topics — the simulator acts as the hardware side of that bridge.
@@ -589,7 +613,7 @@ Start the simulator before or after the main app — it reconnects automatically
 | `vhf_relay` | #332 CX-2 | `05` | Single SPDT relay |
 | `antenna_relay` | #361 | `06` | 8-relay bank; supports POS, pulse, mask commands |
 
-Voltages and temperatures drift slightly each cycle; RF power has a small envelope ripple — enough that the UI graphs look live rather than static.
+**Voltages** drift slowly within `voltage_min`–`voltage_max` each tick. **Temperatures** step by one of the `temp_steps` values (randomly up or down) every `temp_tick_min`–`temp_tick_max` ticks, staying within `temp_min`–`temp_max`. **RF power** auto-cycles: TX on for `tx_duration_min`–`tx_duration_max` seconds at `forward_power_w` with randomly varying reflected power, then off for `off_duration_min`–`off_duration_max` seconds. **Relay commands** from the UI are applied immediately and an updated packet is published back straight away — no waiting for the next periodic tick.
 
 ### Radio simulation
 
@@ -678,7 +702,7 @@ StationController_Py/
 
 ## API
 
-The REST API is available at `http://localhost:8080/api/`. Interactive docs (Swagger UI) are at **http://localhost:8080/docs**.
+The REST API is available at `https://localhost:8080/api/`. Interactive docs (Swagger UI) are at **https://localhost:8080/docs**.
 
 Key endpoints:
 
