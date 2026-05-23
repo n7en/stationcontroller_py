@@ -22,8 +22,9 @@
   let pickerType  = 'radio_status'
   let pickerConfig = {}
 
-  let devices      = []
-  let selectedRelay = ''
+  let devices       = []
+  let selectedRelay  = ''
+  let selectedSensor = ''
 
   const CARD_TYPES = [
     { id: 'radio_status', label: 'Radio Status' },
@@ -151,12 +152,14 @@
 
   // ── Card picker ───────────────────────────────────────────────────────────
   function openPicker(idx = null) {
-    editingIdx    = idx
-    selectedRelay = ''
+    editingIdx     = idx
+    selectedRelay  = ''
+    selectedSensor = ''
     if (idx !== null) {
       const c = config.cards[idx]
-      pickerType   = c.type
-      pickerConfig = JSON.parse(JSON.stringify(c))
+      pickerType     = c.type
+      pickerConfig   = JSON.parse(JSON.stringify(c))
+      selectedSensor = c.sensor || ''
     } else {
       pickerType   = 'radio_status'
       pickerConfig = mkDefault('radio_status')
@@ -170,12 +173,37 @@
     pickerConfig = { ...pickerConfig, relay_key: key, device_addr, relay_num }
   }
 
+  function applySensorSelection(val) {
+    pickerConfig = { ...pickerConfig, sensor: val }
+  }
+
   $: relaysByDevice = devices
     .map(dev => ({
       dev,
       relays: (dev.sensors ?? []).filter(s => s.role === 'relay'),
     }))
     .filter(({ relays }) => relays.length > 0)
+
+  const POWER_ROLES   = new Set(['forward_power', 'reflected_power'])
+  const SWR_ROLES     = new Set(['swr'])
+  const SENSOR_ROLES  = new Set([
+    'temperature', 'voltmeter', 'digital_input', 'active_port',
+    'forward_power', 'reflected_power', 'swr',
+    'reflection_coefficient', 'return_loss', 'mismatch_loss',
+  ])
+
+  function sensorsForRoles(roles) {
+    return devices
+      .map(dev => ({
+        dev,
+        sensors: (dev.sensors ?? []).filter(s => roles.has(s.role)),
+      }))
+      .filter(({ sensors }) => sensors.length > 0)
+  }
+
+  $: powerSensorGroups  = sensorsForRoles(POWER_ROLES)
+  $: swrSensorGroups    = sensorsForRoles(SWR_ROLES)
+  $: generalSensorGroups = sensorsForRoles(SENSOR_ROLES)
 
   function mkDefault(type) {
     switch (type) {
@@ -192,8 +220,10 @@
 
   function onPickerTypeChange(type) {
     const oldTitle = pickerConfig.title
-    pickerConfig = { ...mkDefault(type), title: oldTitle ?? '' }
-    pickerType   = type
+    pickerConfig   = { ...mkDefault(type), title: oldTitle ?? '' }
+    pickerType     = type
+    selectedSensor = ''
+    selectedRelay  = ''
   }
 
   function commitPicker() {
@@ -382,8 +412,26 @@
             <label>Title
               <input bind:value={pickerConfig.title} placeholder="e.g. Temperature" />
             </label>
-            <label>Sensor key
-              <input bind:value={pickerConfig.sensor} list="dv-nonrelay-keys" placeholder="hardware_key" />
+            <label>Sensor
+              <select
+                bind:value={selectedSensor}
+                on:change={() => applySensorSelection(selectedSensor)}
+              >
+                <option value="">— pick a sensor —</option>
+                {#if generalSensorGroups.length > 0}
+                  {#each generalSensorGroups as { dev, sensors }}
+                    <optgroup label="{dev.name} · {dev.type.replace(/_/g, ' ')} · addr {dev.address}">
+                      {#each sensors as s}
+                        <option value={s.key}>{$labels[s.key] || s.key}</option>
+                      {/each}
+                    </optgroup>
+                  {/each}
+                {:else}
+                  {#each nonRelayKeys as k}
+                    <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
+                  {/each}
+                {/if}
+              </select>
             </label>
             <label>Unit
               <input bind:value={pickerConfig.unit} placeholder="e.g. °F, V, A" />
@@ -440,8 +488,26 @@
             <label>Title
               <input bind:value={pickerConfig.title} placeholder="e.g. Forward Power" />
             </label>
-            <label>Sensor key
-              <input bind:value={pickerConfig.sensor} list="dv-nonrelay-keys" placeholder="hardware_key" />
+            <label>Power sensor
+              <select
+                bind:value={selectedSensor}
+                on:change={() => applySensorSelection(selectedSensor)}
+              >
+                <option value="">— pick a power sensor —</option>
+                {#if powerSensorGroups.length > 0}
+                  {#each powerSensorGroups as { dev, sensors }}
+                    <optgroup label="{dev.name} · addr {dev.address}">
+                      {#each sensors as s}
+                        <option value={s.key}>{$labels[s.key] || s.key}</option>
+                      {/each}
+                    </optgroup>
+                  {/each}
+                {:else}
+                  {#each nonRelayKeys.filter(k => k.includes('power')) as k}
+                    <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
+                  {/each}
+                {/if}
+              </select>
             </label>
             <label>Max watts
               <input type="number" bind:value={pickerConfig.max_w} min="1" />
@@ -451,8 +517,26 @@
             <label>Title
               <input bind:value={pickerConfig.title} placeholder="e.g. SWR" />
             </label>
-            <label>Sensor key
-              <input bind:value={pickerConfig.sensor} list="dv-nonrelay-keys" placeholder="hardware_key" />
+            <label>SWR sensor
+              <select
+                bind:value={selectedSensor}
+                on:change={() => applySensorSelection(selectedSensor)}
+              >
+                <option value="">— pick an SWR sensor —</option>
+                {#if swrSensorGroups.length > 0}
+                  {#each swrSensorGroups as { dev, sensors }}
+                    <optgroup label="{dev.name} · addr {dev.address}">
+                      {#each sensors as s}
+                        <option value={s.key}>{$labels[s.key] || s.key}</option>
+                      {/each}
+                    </optgroup>
+                  {/each}
+                {:else}
+                  {#each nonRelayKeys.filter(k => k.includes('swr')) as k}
+                    <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
+                  {/each}
+                {/if}
+              </select>
             </label>
             <div class="form-subhead">Thresholds</div>
             <div class="form-row">
@@ -468,18 +552,8 @@
 
       </div>
 
-      <datalist id="dv-sensor-keys">
-        {#each sensorKeys as k}
-          <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
-        {/each}
-      </datalist>
       <datalist id="dv-relay-keys">
         {#each relayKeys as k}
-          <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
-        {/each}
-      </datalist>
-      <datalist id="dv-nonrelay-keys">
-        {#each nonRelayKeys as k}
           <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
         {/each}
       </datalist>
