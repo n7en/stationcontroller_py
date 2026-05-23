@@ -22,6 +22,9 @@
   let pickerType  = 'radio_status'
   let pickerConfig = {}
 
+  let devices      = []
+  let selectedRelay = ''
+
   const CARD_TYPES = [
     { id: 'radio_status', label: 'Radio Status' },
     { id: 'sensor',       label: 'Sensor Value' },
@@ -50,6 +53,14 @@
     } finally {
       loading = false
     }
+
+    try {
+      const r = await fetch('/api/devices')
+      if (r.ok) {
+        const d = await r.json()
+        devices = d.devices ?? []
+      }
+    } catch {}
   })
 
   async function save() {
@@ -140,7 +151,8 @@
 
   // ── Card picker ───────────────────────────────────────────────────────────
   function openPicker(idx = null) {
-    editingIdx = idx
+    editingIdx    = idx
+    selectedRelay = ''
     if (idx !== null) {
       const c = config.cards[idx]
       pickerType   = c.type
@@ -151,6 +163,19 @@
     }
     showPicker = true
   }
+
+  function applyRelaySelection(val) {
+    if (!val) return
+    const { key, device_addr, relay_num } = JSON.parse(val)
+    pickerConfig = { ...pickerConfig, relay_key: key, device_addr, relay_num }
+  }
+
+  $: relaysByDevice = devices
+    .map(dev => ({
+      dev,
+      relays: (dev.sensors ?? []).filter(s => s.role === 'relay'),
+    }))
+    .filter(({ relays }) => relays.length > 0)
 
   function mkDefault(type) {
     switch (type) {
@@ -377,6 +402,28 @@
             <label>Title
               <input bind:value={pickerConfig.title} placeholder="e.g. Antenna A" />
             </label>
+
+            {#if relaysByDevice.length > 0}
+              <label>Relay
+                <select
+                  bind:value={selectedRelay}
+                  on:change={() => applyRelaySelection(selectedRelay)}
+                >
+                  <option value="">— pick from device —</option>
+                  {#each relaysByDevice as { dev, relays }}
+                    <optgroup label="{dev.name} · {dev.type.replace(/_/g, ' ')} · addr {dev.address}">
+                      {#each relays as s}
+                        <option value={JSON.stringify({ key: s.key, device_addr: dev.address, relay_num: s.relay_num + 1 })}>
+                          {$labels[s.key] || s.key}
+                        </option>
+                      {/each}
+                    </optgroup>
+                  {/each}
+                </select>
+              </label>
+            {/if}
+
+            <div class="form-subhead">Override</div>
             <label>Relay key
               <input bind:value={pickerConfig.relay_key} list="dv-relay-keys" placeholder="hardware_key" />
             </label>
@@ -673,12 +720,16 @@
     display: flex; flex-direction: column; gap: 0.2rem;
     font-size: 0.74rem; color: var(--text-muted);
   }
-  .picker-form input {
+  .picker-form input,
+  .picker-form select {
     background: var(--bg); border: 1px solid var(--border);
     border-radius: 4px; color: var(--text);
     padding: 0.35rem 0.5rem; font-size: 0.82rem;
   }
-  .picker-form input:focus { outline: none; border-color: var(--accent); }
+  .picker-form input:focus,
+  .picker-form select:focus { outline: none; border-color: var(--accent); }
+  .picker-form select option { background: var(--bg); }
+  .picker-form select optgroup { color: var(--text-muted); font-size: 0.75rem; }
   .form-hint { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
   .form-subhead {
     font-size: 0.68rem; font-weight: 600;
