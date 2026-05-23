@@ -276,6 +276,22 @@ async def main() -> None:
 
     sensor_registry.attach_labels(label_registry)
 
+    # ── 2b. Embedded MQTT broker (must start before DCN transports connect) ──
+    from comms.mqtt_broker import EmbeddedMQTTBroker
+
+    mqtt_broker: EmbeddedMQTTBroker | None = None
+
+    if COMMS_CFG.exists():
+        with open(COMMS_CFG, encoding="utf-8") as _fh:
+            _comms_raw = yaml.safe_load(_fh) or {}
+        _broker_cfg = _comms_raw.get("mqtt_broker", {})
+        if _broker_cfg.get("enabled", False):
+            try:
+                mqtt_broker = EmbeddedMQTTBroker.from_config(_broker_cfg)
+                await mqtt_broker.start()
+            except Exception:
+                log.exception("Failed to start embedded MQTT broker")
+
     # ── 3. DCN buses ─────────────────────────────────────────────────────
     from comms.dcn_network import DCNNetwork
     from devices.loader    import load_devices
@@ -579,6 +595,8 @@ async def main() -> None:
             await dx_manager.stop()
         if store:
             await store.close()
+        if mqtt_broker is not None:
+            await mqtt_broker.stop()
         log.info("Stopped.")
 
 

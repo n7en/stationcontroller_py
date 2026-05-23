@@ -14,6 +14,24 @@
 # Device-to-bus assignment is configured in main.py.
 # Uncomment/add bus entries to match your hardware layout.
 
+# -- Embedded MQTT broker (optional) -----------------------------------------
+# Set enabled: true to start a built-in MQTT broker (amqtt) on startup.
+# Use this when running the simulator or a Node-RED bridge without an external
+# Mosquitto installation.  Binds to host:port below.
+# For external broker setups, leave enabled: false and point transports at
+# the external broker address directly.
+
+mqtt_broker:
+  enabled: false
+  host: "127.0.0.1"    # use "0.0.0.0" to accept remote connections (e.g. Node-RED on a Pi)
+  port: 1883
+  allow_anonymous: true   # set to false to require credentials
+  # users:              # define users when allow_anonymous is false
+  #   - username: "stationcontroller"
+  #     password: "changeme"
+  #   - username: "nodered"
+  #     password: "changeme"
+
 buses:
 
   # -- Control bus ------------------------------------------------------------
