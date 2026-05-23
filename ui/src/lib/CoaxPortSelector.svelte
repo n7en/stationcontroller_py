@@ -19,7 +19,7 @@
   })()
 
   function portLabel(i) {
-    return labelsMap[`${deviceName}_port_${i}`] || `Port ${i}`
+    return labelsMap[`${deviceName}_port_${i}`] || `Port ${i + 1}`
   }
 
   function select(port) {
@@ -33,7 +33,7 @@
   <div class="device-title">
     {labelsMap[`${deviceName}_active_port`] ? '' : ''}{deviceName.toUpperCase()} Coax Switch
     {#if activePort >= 0}
-      <span class="active-badge">Port {activePort} active</span>
+      <span class="active-badge">Port {activePort + 1} active</span>
     {/if}
   </div>
   <div class="port-grid">
