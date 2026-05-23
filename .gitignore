@@ -48,6 +48,7 @@ config/radio_config.yaml
 config/comms_config.yaml
 config/logging_config.yaml
 config/dashboards/main.yaml
+simulator/sim_config.yaml
 
 # Log files
 *.log

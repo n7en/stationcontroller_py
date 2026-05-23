@@ -461,8 +461,14 @@ def main(argv: Optional[list] = None) -> None:
 
     cfg_path = Path(args.config)
     if not cfg_path.exists():
-        logger.error("Config not found: %s", cfg_path)
-        sys.exit(1)
+        example = Path(str(cfg_path) + ".example")
+        if example.exists():
+            import shutil
+            shutil.copy(example, cfg_path)
+            logger.info("Created %s from example template", cfg_path)
+        else:
+            logger.error("Config not found: %s", cfg_path)
+            sys.exit(1)
 
     with cfg_path.open(encoding="utf-8") as fh:
         config = yaml.safe_load(fh) or {}

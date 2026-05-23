@@ -1,0 +1,134 @@
+# ---------------------------------------------------------------------------
+# DCN simulator configuration
+# ---------------------------------------------------------------------------
+#
+# Run from repo root:
+#   python -m simulator                          # uses this file
+#   python -m simulator path/to/config.yaml      # custom config
+#   python -m simulator -v                       # verbose / debug logging
+#
+# This file is the base template.  On first run the simulator copies it to
+# sim_config.yaml (which is gitignored).  Edit sim_config.yaml to match your
+# local broker address, credentials, and preferred simulation parameters.
+#
+# The simulator acts as the hardware + Node-RED bridge:
+#   topic_rx  - simulator PUBLISHES here   (Python receives device UPDATE packets)
+#   topic_tx  - simulator SUBSCRIBES here  (Python sends relay/coax commands)
+#
+# These topics must match the nodered_mqtt transport in config/comms_config.yaml.
+# ---------------------------------------------------------------------------
+
+mqtt:
+  broker: localhost
+  port: 1883
+  username: ""
+  password: ""
+
+topic_rx: dcn/control/rx
+topic_tx: dcn/control/tx
+
+master_addr: "00"
+
+# ---------------------------------------------------------------------------
+# Devices
+# ---------------------------------------------------------------------------
+# Each device entry matches a real DCN hardware module.
+# address must match the address in config/comms_config.yaml.
+#
+# update_interval_s controls how often the device publishes a periodic UPDATE.
+# In addition, an UPDATE is sent immediately whenever a relay command is received.
+# ---------------------------------------------------------------------------
+
+devices:
+
+  # GPIO module (#321) - 8 relays, 4 digital inputs, 4 voltmeters, 2 temp sensors
+  - type: gpio
+    address: "01"
+    name: gpio
+    update_interval_s: 1.0
+    relay_states: "00000000"      # initial relay state (8 chars, 0=off 1=on)
+    voltage_min: 11.5             # V - lower bound for all voltmeter channels
+    voltage_max: 14.5             # V - upper bound
+    voltage_drift: 0.05           # max V change per update tick
+    temp_min: 75.0                # °F - lower bound for both temp probes
+    temp_max: 80.0                # °F - upper bound
+    temp_steps: [0.1, 0.2]        # step sizes (applied randomly up or down)
+    temp_tick_min: 3              # min ticks between temp steps
+    temp_tick_max: 6              # max ticks between temp steps
+
+  # HF coax switch (#331 CX-1) - selects one of 4 antenna ports
+  - type: coax_switch
+    address: "02"
+    name: coax
+    update_interval_s: 1.0
+    active_port: 1                # initially selected port (1-4, 0 = none)
+
+  # RF watt meter (#351) - forward / reflected power at 10 Hz
+  # Auto-cycles TX on/off.  Reflected power varies randomly within reflected_min/max.
+  - type: watt_meter
+    address: "03"
+    name: watt_meter
+    update_interval_s: 0.1
+    forward_power_w: 100.0        # nominal forward power (W) during TX
+    tx_duration_min: 10.0         # s - minimum TX-on duration
+    tx_duration_max: 15.0         # s - maximum TX-on duration
+    off_duration_min: 5.0         # s - minimum TX-off duration
+    off_duration_max: 10.0        # s - maximum TX-off duration
+    reflected_min: 1.0            # W - minimum reflected power target during TX
+    reflected_max: 5.0            # W - maximum reflected power target during TX
+
+  # VHF coax relay (#332 CX-2) - single SPDT relay
+  - type: vhf_relay
+    address: "05"
+    name: vhf_relay
+    update_interval_s: 1.0
+    relay_state: 0                # 0 = de-energised (NC), 1 = energised (NO)
+
+  # Antenna relay module (#361) - 8-relay bank
+  - type: antenna_relay
+    address: "06"
+    name: ant_relay
+    update_interval_s: 1.0
+    relay_states: "00000000"      # initial relay states
+
+# ---------------------------------------------------------------------------
+# Radio simulator
+# ---------------------------------------------------------------------------
+# rigctld - async TCP server that speaks the rigctld extended protocol.
+# Point the app's rigctld backend at host/port below and it connects as if
+# talking to a real rigctld daemon.
+#
+#   config/radio_config.yaml:
+#     radios:
+#       - name: sim_radio
+#         backend: rigctld
+#         host: 127.0.0.1
+#         port: 4532
+#         poll_interval_s: 0.5
+#
+# hamlib_direct - use the Hamlib.py shim in this directory instead of the
+# real Hamlib Python bindings.  Activate by prepending simulator/ to PYTHONPATH:
+#
+#   Linux / macOS:  PYTHONPATH=simulator .venv/bin/python main.py
+#   Windows:        $env:PYTHONPATH = "simulator"; .venv\Scripts\python main.py
+#
+# The shim is self-contained - it does not require this config section.
+# ---------------------------------------------------------------------------
+
+radio:
+  rigctld:
+    enabled: false            # set to true to start the rigctld server
+    host: "127.0.0.1"
+    port: 4532
+    initial:
+      frequency_hz: 14200000  # 14.200 MHz (20 m USB)
+      mode: USB
+      bandwidth_hz: 2400
+      vfo: VFOA
+      ptt: false
+      split: false
+      split_freq_hz: 14200000
+      rf_power: 1.0           # normalised 0.0-1.0
+      af_gain: 0.5
+      signal_strength: -10.0  # S-meter dBm (approx S3)
+      info: "SimRig"
