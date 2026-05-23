@@ -45,11 +45,11 @@ class WSHub:
     async def connect(self, ws: WebSocket) -> None:
         await ws.accept()
         self._connections.add(ws)
-        log.debug("WS client connected (%d total)", len(self._connections))
+        log.info("WS client connected (%d total)", len(self._connections))
 
     def disconnect(self, ws: WebSocket) -> None:
         self._connections.discard(ws)
-        log.debug("WS client disconnected (%d remaining)", len(self._connections))
+        log.info("WS client disconnected (%d remaining)", len(self._connections))
 
     # ------------------------------------------------------------------
     # Broadcasting

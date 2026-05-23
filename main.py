@@ -417,6 +417,14 @@ async def main() -> None:
             def _make_radio_handler(_iface=_iface, _is_primary=_is_primary):
                 async def _on_radio(rs: RadioState, changed: dict) -> None:
                     await ws_hub.broadcast_radio(_iface.name, rs)
+                    if "ptt" in changed:
+                        log.info("Radio %s PTT %s", _iface.name, "ON" if rs.ptt else "off")
+                    if "connected" in changed:
+                        log.info(
+                            "Radio %s %s",
+                            _iface.name,
+                            "connected" if rs.connected else "disconnected",
+                        )
                     if _is_primary and engine and band_registry:
                         ctx = AutomationContext(
                             radio_state=rs,
