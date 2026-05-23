@@ -83,11 +83,19 @@ class SimGPIO(_SimDevice):
         self.interval = float(cfg.get("update_interval_s", 1.0))
         raw = cfg.get("relay_states", "00000000")
         self._relays  = list(str(raw).ljust(8, "0")[:8])
-        # Voltages wander in 11.5–14.5 V
-        self._v = [random.uniform(12.5, 13.5) for _ in range(4)]
-        # Temps wander in 75.0–80.0 °F; step by 0.1 or 0.2 every 3–6 ticks
-        self._temps       = [random.uniform(76.0, 79.0) for _ in range(2)]
-        self._temp_ticks  = [random.randint(3, 6) for _ in range(2)]
+
+        self._v_min   = float(cfg.get("voltage_min",   11.5))
+        self._v_max   = float(cfg.get("voltage_max",   14.5))
+        self._v_drift = float(cfg.get("voltage_drift",  0.05))
+        self._v = [random.uniform(self._v_min, self._v_max) for _ in range(4)]
+
+        self._t_min        = float(cfg.get("temp_min",        75.0))
+        self._t_max        = float(cfg.get("temp_max",        80.0))
+        self._t_steps      = [float(s) for s in cfg.get("temp_steps", [0.1, 0.2])]
+        self._t_tick_min   = int(cfg.get("temp_tick_min", 3))
+        self._t_tick_max   = int(cfg.get("temp_tick_max", 6))
+        self._temps        = [random.uniform(self._t_min, self._t_max) for _ in range(2)]
+        self._temp_ticks   = [random.randint(self._t_tick_min, self._t_tick_max) for _ in range(2)]
 
     def handle(self, cmd: str, args: list) -> None:
         m = re.match(r"^RY(\d)$", cmd)
@@ -108,16 +116,16 @@ class SimGPIO(_SimDevice):
                         self._relays[i] = c
 
     def update_packet(self) -> str:
-        # Voltages: slow random walk clamped to 11.5–14.5 V
+        # Voltages: slow random walk within configured range
         for i in range(4):
-            self._v[i] = max(11.5, min(14.5, self._v[i] + random.uniform(-0.05, 0.05)))
-        # Temps: step by 0.1 or 0.2 every 3–6 ticks, clamped to 75.0–80.0 °F
+            self._v[i] = max(self._v_min, min(self._v_max, self._v[i] + random.uniform(-self._v_drift, self._v_drift)))
+        # Temps: step every temp_tick_min–temp_tick_max ticks within configured range
         for i in range(2):
             self._temp_ticks[i] -= 1
             if self._temp_ticks[i] <= 0:
-                step = random.choice([-0.2, -0.1, 0.1, 0.2])
-                self._temps[i] = max(75.0, min(80.0, self._temps[i] + step))
-                self._temp_ticks[i] = random.randint(3, 6)
+                step = random.choice([-s for s in self._t_steps] + self._t_steps)
+                self._temps[i] = max(self._t_min, min(self._t_max, self._temps[i] + step))
+                self._temp_ticks[i] = random.randint(self._t_tick_min, self._t_tick_max)
         v = ",".join(f"{x:.3f}" for x in self._v)
         t = ",".join(f"{x:.2f}" for x in self._temps)
         relay_str = "".join(self._relays)
@@ -158,23 +166,30 @@ class SimWattMeter(_SimDevice):
         self._fwd_nom = float(cfg.get("forward_power_w", 100.0))
         self._t       = 0.0
 
-        # Auto-cycle: TX on for 10–15 s, then off for 5–10 s
-        self._tx_active = True
-        self._ref_target = random.uniform(1.0, 5.0)
+        self._tx_min  = float(cfg.get("tx_duration_min",  10.0))
+        self._tx_max  = float(cfg.get("tx_duration_max",  15.0))
+        self._off_min = float(cfg.get("off_duration_min",  5.0))
+        self._off_max = float(cfg.get("off_duration_max", 10.0))
+        self._ref_min = float(cfg.get("reflected_min",     1.0))
+        self._ref_max = float(cfg.get("reflected_max",     5.0))
+
+        # Auto-cycle: TX on for tx_duration_min–tx_duration_max s, then off
+        self._tx_active  = True
+        self._ref_target = random.uniform(self._ref_min, self._ref_max)
         self._ticks_left = self._tx_ticks()
 
     def _tx_ticks(self) -> int:
-        return max(1, int(random.uniform(10.0, 15.0) / self.interval))
+        return max(1, int(random.uniform(self._tx_min, self._tx_max) / self.interval))
 
     def _off_ticks(self) -> int:
-        return max(1, int(random.uniform(5.0, 10.0) / self.interval))
+        return max(1, int(random.uniform(self._off_min, self._off_max) / self.interval))
 
     def update_packet(self) -> str:
         self._ticks_left -= 1
         if self._ticks_left <= 0:
             self._tx_active = not self._tx_active
             if self._tx_active:
-                self._ref_target = random.uniform(1.0, 5.0)
+                self._ref_target = random.uniform(self._ref_min, self._ref_max)
                 self._ticks_left = self._tx_ticks()
             else:
                 self._ticks_left = self._off_ticks()

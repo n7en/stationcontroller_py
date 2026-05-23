@@ -44,6 +44,14 @@ devices:
     name: gpio
     update_interval_s: 1.0
     relay_states: "00000000"      # initial relay state (8 chars, 0=off 1=on)
+    voltage_min: 11.5             # V - lower bound for all voltmeter channels
+    voltage_max: 14.5             # V - upper bound
+    voltage_drift: 0.05           # max V change per update tick
+    temp_min: 75.0                # °F - lower bound for both temp probes
+    temp_max: 80.0                # °F - upper bound
+    temp_steps: [0.1, 0.2]        # step sizes (applied randomly up or down)
+    temp_tick_min: 3              # min ticks between temp steps
+    temp_tick_max: 6              # max ticks between temp steps
 
   # HF coax switch (#331 CX-1) - selects one of 4 antenna ports
   - type: coax_switch
@@ -53,13 +61,18 @@ devices:
     active_port: 1                # initially selected port (1-4, 0 = none)
 
   # RF watt meter (#351) - forward / reflected power at 10 Hz
-  # Auto-cycles: TX on for 10–15 s at forward_power_w with varying reflected,
-  # then off for 5–10 s.
+  # Auto-cycles TX on/off.  Reflected power varies randomly within reflected_min/max.
   - type: watt_meter
     address: "03"
     name: watt_meter
     update_interval_s: 0.1
-    forward_power_w: 100.0        # nominal forward power during TX
+    forward_power_w: 100.0        # nominal forward power (W) during TX
+    tx_duration_min: 10.0         # s - minimum TX-on duration
+    tx_duration_max: 15.0         # s - maximum TX-on duration
+    off_duration_min: 5.0         # s - minimum TX-off duration
+    off_duration_max: 10.0        # s - maximum TX-off duration
+    reflected_min: 1.0            # W - minimum reflected power target during TX
+    reflected_max: 5.0            # W - maximum reflected power target during TX
 
   # VHF coax relay (#332 CX-2) - single SPDT relay
   - type: vhf_relay
