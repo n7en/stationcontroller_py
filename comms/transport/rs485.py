@@ -101,9 +101,14 @@ class RS485Transport(DCNTransport):
         port = self._config.get("port", "")
         try:
             # Open with port=None to defer the actual open() call so we can
-            # clear _dtr_state and _rts_state first.  RS-485 adapters do not
-            # support modem-control ioctls (TIOCMBIS/TIOCMBIC) and raise
-            # Errno 5 (EIO) if pyserial tries to assert DTR/RTS on open.
+            # suppress the modem-control ioctls (TIOCMBIS/TIOCMBIC) that
+            # pyserial issues unconditionally in _update_dtr_state /
+            # _update_rts_state.  USB RS-485 adapters have no DTR/RTS lines
+            # and reject those ioctls with Errno 5 (EIO).
+            # Setting _dtr_state/rts_state to None is NOT sufficient because
+            # pyserial treats None as falsy and still calls _set_dtr_state(False).
+            # Overriding the update methods as no-ops on the instance is the
+            # only reliable way to skip the ioctl entirely.
             ser = serial.Serial(
                 port=None,
                 baudrate=self.baud_rate,
@@ -115,8 +120,8 @@ class RS485Transport(DCNTransport):
                 rtscts=False,
                 xonxoff=False,
             )
-            ser._dtr_state = None
-            ser._rts_state = None
+            ser._update_dtr_state = lambda: None   # suppress TIOCMBIC/TIOCMBIS
+            ser._update_rts_state = lambda: None
             ser.port = port
             ser.open()
             # Clear HUPCL so the kernel does not assert a hangup (de-assert
