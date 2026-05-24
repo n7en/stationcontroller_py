@@ -74,9 +74,13 @@ class RS485Transport(DCNTransport):
         self._stop_event.set()
         if self._serial and self._serial.is_open:
             try:
+                self._serial.reset_input_buffer()
+                self._serial.reset_output_buffer()
                 self._serial.close()
             except Exception:
                 pass
+        if self._read_thread and self._read_thread.is_alive():
+            await asyncio.to_thread(self._read_thread.join, 1.0)
         logger.info("RS-485 '%s' disconnected", self.name)
 
     async def send(self, packet: DCNPacket) -> None:
@@ -115,6 +119,17 @@ class RS485Transport(DCNTransport):
             ser._rts_state = None
             ser.port = port
             ser.open()
+            # Clear HUPCL so the kernel does not assert a hangup (de-assert
+            # DTR/RTS) when the port is closed.  Without this, many USB RS-485
+            # adapters do a firmware reset on close and spend ~500 ms
+            # re-enumerating, causing the next open to fail on service restart.
+            try:
+                import termios
+                attrs = termios.tcgetattr(ser.fd)
+                attrs[2] &= ~termios.HUPCL   # cflag
+                termios.tcsetattr(ser.fd, termios.TCSANOW, attrs)
+            except Exception:
+                pass  # not available on Windows
             self._serial = ser
         except (serial.SerialException, OSError) as exc:
             if self._reconnect_attempts == 0:

@@ -7,6 +7,7 @@
 
   export let deviceName = 'coax'   // matches the name used in SensorRegistry keys
   export let deviceAddr = '02'
+  export let bus        = ''        // explicit DCN bus name; empty = auto-detect
   export let labelsMap = {}         // hardware_key → friendly label (full registry)
   export let sensorsMap = {}        // hardware_key → {value, ...}
 
@@ -23,9 +24,9 @@
   }
 
   function select(port) {
-    // Use relay_cmd with relay_num=0 as a CX select — server handles CX,<port>
-    // We send a custom coax_select message instead
-    sendCmd({ type: 'coax_select', device_addr: deviceAddr, port })
+    const cmd = { type: 'coax_select', device_addr: deviceAddr, port }
+    if (bus) cmd.bus = bus
+    sendCmd(cmd)
   }
 </script>
 

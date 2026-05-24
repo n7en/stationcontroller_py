@@ -28,6 +28,7 @@ class RelayCommand(BaseModel):
     state: int          # 0 or 1
     device_addr: str    # DCN address e.g. "01"
     relay_num: int      # 1-indexed relay on that device
+    bus: str = ""       # explicit bus name; empty = auto-detect by address
 
 
 @router.post("/{key}")
@@ -38,7 +39,7 @@ async def set_relay(
 ) -> dict:
     if cmd.state not in (0, 1):
         raise HTTPException(status_code=422, detail="state must be 0 or 1")
-    network = state.network_for_addr(cmd.device_addr)
+    network = state.network_for_addr(cmd.device_addr, bus=cmd.bus or None)
     if network is None:
         raise HTTPException(status_code=503, detail="No DCN network connected")
     await network.send(cmd.device_addr, f"RY{cmd.relay_num},{cmd.state}")

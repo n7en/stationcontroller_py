@@ -37,7 +37,9 @@
   })()
 
   function selectPosition(pos) {
-    sendCmd({ type: 'pos_select', device_addr: device.address, position: pos })
+    const cmd = { type: 'pos_select', device_addr: device.address, position: pos }
+    if (device.bus) cmd.bus = device.bus
+    sendCmd(cmd)
   }
 
   function posLabel(s) {
@@ -58,6 +60,7 @@
       <CoaxPortSelector
         deviceName={device.name}
         deviceAddr={device.address}
+        bus={device.bus ?? ''}
         labelsMap={$labels}
         sensorsMap={$sensors}
       />
@@ -102,6 +105,7 @@
               label={$labels[s.key] ?? ''}
               value={$sensors[s.key]?.value ?? 0}
               deviceAddr={device.address}
+              bus={device.bus ?? ''}
               relayNum={s.relay_num}
             />
           {/each}
@@ -153,6 +157,7 @@
             label={$labels[s.key] ?? ''}
             value={$sensors[s.key]?.value ?? 0}
             deviceAddr={device.address}
+            bus={device.bus ?? ''}
             relayNum={s.relay_num}
           />
         {/each}

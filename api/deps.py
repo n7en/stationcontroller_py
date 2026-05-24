@@ -58,13 +58,22 @@ class AppState:
             next(iter(networks.values())) if networks else None
         )
 
-    def network_for_addr(self, address: str) -> Optional["DCNNetwork"]:
-        """Return the network responsible for *address*, with control-bus fallback."""
-        networks   = self.networks   or {}
-        device_bus = self.device_bus or {}
-        bus = device_bus.get(address)
+    def network_for_addr(self, address: str, bus: Optional[str] = None) -> Optional["DCNNetwork"]:
+        """Return the network responsible for *address*.
+
+        If *bus* is provided it is used directly (explicit dashboard card routing).
+        Otherwise the address→bus mapping built at device-load time is consulted,
+        with a final fallback to the control bus so single-bus setups need no config.
+        """
+        networks = self.networks or {}
         if bus:
             net = networks.get(bus)
+            if net is not None:
+                return net
+        device_bus = self.device_bus or {}
+        b = device_bus.get(address)
+        if b:
+            net = networks.get(b)
             if net is not None:
                 return net
         return self.control_network

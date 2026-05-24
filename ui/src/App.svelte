@@ -216,6 +216,7 @@
             <CoaxPortSelector
               deviceName={dev.name}
               deviceAddr={dev.address}
+              bus={dev.bus ?? ''}
               labelsMap={$labels}
               sensorsMap={$sensors}
             />
@@ -228,6 +229,7 @@
                   label={$labels[s.key] ?? ''}
                   value={$sensors[s.key]?.value ?? 0}
                   deviceAddr={dev.address}
+                  bus={dev.bus ?? ''}
                   relayNum={s.relay_num}
                 />
               {/each}

@@ -20,10 +20,11 @@ def _device_schema(dev: Any) -> dict:
     name = dev.name
     pfx  = name
     addr = getattr(dev, "address", "??")
+    bus  = getattr(dev, "bus", "control")
 
     if isinstance(dev, GPIOModule):
         return {
-            "name": name, "type": "gpio", "address": addr,
+            "name": name, "type": "gpio", "address": addr, "bus": bus,
             "sensors": (
                 [{"key": f"{pfx}_relay_{i}",     "role": "relay",         "relay_num":     i} for i in range(8)] +
                 [{"key": f"{pfx}_input_{i}",     "role": "digital_input", "input_num":     i} for i in range(4)] +
@@ -35,7 +36,7 @@ def _device_schema(dev: Any) -> dict:
 
     if isinstance(dev, CoaxSwitch):
         return {
-            "name": name, "type": "coax_switch", "address": addr, "n_ports": 4,
+            "name": name, "type": "coax_switch", "address": addr, "bus": bus, "n_ports": 4,
             "sensors": (
                 [{"key": f"{pfx}_active_port", "role": "active_port"}] +
                 [{"key": f"{pfx}_port_{i}",    "role": "port", "port": i} for i in range(4)]
@@ -55,11 +56,11 @@ def _device_schema(dev: Any) -> dict:
                 {"key": f"{pp}_return_loss_db",         "role": "return_loss",           "port": port},
                 {"key": f"{pp}_mismatch_loss_db",       "role": "mismatch_loss",         "port": port},
             ]
-        return {"name": name, "type": "watt_meter", "address": addr, "n_ports": n_ports, "sensors": sensors}
+        return {"name": name, "type": "watt_meter", "address": addr, "bus": bus, "n_ports": n_ports, "sensors": sensors}
 
     if isinstance(dev, VHFCoaxRelay):
         return {
-            "name": name, "type": "vhf_relay", "address": addr,
+            "name": name, "type": "vhf_relay", "address": addr, "bus": bus,
             "sensors": [
                 {"key": f"{pfx}_relay", "role": "relay",   "relay_num": 0},
                 {"key": f"{pfx}_nc",    "role": "nc_port"},
@@ -73,6 +74,7 @@ def _device_schema(dev: Any) -> dict:
             "name":          name,
             "type":          "antenna_relay",
             "address":       addr,
+            "bus":           bus,
             "persona":       dev.persona,
             "persona_label": dev.persona_label,
             "n_relays":      n,
@@ -83,7 +85,7 @@ def _device_schema(dev: Any) -> dict:
             ],
         }
 
-    return {"name": name, "type": "unknown", "address": addr, "sensors": []}
+    return {"name": name, "type": "unknown", "address": addr, "bus": bus, "sensors": []}
 
 
 @router.get("/devices")

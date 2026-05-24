@@ -55,6 +55,7 @@
     value={val(card.relay_key)}
     deviceAddr={card.device_addr ?? '01'}
     relayNum={card.relay_num ?? 1}
+    bus={card.bus ?? ''}
     standalone={false}
   />
 

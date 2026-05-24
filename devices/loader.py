@@ -109,6 +109,7 @@ def load_devices(
                 name, bus_name,
             )
 
+        device.bus = bus_name   # expose bus name for API routing
         devices[name] = device
         if address and address not in addr_bus:
             addr_bus[address] = bus_name

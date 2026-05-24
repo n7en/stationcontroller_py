@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from typing import Optional
 
 from .base import RadioBackend, RadioBackendError
@@ -140,6 +141,7 @@ class HamlibDirectBackend(RadioBackend):
         self._rig = None
         self._H = None           # Hamlib module reference
         self._connected = False
+        self._rig_lock = threading.Lock()
 
     @property
     def connected(self) -> bool:
@@ -163,7 +165,10 @@ class HamlibDirectBackend(RadioBackend):
 
     async def _run(self, fn, *args):
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, fn, *args)
+        def _locked():
+            with self._rig_lock:
+                return fn(*args)
+        return await loop.run_in_executor(None, _locked)
 
     async def connect(self) -> None:
         log.info(
@@ -198,7 +203,7 @@ class HamlibDirectBackend(RadioBackend):
             raise RadioBackendError(f"hamlib open failed: {exc}") from exc
 
     async def disconnect(self) -> None:
-        log.debug("Closing hamlib rig: model=%d port=%r", self._model_id, self._port)
+        log.info("Closing hamlib rig: model=%d port=%r", self._model_id, self._port)
         self._connected = False
         if self._rig is not None:
             rig, self._rig = self._rig, None

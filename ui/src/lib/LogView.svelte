@@ -2,14 +2,19 @@
   import { afterUpdate } from 'svelte'
   import { logEntries, dcnEntries } from '../stores/ws.js'
 
-  let tab      = 'general'
-  let paused   = false
-  let logEl    = null
-  let dcnEl    = null
-  let clearedAt = { general: 0, dcn: 0 }
+  let tab         = 'general'
+  let paused      = false
+  let logEl       = null
+  let dcnEl       = null
+  let clearedAt   = { general: 0, dcn: 0 }
+  let dcnBusFilter = 'all'
 
+  $: dcnBuses    = [...new Set($dcnEntries.map(e => e.bus).filter(Boolean))].sort()
   $: visibleLogs = $logEntries.filter(e => e.ts > clearedAt.general)
-  $: visibleDcn  = $dcnEntries.filter(e => e.ts > clearedAt.dcn)
+  $: visibleDcn  = $dcnEntries.filter(e =>
+      e.ts > clearedAt.dcn &&
+      (dcnBusFilter === 'all' || e.bus === dcnBusFilter)
+    )
 
   afterUpdate(() => {
     if (!paused && tab === 'general' && visibleLogs.length && logEl) {
@@ -47,6 +52,14 @@
       </button>
     </div>
     <div class="actions">
+      {#if tab === 'dcn' && dcnBuses.length > 1}
+        <select class="bus-select" bind:value={dcnBusFilter}>
+          <option value="all">All buses</option>
+          {#each dcnBuses as b}
+            <option value={b}>{b}</option>
+          {/each}
+        </select>
+      {/if}
       <button class="act-btn" class:paused on:click={() => paused = !paused}>
         {paused ? 'Resume' : 'Pause'}
       </button>
@@ -134,7 +147,18 @@
   }
   .tab.active .badge { background: var(--accent-dim); color: var(--accent); }
 
-  .actions { display: flex; gap: 0.4rem; }
+  .actions { display: flex; gap: 0.4rem; align-items: center; }
+
+  .bus-select {
+    padding: 0.28rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .bus-select:focus { outline: none; border-color: var(--accent); }
 
   .act-btn {
     padding: 0.28rem 0.7rem;

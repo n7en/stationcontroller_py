@@ -6,6 +6,7 @@
   export let value      = 0
   export let deviceAddr = '01'
   export let relayNum   = 1
+  export let bus        = ''     // explicit DCN bus name; empty = auto-detect
   export let standalone = true   // false when hosted inside a dashboard card
 
   const TIMEOUT_MS   = 3000   // wait up to 3 s for device confirmation
@@ -45,7 +46,9 @@
       failTimer = setTimeout(() => { failed = false }, FAIL_SHOW_MS)
     }, TIMEOUT_MS)
 
-    sendCmd({ type: 'relay_cmd', key: hardwareKey, relay_num: relayNum, state: next, device_addr: deviceAddr })
+    const cmd = { type: 'relay_cmd', key: hardwareKey, relay_num: relayNum, state: next, device_addr: deviceAddr }
+    if (bus) cmd.bus = bus
+    sendCmd(cmd)
   }
 </script>
 

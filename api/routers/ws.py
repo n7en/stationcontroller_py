@@ -51,7 +51,8 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
         relay_num: int = int(msg.get("relay_num", 0))   # 0-based from client
         relay_state: int = int(msg.get("state", 0))
         device_addr = msg.get("device_addr", "01")
-        network = state.network_for_addr(device_addr)
+        bus: str = msg.get("bus", "")
+        network = state.network_for_addr(device_addr, bus=bus or None)
         if network is None:
             log.warning("WS relay_cmd: no network for device addr %s", device_addr)
             return
@@ -60,12 +61,13 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
     elif kind == "coax_select":
         device_addr: str = msg.get("device_addr", "02")
         port: int = int(msg.get("port", 0))   # 0-indexed port number
+        bus: str = msg.get("bus", "")
         # Optimistic update first so the UI responds even without hardware.
         for dev in state.devices.values():
             if getattr(dev, "address", None) == device_addr and hasattr(dev, "optimistic_select"):
                 dev.optimistic_select(port)
                 break
-        network = state.network_for_addr(device_addr)
+        network = state.network_for_addr(device_addr, bus=bus or None)
         if network is None:
             log.warning("WS coax_select: no network for device addr %s", device_addr)
             return
@@ -74,11 +76,12 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
     elif kind == "pos_select":
         device_addr: str = msg.get("device_addr", "06")
         position: int = int(msg.get("position", 0))   # 0-based from client
+        bus: str = msg.get("bus", "")
         for dev in state.devices.values():
             if getattr(dev, "address", None) == device_addr and hasattr(dev, "optimistic_select_position"):
                 dev.optimistic_select_position(position)   # 0-based
                 break
-        network = state.network_for_addr(device_addr)
+        network = state.network_for_addr(device_addr, bus=bus or None)
         if network is None:
             log.warning("WS pos_select: no network for device addr %s", device_addr)
             return
