@@ -52,7 +52,7 @@
       </button>
     </div>
     <div class="actions">
-      {#if tab === 'dcn' && dcnBuses.length > 1}
+      {#if tab === 'dcn' && dcnBuses.length > 0}
         <select class="bus-select" bind:value={dcnBusFilter}>
           <option value="all">All buses</option>
           {#each dcnBuses as b}
