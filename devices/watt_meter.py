@@ -58,13 +58,13 @@ def compute_rf_metrics(forward_w: float, reflected_w: float) -> dict:
     gamma = math.sqrt(ratio)
 
     swr = (1.0 + gamma) / (1.0 - gamma)
-    return_loss_db = -10.0 * math.log10(ratio) if ratio > 0.0 else float("inf")
+    return_loss_db = -10.0 * math.log10(ratio) if ratio > 0.0 else 99.9
     mismatch_loss_db = -10.0 * math.log10(1.0 - ratio)
 
     return {
         "swr": round(swr, 4),
         "reflection_coefficient": round(gamma, 6),
-        "return_loss_db": round(return_loss_db, 3),
+        "return_loss_db": round(min(return_loss_db, 99.9), 3),
         "mismatch_loss_db": round(mismatch_loss_db, 4),
     }
 
