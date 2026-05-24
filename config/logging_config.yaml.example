@@ -1,27 +1,27 @@
-# Station Controller — logging configuration
+# Station Controller - logging configuration
 #
 # Changes take effect on the next application restart.
 #
-# Log levels (least → most verbose):
+# Log levels (least to most verbose):
 #   CRITICAL  fatal errors only
 #   ERROR     recoverable errors
 #   WARNING   unexpected conditions (default file level)
 #   INFO      normal operational events (default console level)
-#   DEBUG     full detail — every command, poll, packet
+#   DEBUG     full detail - every command, poll, packet
 #
 # Typical workflow:
-#   Development  → console: INFO,  file: WARNING
-#   Production   → console: WARNING or ERROR, file: WARNING
-#   Troubleshooting → console: DEBUG, file: DEBUG (then restart)
-#   Post-incident review → open logs/station.log
+#   Development     - console: INFO,    file: WARNING
+#   Production      - console: WARNING, file: WARNING
+#   Troubleshooting - console: DEBUG,   file: DEBUG   (then restart)
+#   Post-incident   - open logs/station.log
 #
 # The LOG_LEVEL environment variable overrides console_level without editing
-# this file — useful for production deployments:
+# this file - useful for production deployments:
 #   Windows:  $env:LOG_LEVEL = "WARNING"; python main.py
 #   Linux:    LOG_LEVEL=WARNING python main.py
 
 logging:
-  # What gets printed to stdout / the terminal
+  # What gets printed to stdout / the terminal.
   # Set to WARNING or ERROR for production (or use the LOG_LEVEL env var).
   console_level: INFO
 

@@ -178,12 +178,14 @@ class WattMeter:
         pfx  = f"{self.name}_port_{port}"
         self._registry.publish(f"{pfx}_forward_power_w",   forward_w,   "W",  src)
         self._registry.publish(f"{pfx}_reflected_power_w", reflected_w, "W",  src)
-
-        if metrics["swr"] is not None:
-            self._registry.publish(f"{pfx}_swr",                    metrics["swr"],                    "",   src)
-            self._registry.publish(f"{pfx}_reflection_coefficient", metrics["reflection_coefficient"], "",   src)
-            self._registry.publish(f"{pfx}_return_loss_db",         metrics["return_loss_db"],         "dB", src)
-            self._registry.publish(f"{pfx}_mismatch_loss_db",       metrics["mismatch_loss_db"],       "dB", src)
+        self._registry.publish(f"{pfx}_swr",
+            metrics["swr"]                    if metrics["swr"]                    is not None else 0.0, "", src)
+        self._registry.publish(f"{pfx}_reflection_coefficient",
+            metrics["reflection_coefficient"] if metrics["reflection_coefficient"] is not None else 0.0, "", src)
+        self._registry.publish(f"{pfx}_return_loss_db",
+            metrics["return_loss_db"]         if metrics["return_loss_db"]         is not None else 0.0, "dB", src)
+        self._registry.publish(f"{pfx}_mismatch_loss_db",
+            metrics["mismatch_loss_db"]       if metrics["mismatch_loss_db"]       is not None else 0.0, "dB", src)
 
 
 # ---------------------------------------------------------------------------

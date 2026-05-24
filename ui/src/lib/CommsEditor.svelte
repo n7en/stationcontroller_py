@@ -31,8 +31,10 @@
   function mkBus() {
     return {
       name: '',
+      enabled: true,
       transport: {
         type: 'rs485',
+        enabled: true,
         port: '', baud_rate: 9600,
         broker: 'localhost', port_mqtt: 1883, topic_rx: '', topic_tx: '',
         username: '', password: '',
@@ -65,9 +67,11 @@
         buses = (d.buses ?? []).map(b => {
           const t = b.transports?.[0] ?? {}
           return {
-            name: b.name,
+            name:    b.name,
+            enabled: b.enabled ?? true,
             transport: {
               type:      t.type      ?? 'rs485',
+              enabled:   t.enabled   ?? true,
               port:      t.port      ?? '',
               baud_rate: t.baud_rate ?? 9600,
               broker:    t.broker    ?? 'localhost',
@@ -125,7 +129,8 @@
     if (!newBus.name.trim()) return
     const t = newBus.transport
     buses = [...buses, {
-      name: newBus.name.trim(),
+      name:    newBus.name.trim(),
+      enabled: true,
       transport: {
         ...t,
         topic_rx: t.topic_rx || `dcn/${newBus.name.trim()}/rx`,
@@ -133,6 +138,10 @@
       },
     }]
     newBus = mkBus(); addingBus = false
+  }
+
+  function toggleBus(i) {
+    buses = buses.map((b, idx) => idx === i ? { ...b, enabled: !b.enabled } : b)
   }
 
   // ── Device CRUD ────────────────────────────────────────────────────────────
@@ -171,8 +180,11 @@
     const L = ['buses:']
     for (const bus of buses) {
       const t = bus.transport
-      L.push('', `  - name: ${bus.name}`, '    transports:',
+      L.push('', `  - name: ${bus.name}`)
+      if (!bus.enabled) L.push('    enabled: false')
+      L.push('    transports:',
              `      - name: ${bus.name}_${t.type}`, `        type: ${t.type}`)
+      if (!t.enabled) L.push('        enabled: false')
       if (t.type === 'rs485') {
         L.push(`        port: ${t.port}`, `        baud_rate: ${t.baud_rate}`)
       } else if (t.type === 'nodered_mqtt') {
@@ -332,6 +344,17 @@
               </div>
             {/if}
 
+            <div class="field-row enable-row">
+              <label class="checkbox-label">
+                <input type="checkbox" bind:checked={editBus.enabled} />
+                Bus enabled
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" bind:checked={editBus.transport.enabled} />
+                Transport enabled
+              </label>
+            </div>
+
             <div class="form-btns">
               <button class="btn-secondary" on:click={cancelEditBus}>Cancel</button>
               <button class="btn-primary" on:click={commitEditBus}
@@ -340,7 +363,12 @@
           </div>
 
         {:else}
-          <div class="item-row">
+          <div class="item-row" class:disabled={!bus.enabled}>
+            <button class="btn-toggle" class:on={bus.enabled}
+              title={bus.enabled ? 'Disable bus' : 'Enable bus'}
+              on:click={() => toggleBus(i)}>
+              {bus.enabled ? 'on' : 'off'}
+            </button>
             <span class="item-name">{bus.name}</span>
             <span class="badge">{bus.transport.type}</span>
             {#if bus.transport.type === 'rs485'}
@@ -349,6 +377,9 @@
               <span class="item-detail">{bus.transport.broker}:{bus.transport.port_mqtt}</span>
             {:else}
               <span class="item-detail">{bus.transport.host}:{bus.transport.port_tcp}</span>
+            {/if}
+            {#if !bus.transport.enabled}
+              <span class="badge-off">transport off</span>
             {/if}
             <button class="btn-icon" title="Edit" on:click={() => startEditBus(i)}>✎</button>
             <button class="btn-remove" title="Remove" on:click={() => removeBus(i)}>×</button>
@@ -802,4 +833,47 @@
     flex-shrink: 0;
   }
   .btn-remove:hover { color: var(--red); }
+
+  .item-row.disabled { opacity: 0.45; }
+
+  .btn-toggle {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    flex-shrink: 0;
+    background: rgba(233,98,98,0.1);
+    border-color: rgba(233,98,98,0.3);
+    color: var(--red, #e96262);
+  }
+  .btn-toggle.on {
+    background: rgba(62,207,142,0.1);
+    border-color: rgba(62,207,142,0.3);
+    color: var(--green, #3ecf8e);
+  }
+  .btn-toggle:hover { filter: brightness(1.15); }
+
+  .badge-off {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    background: rgba(233,98,98,0.1);
+    color: var(--red, #e96262);
+    border: 1px solid rgba(233,98,98,0.25);
+    flex-shrink: 0;
+  }
+
+  .enable-row { align-items: center; gap: 1rem; flex-wrap: nowrap; }
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--text);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .checkbox-label input[type="checkbox"] {
+    width: auto;
+    cursor: pointer;
+  }
 </style>

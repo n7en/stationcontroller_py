@@ -37,12 +37,18 @@ buses:
   # -- Control bus ------------------------------------------------------------
   # Carries GPIO module (01), coax switch (02), VHF relay (05),
   # and antenna relay module (06) at standard 9600 baud.
+  #
+  # Set enabled: false on a bus to disable it entirely without removing the
+  # config (all devices on that bus will be created but not attached).
+  # Set enabled: false on an individual transport to disable just that link.
   - name: control
+    # enabled: false          # uncomment to disable this entire bus
     transports:
 
       # Direct RS-485 USB adapter
       - name: control_serial
         type: rs485
+        # enabled: false      # uncomment to disable just this transport
         port: /dev/ttyUSB0      # Linux. Windows example: COM3
         baud_rate: 9600
         description: "Main control DCN - GPIO, antennas, coax"

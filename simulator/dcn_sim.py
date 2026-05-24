@@ -204,7 +204,7 @@ class SimWattMeter(_SimDevice):
             ))
         else:
             fwd = ref = 0.0
-        return self._pkt(f"UPDATE,WM1,1,{fwd:.3f},{ref:.3f}")
+        return self._pkt(f"UPDATE,WM1,0,{fwd:.3f},{ref:.3f}")
 
 
 # ---------------------------------------------------------------------------

@@ -268,9 +268,16 @@ class DCNNetwork:
 
         for bus_cfg in get_buses(config):
             bus_name = bus_cfg.get("name") or f"bus_{len(buses)}"
+            if not bus_cfg.get("enabled", True):
+                logger.info("Bus '%s' is disabled - skipping", bus_name)
+                continue
             network = cls(master_addr=master_addr)
 
             for transport_cfg in bus_cfg.get("transports", []):
+                if not transport_cfg.get("enabled", True):
+                    t_name = transport_cfg.get("name") or transport_cfg.get("type", "?")
+                    logger.info("Transport '%s' in bus '%s' is disabled - skipping", t_name, bus_name)
+                    continue
                 transport_type = transport_cfg.get("type")
                 transport_cls = _TRANSPORT_REGISTRY.get(transport_type)
                 if transport_cls is None:
