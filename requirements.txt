@@ -3,7 +3,7 @@ paho-mqtt==2.1.0
 amqtt>=0.11.0
 # Icom LAN backend (icom_lan) — install separately if needed:
 # pip install git+https://github.com/rigplane/rigplane-core.git
-PyYAML==6.0.3
+PyYAML>=5.1
 SQLAlchemy==2.0.49
 aiosqlite==0.22.1
 alembic==1.18.4
