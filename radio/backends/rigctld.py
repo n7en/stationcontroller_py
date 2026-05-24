@@ -72,7 +72,7 @@ class RigctldBackend(RadioBackend):
                     self._connected = True
         except (OSError, asyncio.TimeoutError) as exc:
             self._connected = False
-            log.debug("rigctld connect failed at %s:%d: %s", self._host, self._port, exc)
+            log.error("rigctld connect failed at %s:%d: %s", self._host, self._port, exc)
             raise RadioBackendError(
                 f"Cannot connect to rigctld at {self._host}:{self._port}: {exc}"
             ) from exc

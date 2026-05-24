@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import logging.handlers
+import os
 import sys
 from pathlib import Path
 
@@ -119,6 +120,17 @@ def _configure_logging(cfg_path: Path) -> None:
             backup_count = int(fc.get("backup_count", backup_count))
         except Exception as exc:
             print(f"WARNING: Could not read {cfg_path} ({exc}) - using logging defaults",
+                  file=sys.stderr)
+
+    # LOG_LEVEL env var overrides the config file — useful for production deployments
+    # without editing logging_config.yaml (e.g. set LOG_LEVEL=WARNING on main branch).
+    _env_level = os.environ.get("LOG_LEVEL", "").upper()
+    if _env_level:
+        _override = getattr(logging, _env_level, None)
+        if _override is not None:
+            console_level = _override
+        else:
+            print(f"WARNING: LOG_LEVEL={_env_level!r} is not a valid log level - ignored",
                   file=sys.stderr)
 
     # Root logger sees everything; individual handlers filter by level.

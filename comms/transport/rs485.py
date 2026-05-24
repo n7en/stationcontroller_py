@@ -27,7 +27,8 @@ from ..dcn_packet import DCNPacket, parse_packet
 
 logger = logging.getLogger(__name__)
 
-RECONNECT_DELAY = 5.0  # seconds between reconnect attempts
+RECONNECT_DELAY = 5.0   # seconds between reconnect attempts
+RECONNECT_LOG_EVERY = 12  # log a reminder every N retries (~60 s at 5 s delay)
 
 
 class RS485Transport(DCNTransport):
@@ -39,6 +40,7 @@ class RS485Transport(DCNTransport):
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._stop_event = threading.Event()
         self._buffer = ""
+        self._reconnect_attempts = 0
 
     # ------------------------------------------------------------------
     # Public interface
@@ -62,9 +64,9 @@ class RS485Transport(DCNTransport):
                 self.name, self._config["port"], self.baud_rate,
             )
         else:
-            logger.warning(
-                "RS-485 '%s' failed to open %s - will retry in background",
-                self.name, self._config["port"],
+            logger.error(
+                "RS-485 '%s' could not open %s - will retry every %.0fs",
+                self.name, self._config.get("port", ""), RECONNECT_DELAY,
             )
 
     async def disconnect(self) -> None:
@@ -103,19 +105,28 @@ class RS485Transport(DCNTransport):
                 timeout=0.1,
             )
         except serial.SerialException as exc:
-            logger.error("RS-485 '%s' cannot open %s: %s", self.name, port, exc)
+            if self._reconnect_attempts == 0:
+                logger.error("RS-485 '%s' cannot open %s: %s", self.name, port, exc)
             self._serial = None
 
     def _read_loop(self) -> None:
         while not self._stop_event.is_set():
             if not self._serial or not self._serial.is_open:
                 time.sleep(RECONNECT_DELAY)
-                logger.info("RS-485 '%s': attempting reconnect on %s",
-                            self.name, self._config.get("port", ""))
+                self._reconnect_attempts += 1
                 self._open_port()
                 if self._serial and self._serial.is_open:
                     self._connected = True
-                    logger.info("RS-485 '%s': reconnected", self.name)
+                    self._reconnect_attempts = 0
+                    logger.info("RS-485 '%s': reconnected on %s",
+                                self.name, self._config.get("port", ""))
+                else:
+                    if self._reconnect_attempts % RECONNECT_LOG_EVERY == 0:
+                        logger.error(
+                            "RS-485 '%s': still cannot open %s (%d attempts)",
+                            self.name, self._config.get("port", ""),
+                            self._reconnect_attempts,
+                        )
                 continue
 
             try:

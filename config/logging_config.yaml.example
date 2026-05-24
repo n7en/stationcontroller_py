@@ -10,12 +10,19 @@
 #   DEBUG     full detail — every command, poll, packet
 #
 # Typical workflow:
-#   Normal operation   → console: INFO,  file: WARNING
-#   Troubleshooting    → console: DEBUG, file: DEBUG   (then restart)
+#   Development  → console: INFO,  file: WARNING
+#   Production   → console: WARNING or ERROR, file: WARNING
+#   Troubleshooting → console: DEBUG, file: DEBUG (then restart)
 #   Post-incident review → open logs/station.log
+#
+# The LOG_LEVEL environment variable overrides console_level without editing
+# this file — useful for production deployments:
+#   Windows:  $env:LOG_LEVEL = "WARNING"; python main.py
+#   Linux:    LOG_LEVEL=WARNING python main.py
 
 logging:
   # What gets printed to stdout / the terminal
+  # Set to WARNING or ERROR for production (or use the LOG_LEVEL env var).
   console_level: INFO
 
   file:

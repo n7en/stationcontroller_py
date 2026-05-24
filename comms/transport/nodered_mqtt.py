@@ -32,12 +32,18 @@ from ..dcn_packet import DCNPacket, parse_packet
 logger = logging.getLogger(__name__)
 
 
+_CONNECT_TIMEOUT_S = 10   # seconds before logging an error for unreachable broker
+
+
 class NodeRedMQTTTransport(DCNTransport):
 
     def __init__(self, name: str, config: dict) -> None:
         super().__init__(name, config)
         self._client: Optional[mqtt.Client] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._watchdog_task: Optional[asyncio.Task] = None
+        self._broker_host: str = ""
+        self._broker_port: int = 1883
 
     @property
     def _topic_rx(self) -> str:
@@ -58,6 +64,9 @@ class NodeRedMQTTTransport(DCNTransport):
         username = self._config.get("username", "")
         password = self._config.get("password", "")
 
+        self._broker_host = broker
+        self._broker_port = port
+
         self._client = mqtt.Client(
             callback_api_version=mqtt.CallbackAPIVersion.VERSION1,
             client_id=f"dcn-{self.name}",
@@ -77,8 +86,15 @@ class NodeRedMQTTTransport(DCNTransport):
             self.name, broker, port, self._topic_rx, self._topic_tx,
         )
 
+        self._watchdog_task = self._loop.create_task(
+            self._connection_watchdog(), name=f"mqtt-watchdog-{self.name}"
+        )
+
     async def disconnect(self) -> None:
         self._connected = False
+        if self._watchdog_task is not None:
+            self._watchdog_task.cancel()
+            self._watchdog_task = None
         if self._client:
             self._client.loop_stop()
             self._client.disconnect()
@@ -96,9 +112,21 @@ class NodeRedMQTTTransport(DCNTransport):
     # paho-mqtt callbacks (run in paho's network thread)
     # ------------------------------------------------------------------
 
+    async def _connection_watchdog(self) -> None:
+        await asyncio.sleep(_CONNECT_TIMEOUT_S)
+        if not self._connected:
+            logger.error(
+                "MQTT '%s': no connection to broker %s:%d after %ds - "
+                "check the broker is running and the address is correct",
+                self.name, self._broker_host, self._broker_port, _CONNECT_TIMEOUT_S,
+            )
+
     def _on_connect(self, client: mqtt.Client, userdata, flags, rc: int) -> None:
         if rc == 0:
             self._connected = True
+            if self._watchdog_task is not None:
+                self._watchdog_task.cancel()
+                self._watchdog_task = None
             client.subscribe(self._topic_rx, qos=0)
             logger.info(
                 "MQTT '%s' connected, subscribed to %s", self.name, self._topic_rx

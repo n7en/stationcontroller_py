@@ -44,6 +44,7 @@ class RadioInterface:
         self.state = RadioState(name=name)
         self._callbacks: list[StateCallback] = []
         self._task: Optional[asyncio.Task] = None
+        self._reconnect_attempts = 0
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -144,18 +145,23 @@ class RadioInterface:
             await self._fire(diff)
 
     async def _reconnect(self) -> None:
-        logger.info(
-            "Reconnecting %s in %.1fs...", self.name, self._reconnect_delay
-        )
         await asyncio.sleep(self._reconnect_delay)
         try:
             await self._backend.connect()
+            self._reconnect_attempts = 0
             # Don't broadcast "connected" here - wait for the first successful
             # poll to confirm the radio is actually responding before the UI
             # flips back to "online".
             logger.info("Reconnected %s - awaiting first poll", self.name)
         except RadioBackendError as exc:
-            logger.warning("Reconnect failed for %s: %s", self.name, exc)
+            self._reconnect_attempts += 1
+            if self._reconnect_attempts == 1:
+                logger.error("Radio '%s' cannot connect: %s", self.name, exc)
+            elif self._reconnect_attempts % 12 == 0:
+                logger.error(
+                    "Radio '%s' still not connected after %d attempts",
+                    self.name, self._reconnect_attempts,
+                )
 
     # ------------------------------------------------------------------
     # Radio control - delegate to backend, update state immediately
