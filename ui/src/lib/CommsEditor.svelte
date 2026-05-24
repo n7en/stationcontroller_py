@@ -110,8 +110,14 @@
 
   function commitEditBus() {
     if (!editBus.name.trim()) return
-    const updated = { ...editBus, name: editBus.name.trim() }
-    const oldName = buses[editingBusIdx].name
+    const cur = buses[editingBusIdx]
+    const updated = {
+      ...editBus,
+      name:      editBus.name.trim(),
+      enabled:   cur.enabled,
+      transport: { ...editBus.transport, enabled: cur.transport.enabled },
+    }
+    const oldName = cur.name
     buses = buses.map((b, idx) => idx === editingBusIdx ? updated : b)
     if (oldName !== updated.name)
       devices = devices.map(d => d.bus === oldName ? { ...d, bus: updated.name } : d)
@@ -142,6 +148,12 @@
 
   function toggleBus(i) {
     buses = buses.map((b, idx) => idx === i ? { ...b, enabled: !b.enabled } : b)
+  }
+
+  function toggleTransport(i) {
+    buses = buses.map((b, idx) => idx === i
+      ? { ...b, transport: { ...b.transport, enabled: !b.transport.enabled } }
+      : b)
   }
 
   // ── Device CRUD ────────────────────────────────────────────────────────────
@@ -344,17 +356,6 @@
               </div>
             {/if}
 
-            <div class="field-row enable-row">
-              <label class="checkbox-label">
-                <input type="checkbox" bind:checked={editBus.enabled} />
-                Bus enabled
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" bind:checked={editBus.transport.enabled} />
-                Transport enabled
-              </label>
-            </div>
-
             <div class="form-btns">
               <button class="btn-secondary" on:click={cancelEditBus}>Cancel</button>
               <button class="btn-primary" on:click={commitEditBus}
@@ -364,10 +365,10 @@
 
         {:else}
           <div class="item-row" class:disabled={!bus.enabled}>
-            <button class="btn-toggle" class:on={bus.enabled}
-              title={bus.enabled ? 'Disable bus' : 'Enable bus'}
+            <button class="toggle-switch" class:on={bus.enabled}
+              title={bus.enabled ? 'Bus enabled — click to disable' : 'Bus disabled — click to enable'}
               on:click={() => toggleBus(i)}>
-              {bus.enabled ? 'on' : 'off'}
+              <span class="toggle-knob"></span>
             </button>
             <span class="item-name">{bus.name}</span>
             <span class="badge">{bus.transport.type}</span>
@@ -378,9 +379,12 @@
             {:else}
               <span class="item-detail">{bus.transport.host}:{bus.transport.port_tcp}</span>
             {/if}
-            {#if !bus.transport.enabled}
-              <span class="badge-off">transport off</span>
-            {/if}
+            <span class="transport-lbl">transport</span>
+            <button class="toggle-switch toggle-sm" class:on={bus.transport.enabled}
+              title={bus.transport.enabled ? 'Transport enabled — click to disable' : 'Transport disabled — click to enable'}
+              on:click={() => toggleTransport(i)}>
+              <span class="toggle-knob"></span>
+            </button>
             <button class="btn-icon" title="Edit" on:click={() => startEditBus(i)}>✎</button>
             <button class="btn-remove" title="Remove" on:click={() => removeBus(i)}>×</button>
           </div>
@@ -836,44 +840,36 @@
 
   .item-row.disabled { opacity: 0.45; }
 
-  .btn-toggle {
-    font-size: 0.65rem;
-    padding: 0.1rem 0.35rem;
-    border-radius: 3px;
-    flex-shrink: 0;
-    background: rgba(233,98,98,0.1);
-    border-color: rgba(233,98,98,0.3);
-    color: var(--red, #e96262);
-  }
-  .btn-toggle.on {
-    background: rgba(62,207,142,0.1);
-    border-color: rgba(62,207,142,0.3);
-    color: var(--green, #3ecf8e);
-  }
-  .btn-toggle:hover { filter: brightness(1.15); }
-
-  .badge-off {
-    font-size: 0.65rem;
-    padding: 0.1rem 0.35rem;
-    border-radius: 3px;
-    background: rgba(233,98,98,0.1);
-    color: var(--red, #e96262);
-    border: 1px solid rgba(233,98,98,0.25);
+  /* ── Pill toggle (matches RadioConfig style) ── */
+  .toggle-switch {
+    position: relative;
+    width: 36px; height: 20px;
+    padding: 0; border: none;
+    border-radius: 10px;
+    background: var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
     flex-shrink: 0;
   }
-
-  .enable-row { align-items: center; gap: 1rem; flex-wrap: nowrap; }
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.8rem;
-    color: var(--text);
-    cursor: pointer;
-    white-space: nowrap;
+  .toggle-switch.on { background: var(--green); }
+  .toggle-switch.toggle-sm { width: 28px; height: 16px; border-radius: 8px; }
+  .toggle-knob {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.2s;
+    pointer-events: none;
   }
-  .checkbox-label input[type="checkbox"] {
-    width: auto;
-    cursor: pointer;
+  .toggle-switch.on .toggle-knob { left: 19px; }
+  .toggle-switch.toggle-sm .toggle-knob { width: 10px; height: 10px; }
+  .toggle-switch.toggle-sm.on .toggle-knob { left: 15px; }
+
+  .transport-lbl {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-left: auto;
   }
 </style>
