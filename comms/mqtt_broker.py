@@ -53,18 +53,13 @@ class EmbeddedMQTTBroker:
                 for user in self._users:
                     fh.write(f"{user['username']}:{user['password']}\n")
             self._passwd_file = path
-            plugins = {
-                "auth.file": {
-                    "allow-anonymous": self._allow_anonymous,
-                    "password-file": path,
-                }
+            auth_cfg = {
+                "allow-anonymous": self._allow_anonymous,
+                "plugins": ["auth.file"],
+                "password-file": path,
             }
         else:
-            plugins = {
-                "auth.anonymous": {
-                    "allow-anonymous": True,
-                }
-            }
+            auth_cfg = {"allow-anonymous": True}
 
         amqtt_config = {
             "listeners": {
@@ -74,7 +69,9 @@ class EmbeddedMQTTBroker:
                     "max_connections": 50,
                 }
             },
-            "plugins": plugins,
+            "sys_interval": 0,
+            "auth": auth_cfg,
+            "topic-check": {"enabled": False},
         }
 
         self._broker = Broker(amqtt_config)
