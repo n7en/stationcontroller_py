@@ -91,14 +91,26 @@
     if (window.matchMedia('(max-width: 640px)').matches) sidebarOpen = false
   }
 
-  $: antennaRelays = Array.from({length: 8}, (_, i) => {
-    const key = `ant_relay_${i}`
-    return { key, value: $sensors[key]?.value ?? 0, label: $labels[key] ?? '', relayNum: i }
+  let devices = []
+
+  onMount(async () => {
+    try {
+      const r = await fetch('/api/devices')
+      if (r.ok) devices = (await r.json()).devices ?? []
+    } catch {}
   })
 
-  $: vhfRelays = [{ key: 'vhf_relay', relayNum: 1 }].map(r => ({
-    ...r, value: $sensors[r.key]?.value ?? 0, label: $labels[r.key] ?? '',
-  }))
+  $: relayDevices = devices.filter(dev =>
+    dev.type === 'coax_switch' ||
+    (dev.sensors ?? []).some(s => s.role === 'relay')
+  )
+
+  const DEVICE_TYPE_LABEL = {
+    gpio:          'GPIO Module',
+    antenna_relay: 'Antenna Relay Module',
+    vhf_relay:     'VHF/UHF Coax Relay',
+    coax_switch:   'HF Coax Switch',
+  }
 
 </script>
 
@@ -187,33 +199,42 @@
 
     {:else if page === 'relays'}
 
-      <section>
-        <div class="section-title">VHF / UHF Coax Relay (#332)</div>
-        <div class="relay-grid">
-          {#each vhfRelays as r (r.key)}
-            <RelayButton hardwareKey={r.key} label={r.label} value={r.value} deviceAddr="05" relayNum={r.relayNum} />
-          {/each}
-        </div>
-      </section>
+      {#if relayDevices.length === 0}
+        <p style="color:var(--text-muted);font-size:0.85rem;">
+          No relay devices configured. Add devices in Config &rarr; Comms &amp; Devices.
+        </p>
+      {/if}
 
-      <section>
-        <div class="section-title">Antenna Relay Module (#361)</div>
-        <div class="relay-grid">
-          {#each antennaRelays as r (r.key)}
-            <RelayButton hardwareKey={r.key} label={r.label} value={r.value} deviceAddr="06" relayNum={r.relayNum} />
-          {/each}
-        </div>
-      </section>
+      {#each relayDevices as dev (dev.name)}
+        <section>
+          <div class="section-title">
+            {dev.name} &mdash; {DEVICE_TYPE_LABEL[dev.type] ?? dev.type}
+            <span style="font-size:0.65rem;opacity:0.6;margin-left:0.4rem">addr {dev.address}</span>
+          </div>
 
-      <section>
-        <div class="section-title">HF Coax Switch (#331)</div>
-        <CoaxPortSelector
-          deviceName="coax"
-          deviceAddr="02"
-          labelsMap={$labels}
-          sensorsMap={$sensors}
-        />
-      </section>
+          {#if dev.type === 'coax_switch'}
+            <CoaxPortSelector
+              deviceName={dev.name}
+              deviceAddr={dev.address}
+              labelsMap={$labels}
+              sensorsMap={$sensors}
+            />
+          {:else}
+            {@const relays = (dev.sensors ?? []).filter(s => s.role === 'relay')}
+            <div class="relay-grid">
+              {#each relays as s (s.key)}
+                <RelayButton
+                  hardwareKey={s.key}
+                  label={$labels[s.key] ?? ''}
+                  value={$sensors[s.key]?.value ?? 0}
+                  deviceAddr={dev.address}
+                  relayNum={s.relay_num}
+                />
+              {/each}
+            </div>
+          {/if}
+        </section>
+      {/each}
 
     {:else if page === 'labels'}
 
