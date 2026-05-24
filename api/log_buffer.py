@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import collections
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .ws_hub import WSHub
@@ -20,17 +20,25 @@ class LogBuffer:
         self._general: collections.deque = collections.deque(maxlen=maxlen)
         self._dcn:     collections.deque = collections.deque(maxlen=maxlen)
         self._ws_hub:  "WSHub | None"   = None
+        self._loop:    Optional[asyncio.AbstractEventLoop] = None
 
     def attach_ws_hub(self, hub: "WSHub") -> None:
         self._ws_hub = hub
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            pass
 
     def _push(self, msg: dict) -> None:
-        if self._ws_hub is None:
+        if self._ws_hub is None or self._loop is None:
             return
         try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(self._ws_hub.broadcast(msg), name="log_buf.push")
-        except RuntimeError:
+            # run_coroutine_threadsafe works whether called from the event-loop
+            # thread or any other thread (RS-485 reader, paho network thread, etc.)
+            asyncio.run_coroutine_threadsafe(
+                self._ws_hub.broadcast(msg), self._loop
+            )
+        except Exception:
             pass
 
     def append_log(self, entry: dict) -> None:
