@@ -1,10 +1,8 @@
 name: Main branch cleanup
 
 # Runs when a PR is merged into main.
-# Performs two cleanup tasks in a single commit:
-#   1. Removes simulator/ (dev-only tooling that should not ship in main)
-#   2. Rewrites branch-specific install URLs from /dev/ to /main/ in README
-#      and install scripts, so one-liner instructions are always correct.
+# Rewrites branch-specific install URLs from /dev/ to /main/ in README
+# and install scripts, so one-liner instructions are always correct.
 
 'on':
   pull_request:
@@ -27,7 +25,7 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Strip simulator and fix branch refs
+      - name: Fix branch refs
         id: cleanup
         run: |
           git config user.name  "github-actions[bot]"
@@ -35,13 +33,7 @@ jobs:
 
           changed=false
 
-          # 1. Remove simulator/ if present
-          if [ -d simulator ]; then
-            git rm -r simulator/
-            changed=true
-          fi
-
-          # 2. Rewrite /dev/install → /main/install in docs and scripts
+          # Rewrite /dev/install → /main/install in docs and scripts
           for f in README.md install.sh install.ps1; do
             if [ -f "$f" ]; then
               sed -i 's|stationcontroller_py/dev/install\.|stationcontroller_py/main/install.|g' "$f"
@@ -53,7 +45,7 @@ jobs:
           done
 
           if [ "$changed" = true ]; then
-            git commit -m "chore: post-merge cleanup (strip simulator, fix branch refs) [skip ci]"
+            git commit -m "chore: post-merge cleanup (fix branch refs) [skip ci]"
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"

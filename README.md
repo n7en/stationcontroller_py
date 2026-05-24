@@ -37,7 +37,7 @@ Optional but recommended:
 curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.sh | bash
 ```
 
-This clones the repository into `~/StationController_Py`, creates a Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, scans for serial ports — prompting you to assign each DCN bus — and optionally installs a systemd service so the app starts at boot. On the `dev` branch the script also offers to configure the [DCN simulator](#dcn-simulator).
+This clones the repository into `~/StationController_Py`, creates a Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, scans for serial ports — prompting you to assign each DCN bus — and optionally installs a systemd service so the app starts at boot. The script also offers to configure the [DCN simulator](#dcn-simulator).
 
 To include development tools (pytest, etc.) as well:
 
@@ -60,7 +60,7 @@ Open **PowerShell** and run:
 irm https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.ps1 | iex
 ```
 
-This clones the repository into `~\StationController_Py`, sets up the Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for COM ports — prompting you to assign each DCN bus. On the `dev` branch the script also offers to configure the [DCN simulator](#dcn-simulator).
+This clones the repository into `~\StationController_Py`, sets up the Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for COM ports — prompting you to assign each DCN bus. The script also offers to configure the [DCN simulator](#dcn-simulator).
 
 To include development tools as well:
 
@@ -513,8 +513,6 @@ The `simulator/` directory contains a software DCN hardware simulator for develo
 
 The simulator connects to an MQTT broker and publishes realistic device `UPDATE` packets on the same topics used by the Node-RED MQTT bridge transport. It also subscribes for commands from the app (relay set, coax select, position select, etc.) and updates its internal state accordingly, so the app behaves exactly as it would with real hardware.
 
-> **Dev branch only.** `simulator/` is present on `dev` and feature branches. A GitHub Actions workflow automatically removes it from `main` on merge, so production installs are never affected.
-
 ### Prerequisites
 
 An MQTT broker reachable from both the app and the simulator. [Mosquitto](https://mosquitto.org/) is the simplest option:
@@ -668,6 +666,186 @@ The shim is self-contained — it does not require the MQTT broker or any other 
 
 ---
 
+## Testing automations with the simulator
+
+The simulator lets you develop and verify automation rules end-to-end without any physical hardware. Sensor values update continuously, commands from the app are applied immediately, and the full automation engine runs against the simulated readings exactly as it would in the shack.
+
+### 1 — Add a simulator bus to `config/comms_config.yaml`
+
+The simulator speaks the MQTT bridge protocol, so add a `nodered_mqtt` transport on a dedicated bus:
+
+```yaml
+buses:
+  - name: simulator
+    transports:
+      - name: sim_mqtt
+        type: nodered_mqtt
+        broker: localhost
+        port: 1883
+        topic_rx: dcn/sim/rx    # app reads packets from here
+        topic_tx: dcn/sim/tx    # app sends commands here
+```
+
+You can run a simulator bus alongside a real `control` bus — they are independent, so hardware commands still go to the real RS-485 network.
+
+### 2 — Configure `simulator/sim_config.yaml` to match
+
+```yaml
+mqtt:
+  broker: localhost
+  port: 1883
+
+topic_rx: dcn/sim/rx   # must match topic_rx above
+topic_tx: dcn/sim/tx   # must match topic_tx above
+
+master_addr: "00"
+
+devices:
+  - type: gpio
+    address: "01"
+    name: gpio
+    update_interval_s: 1.0
+    relay_states: "00000000"
+
+  - type: watt_meter
+    address: "03"
+    name: watt_meter
+    update_interval_s: 0.1
+    forward_power_w: 100.0
+    tx_duration_min: 10.0
+    tx_duration_max: 15.0
+    off_duration_min: 5.0
+    off_duration_max: 10.0
+    reflected_min: 1.0
+    reflected_max: 5.0
+
+  - type: antenna_relay
+    address: "06"
+    name: ant
+    update_interval_s: 1.0
+```
+
+### 3 — Point devices at the simulator bus
+
+In `config/comms_config.yaml`, add or duplicate devices under the `simulator` bus:
+
+```yaml
+devices:
+  - type: gpio
+    name: gpio
+    address: "01"
+    bus: simulator
+
+  - type: watt_meter
+    name: watt_meter
+    address: "03"
+    bus: simulator
+
+  - type: antenna_relay
+    name: ant
+    address: "06"
+    bus: simulator
+    persona: cc_8a
+```
+
+If you have real hardware on a `control` bus at the same addresses, give the simulated devices unique names (`name: sim_gpio`, etc.) — the bus field routes each device's commands to the right network.
+
+### 4 — Write the automation rule
+
+Create or edit `config/automation_config.yaml`. This example switches the antenna relay when band changes and protects against high SWR:
+
+```yaml
+automations:
+
+  - name: "switch_antenna_40m"
+    trigger:
+      type: band_entered
+      band: "40m"
+    action:
+      type: set_relay
+      dcn_address: "06"
+      relay_num: 2
+      state: 1
+
+  - name: "protect_high_swr"
+    tier: protection
+    trigger:
+      type: sensor_above
+      sensor: watt_meter_port_0_swr
+      threshold: 2.5
+    condition:
+      type: ptt_active
+    action:
+      type: log
+      message: "High SWR during TX — check antenna"
+      level: warning
+```
+
+Sensor keys follow the pattern `<device_name>_<measurement>` — `watt_meter_port_0_swr`, `ant_relay_1`, `gpio_relay_1`, etc. The exact keys for your device names appear in the **Relays** page and the sensor list at `/api/sensors`.
+
+### 5 — Start the simulator alongside the app
+
+```bash
+# Terminal 1 — main app
+.venv/bin/python main.py
+
+# Terminal 2 — simulator
+.venv/bin/python -m simulator
+
+# Add -v to see every packet
+.venv/bin/python -m simulator -v
+```
+
+The app and simulator connect to the MQTT broker independently. Either one can be restarted without affecting the other — they will reconnect automatically.
+
+### 6 — Watch automations fire
+
+Open the **Log** page and switch to the **DCN** tab. Use the bus filter dropdown (appears when more than one bus is active) to show only the `simulator` bus. Every UPDATE packet the simulator sends and every command the app sends back is visible here in real time.
+
+For automation log output, check the **General** tab — log-action rules write there with the configured level.
+
+### Adjusting simulated values for specific scenarios
+
+Edit `simulator/sim_config.yaml` and restart the simulator (no app restart needed) to change what the simulated hardware reports:
+
+| Goal | Config key to change |
+|---|---|
+| Force high SWR | Increase `reflected_max` or reduce `reflected_min` |
+| Keep transmitter on continuously | Set `off_duration_min` and `off_duration_max` to `0` |
+| Slow down power meter updates | Increase `update_interval_s` on the watt_meter |
+| Start with a relay pre-set on | Set that character to `1` in `relay_states` |
+| Simulate a hot PA | Set `temp_min` and `temp_max` above your `warn_above` threshold |
+
+### Simulating band changes without a radio
+
+To test band-triggered rules without a real radio, enable the rigctld simulator and configure the app to connect to it:
+
+`simulator/sim_config.yaml`:
+```yaml
+radio:
+  rigctld:
+    enabled: true
+    host: "127.0.0.1"
+    port: 4532
+    initial:
+      frequency_hz: 14200000   # start on 20m
+      mode: USB
+```
+
+`config/radio_config.yaml`:
+```yaml
+radios:
+  - name: sim_radio
+    backend: rigctld
+    host: 127.0.0.1
+    port: 4532
+    poll_interval_s: 0.5
+```
+
+With both running, use the radio frequency control in the UI to tune to a different band — band-triggered automations will fire exactly as they would with real hardware.
+
+---
+
 ## Project structure
 
 ```
@@ -693,7 +871,7 @@ StationController_Py/
 ├── data/                   # Runtime data (SQLite DB created here)
 ├── alembic/                # Database migration scripts
 ├── tests/                  # pytest test suite
-└── simulator/              # DCN hardware simulator (dev branch only)
+└── simulator/              # DCN hardware simulator
     ├── dcn_sim.py          # Simulator logic and device models
     └── sim_config.yaml     # MQTT and device configuration
 ```
