@@ -103,8 +103,10 @@ class RS485Transport(DCNTransport):
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
                 timeout=0.1,
+                dsrdtr=False,
+                rtscts=False,
             )
-        except serial.SerialException as exc:
+        except (serial.SerialException, OSError) as exc:
             if self._reconnect_attempts == 0:
                 logger.error("RS-485 '%s' cannot open %s: %s", self.name, port, exc)
             self._serial = None
