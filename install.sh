@@ -402,6 +402,55 @@ PYEOF
     fi
 fi
 
+# ── 8b. Embedded MQTT broker ──────────────────────────────────────────────
+_MQTT_CFG="$SCRIPT_DIR/config/comms_config.yaml"
+echo ""
+info "Embedded MQTT broker"
+if [[ ! -f "$_MQTT_CFG" ]]; then
+    warn "comms_config.yaml not found — copy config/comms_config.yaml.example and re-run to configure."
+else
+    _MQTT_ENABLED=$("$PYTHON_VENV" - "$_MQTT_CFG" <<'PYEOF'
+import sys, yaml, pathlib
+cfg = yaml.safe_load(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8')) or {}
+print("yes" if cfg.get("mqtt_broker", {}).get("enabled") else "no")
+PYEOF
+    )
+    if [[ "$_MQTT_ENABLED" == "yes" ]]; then
+        echo "    Already enabled in comms_config.yaml"
+    else
+        prompt "Enable the embedded MQTT broker? [y/N]:"
+        read -r _mqtt_choice </dev/tty
+        if [[ "$_mqtt_choice" =~ ^[Yy]$ ]]; then
+            prompt "MQTT port [1883]:"
+            read -r _mqtt_port </dev/tty
+            _mqtt_port="${_mqtt_port:-1883}"
+            if ! [[ "$_mqtt_port" =~ ^[0-9]+$ ]] || [[ "$_mqtt_port" -lt 1 || "$_mqtt_port" -gt 65535 ]]; then
+                warn "Invalid port — using 1883"
+                _mqtt_port=1883
+            fi
+            "$PYTHON_VENV" - "$_MQTT_CFG" "$_mqtt_port" <<'PYEOF'
+import sys, yaml, pathlib
+cfg_path = pathlib.Path(sys.argv[1])
+port = int(sys.argv[2])
+cfg = yaml.safe_load(cfg_path.read_text(encoding='utf-8')) or {}
+cfg.setdefault('mqtt_broker', {}).update({
+    'enabled': True,
+    'host': '127.0.0.1',
+    'port': port,
+    'allow_anonymous': True,
+})
+cfg_path.write_text(
+    yaml.dump(cfg, default_flow_style=False, allow_unicode=True),
+    encoding='utf-8', newline='\n',
+)
+print(f"  mqtt_broker enabled on port {port}")
+PYEOF
+        else
+            echo "    -> skipped"
+        fi
+    fi
+fi
+
 # ── 9. Simulator setup (dev branches only) ────────────────────────────────
 _SIM_READY=0
 if [[ -d "$SCRIPT_DIR/simulator" ]]; then

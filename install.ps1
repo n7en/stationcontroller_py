@@ -160,7 +160,7 @@ import pathlib, yaml
 cfg_path = pathlib.Path("config/telemetry_config.yaml")
 default_url = "sqlite+aiosqlite:///data/station.db"
 if cfg_path.exists():
-    raw = yaml.safe_load(cfg_path.read_text()) or {}
+    raw = yaml.safe_load(cfg_path.read_text(encoding='utf-8')) or {}
     url = raw.get("telemetry", {}).get("database", {}).get("url", default_url)
 else:
     url = default_url
@@ -257,7 +257,7 @@ if (Test-Path $COMMS_CFG) {
         $transports = @(
             @'
 import sys, yaml, pathlib
-cfg = yaml.safe_load(pathlib.Path(sys.argv[1]).read_text()) or {}
+cfg = yaml.safe_load(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8')) or {}
 for bus in cfg.get("buses", []):
     for t in bus.get("transports", []):
         if t.get("type") == "rs485":
@@ -327,7 +327,7 @@ assignments = {}
 for arg in sys.argv[2:]:
     name, _, port = arg.partition("=")
     assignments[name] = port
-text = cfg_path.read_text()
+text = cfg_path.read_text(encoding='utf-8')
 lines = text.splitlines(keepends=True)
 result = []
 current_transport = None
@@ -350,10 +350,60 @@ for line in lines:
             new_port = assignments[current_transport]
             line = f"{m_port.group(1)}{new_port}\n"
     result.append(line)
-cfg_path.write_text("".join(result))
+cfg_path.write_text("".join(result), encoding='utf-8', newline='\n')
 print(f"  Updated {cfg_path}")
 '@ | & $PYTHON_VENV - @patchArgs
             }
+        }
+    }
+}
+
+# -- 8b. Embedded MQTT broker -----------------------------------------------
+$mqttCfg = Join-Path $SCRIPT_DIR "config" "comms_config.yaml"
+Write-Host ""
+Info "Embedded MQTT broker"
+if (-not (Test-Path $mqttCfg)) {
+    Warn "comms_config.yaml not found - copy config\comms_config.yaml.example and re-run to configure."
+} else {
+    $mqttEnabled = (@'
+import sys, yaml, pathlib
+cfg = yaml.safe_load(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8')) or {}
+print("yes" if cfg.get("mqtt_broker", {}).get("enabled") else "no")
+'@ | & $PYTHON_VENV - $mqttCfg) | Select-Object -First 1
+
+    if ($mqttEnabled -eq "yes") {
+        Write-Host "    Already enabled in comms_config.yaml"
+    } else {
+        Prompt "Enable the embedded MQTT broker? [y/N]:"
+        $mqttChoice = Read-Host
+        if ($mqttChoice -match '^[Yy]$') {
+            Prompt "MQTT port [1883]:"
+            $mqttPortStr = Read-Host
+            if (-not $mqttPortStr) { $mqttPortStr = "1883" }
+            $mqttPort = 0
+            if (-not [int]::TryParse($mqttPortStr, [ref]$mqttPort) -or $mqttPort -lt 1 -or $mqttPort -gt 65535) {
+                Warn "Invalid port - using 1883"
+                $mqttPort = 1883
+            }
+            @'
+import sys, yaml, pathlib
+cfg_path = pathlib.Path(sys.argv[1])
+port = int(sys.argv[2])
+cfg = yaml.safe_load(cfg_path.read_text(encoding='utf-8')) or {}
+cfg.setdefault('mqtt_broker', {}).update({
+    'enabled': True,
+    'host': '127.0.0.1',
+    'port': port,
+    'allow_anonymous': True,
+})
+cfg_path.write_text(
+    yaml.dump(cfg, default_flow_style=False, allow_unicode=True),
+    encoding='utf-8', newline='\n',
+)
+print(f"  mqtt_broker enabled on port {port}")
+'@ | & $PYTHON_VENV - $mqttCfg $mqttPort
+        } else {
+            Write-Host "    -> skipped"
         }
     }
 }
@@ -382,13 +432,13 @@ import sys, yaml, pathlib
 comms_path = pathlib.Path(sys.argv[1])
 sim_path   = pathlib.Path(sys.argv[2])
 
-sim = yaml.safe_load(sim_path.read_text()) or {}
+sim = yaml.safe_load(sim_path.read_text(encoding='utf-8')) or {}
 
 if not comms_path.exists():
     print("  comms_config.yaml not found — simulator will use defaults")
     sys.exit(0)
 
-comms = yaml.safe_load(comms_path.read_text()) or {}
+comms = yaml.safe_load(comms_path.read_text(encoding='utf-8')) or {}
 
 # Pull settings from the first nodered_mqtt transport found
 mqtt_t = None
@@ -431,7 +481,7 @@ if comms_devs:
         sim['devices'].append(entry)
         print(f"  device: {entry['type']:15s}  addr={entry['address']}")
 
-sim_path.write_text(yaml.dump(sim, default_flow_style=False, sort_keys=False))
+sim_path.write_text(yaml.dump(sim, default_flow_style=False, sort_keys=False, allow_unicode=False), encoding='utf-8', newline='\n')
 print(f"  Written -> {sim_path}")
 '@ | & $PYTHON_VENV - $COMMS_CFG $simCfg
 
