@@ -96,8 +96,12 @@ class RS485Transport(DCNTransport):
     def _open_port(self) -> None:
         port = self._config.get("port", "")
         try:
-            self._serial = serial.Serial(
-                port=port,
+            # Open with port=None to defer the actual open() call so we can
+            # clear _dtr_state and _rts_state first.  RS-485 adapters do not
+            # support modem-control ioctls (TIOCMBIS/TIOCMBIC) and raise
+            # Errno 5 (EIO) if pyserial tries to assert DTR/RTS on open.
+            ser = serial.Serial(
+                port=None,
                 baudrate=self.baud_rate,
                 bytesize=serial.EIGHTBITS,
                 parity=serial.PARITY_NONE,
@@ -105,7 +109,13 @@ class RS485Transport(DCNTransport):
                 timeout=0.1,
                 dsrdtr=False,
                 rtscts=False,
+                xonxoff=False,
             )
+            ser._dtr_state = None
+            ser._rts_state = None
+            ser.port = port
+            ser.open()
+            self._serial = ser
         except (serial.SerialException, OSError) as exc:
             if self._reconnect_attempts == 0:
                 logger.error("RS-485 '%s' cannot open %s: %s", self.name, port, exc)
