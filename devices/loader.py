@@ -81,8 +81,18 @@ def load_devices(
         bus_name = dev_cfg.get("bus", "control")
 
         if name in devices:
-            log.warning("Duplicate device name '%s' - skipping second definition", name)
-            continue
+            new_name = f"{name}_{bus_name}"
+            if new_name in devices:
+                log.warning(
+                    "Device '%s' on bus '%s': auto-name '%s' also taken - skipping",
+                    name, bus_name, new_name,
+                )
+                continue
+            log.info(
+                "Device '%s' on bus '%s' renamed to '%s' to avoid name collision",
+                name, bus_name, new_name,
+            )
+            name = new_name
 
         try:
             kwargs: dict = {}

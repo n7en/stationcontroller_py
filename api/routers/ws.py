@@ -62,11 +62,13 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
         device_addr: str = msg.get("device_addr", "02")
         port: int = int(msg.get("port", 0))   # 0-indexed port number
         bus: str = msg.get("bus", "")
-        # Optimistic update first so the UI responds even without hardware.
+        # Optimistic update: find the device on the correct bus so we don't
+        # highlight the wrong coax switch when multiple buses share the same address.
         for dev in state.devices.values():
             if getattr(dev, "address", None) == device_addr and hasattr(dev, "optimistic_select"):
-                dev.optimistic_select(port)
-                break
+                if not bus or getattr(dev, "bus", None) == bus:
+                    dev.optimistic_select(port)
+                    break
         network = state.network_for_addr(device_addr, bus=bus or None)
         if network is None:
             log.warning("WS coax_select: no network for device addr %s", device_addr)
@@ -79,8 +81,9 @@ async def _handle_client_message(raw: str, state: AppState) -> None:
         bus: str = msg.get("bus", "")
         for dev in state.devices.values():
             if getattr(dev, "address", None) == device_addr and hasattr(dev, "optimistic_select_position"):
-                dev.optimistic_select_position(position)   # 0-based
-                break
+                if not bus or getattr(dev, "bus", None) == bus:
+                    dev.optimistic_select_position(position)   # 0-based
+                    break
         network = state.network_for_addr(device_addr, bus=bus or None)
         if network is None:
             log.warning("WS pos_select: no network for device addr %s", device_addr)
