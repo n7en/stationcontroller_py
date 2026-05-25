@@ -1,5 +1,5 @@
 <script>
-  import { afterUpdate } from 'svelte'
+  import { afterUpdate, onMount } from 'svelte'
   import { logEntries, dcnEntries } from '../stores/ws.js'
 
   let tab         = 'general'
@@ -8,8 +8,21 @@
   let dcnEl       = null
   let clearedAt   = { general: 0, dcn: 0 }
   let dcnBusFilter = 'all'
+  let dcnRaw       = false
+  let configuredBuses = []
 
-  $: dcnBuses    = [...new Set($dcnEntries.map(e => e.bus).filter(Boolean))].sort()
+  onMount(async () => {
+    try {
+      const res = await fetch('/api/comms/buses')
+      if (res.ok) {
+        const data = await res.json()
+        configuredBuses = data.buses ?? []
+      }
+    } catch { /* ignore */ }
+  })
+
+  $: trafficBuses = [...new Set($dcnEntries.map(e => e.bus).filter(Boolean))]
+  $: dcnBuses    = [...new Set([...configuredBuses, ...trafficBuses])].sort()
   $: visibleLogs = $logEntries.filter(e => e.ts > clearedAt.general)
   $: visibleDcn  = $dcnEntries.filter(e =>
       e.ts > clearedAt.dcn &&
@@ -60,6 +73,9 @@
           {/each}
         </select>
       {/if}
+      {#if tab === 'dcn'}
+        <button class="act-btn" class:active={dcnRaw} on:click={() => dcnRaw = !dcnRaw}>Raw</button>
+      {/if}
       <button class="act-btn" class:paused on:click={() => paused = !paused}>
         {paused ? 'Resume' : 'Pause'}
       </button>
@@ -89,8 +105,12 @@
           <span class="ts">{fmtTs(e.ts)}</span>
           <span class="dir">{e.direction?.toUpperCase()}</span>
           <span class="src">{e.bus ?? ''}</span>
-          <span class="addr">{e.from_addr ?? '?'}&#x2192;{e.to_addr ?? '?'}</span>
-          <span class="msg">{e.payload ?? e.raw ?? ''}</span>
+          {#if dcnRaw}
+            <span class="msg raw">{e.raw ?? e.payload ?? ''}</span>
+          {:else}
+            <span class="addr">{e.from_addr ?? '?'}&#x2192;{e.to_addr ?? '?'}</span>
+            <span class="msg">{e.payload ?? e.raw ?? ''}</span>
+          {/if}
         </div>
       {:else}
         <div class="empty">No DCN messages yet.</div>
@@ -172,6 +192,7 @@
   }
   .act-btn:hover { background: var(--border); color: var(--text); }
   .act-btn.paused { border-color: var(--accent); color: var(--accent); }
+  .act-btn.active { border-color: var(--accent); color: var(--accent); }
 
   .pane {
     flex: 1;
@@ -199,6 +220,7 @@
   .dir  { flex-shrink: 0; width: 3ch; font-weight: 600; }
   .addr { flex-shrink: 0; width: 8ch; color: var(--text-muted); }
   .msg  { overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+  .msg.raw { font-size: 0.74rem; color: var(--text-muted); }
 
   .exc {
     width: 100%;
