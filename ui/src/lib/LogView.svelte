@@ -7,8 +7,10 @@
   let logEl       = null
   let dcnEl       = null
   let clearedAt   = { general: 0, dcn: 0 }
-  let dcnBusFilter = 'all'
-  let dcnRaw       = false
+  let dcnBusFilter  = 'all'
+  let dcnDirFilter  = 'all'   // 'all' | 'rx' | 'tx'
+  let dcnAddrFilter = ''
+  let dcnRaw        = false
   let configuredBuses = []
 
   onMount(async () => {
@@ -24,10 +26,16 @@
   $: trafficBuses = [...new Set($dcnEntries.map(e => e.bus).filter(Boolean))]
   $: dcnBuses    = [...new Set([...configuredBuses, ...trafficBuses])].sort()
   $: visibleLogs = $logEntries.filter(e => e.ts > clearedAt.general)
-  $: visibleDcn  = $dcnEntries.filter(e =>
-      e.ts > clearedAt.dcn &&
-      (dcnBusFilter === 'all' || e.bus === dcnBusFilter)
-    )
+  $: visibleDcn  = $dcnEntries.filter(e => {
+      if (e.ts <= clearedAt.dcn) return false
+      if (dcnBusFilter !== 'all' && e.bus !== dcnBusFilter) return false
+      if (dcnDirFilter !== 'all' && e.direction !== dcnDirFilter) return false
+      if (dcnAddrFilter) {
+        const a = dcnAddrFilter.trim().toLowerCase()
+        if (!e.from_addr?.toLowerCase().includes(a) && !e.to_addr?.toLowerCase().includes(a)) return false
+      }
+      return true
+    })
 
   afterUpdate(() => {
     if (!paused && tab === 'general' && visibleLogs.length && logEl) {
@@ -65,7 +73,28 @@
       </button>
     </div>
     <div class="actions">
-      {#if tab === 'dcn' && dcnBuses.length > 0}
+      <button class="act-btn" class:paused on:click={() => paused = !paused}>
+        {paused ? 'Resume' : 'Pause'}
+      </button>
+      <button class="act-btn" on:click={clear}>Clear</button>
+    </div>
+  </div>
+
+  {#if tab === 'dcn'}
+    <div class="filter-bar">
+      <div class="dir-group">
+        <button class="dir-btn" class:active={dcnDirFilter === 'all'} on:click={() => dcnDirFilter = 'all'}>All</button>
+        <button class="dir-btn rx" class:active={dcnDirFilter === 'rx'} on:click={() => dcnDirFilter = 'rx'}>RX</button>
+        <button class="dir-btn tx" class:active={dcnDirFilter === 'tx'} on:click={() => dcnDirFilter = 'tx'}>TX</button>
+      </div>
+      <input
+        class="addr-input"
+        type="text"
+        placeholder="Address"
+        bind:value={dcnAddrFilter}
+        maxlength="4"
+      />
+      {#if dcnBuses.length > 0}
         <select class="bus-select" bind:value={dcnBusFilter}>
           <option value="all">All buses</option>
           {#each dcnBuses as b}
@@ -73,15 +102,9 @@
           {/each}
         </select>
       {/if}
-      {#if tab === 'dcn'}
-        <button class="act-btn" class:active={dcnRaw} on:click={() => dcnRaw = !dcnRaw}>Raw</button>
-      {/if}
-      <button class="act-btn" class:paused on:click={() => paused = !paused}>
-        {paused ? 'Resume' : 'Pause'}
-      </button>
-      <button class="act-btn" on:click={clear}>Clear</button>
+      <button class="act-btn" class:active={dcnRaw} on:click={() => dcnRaw = !dcnRaw}>Raw</button>
     </div>
-  </div>
+  {/if}
 
   {#if tab === 'general'}
     <div class="pane" bind:this={logEl}>
@@ -169,13 +192,60 @@
 
   .actions { display: flex; gap: 0.4rem; align-items: center; }
 
-  .bus-select {
-    padding: 0.28rem 0.5rem;
+  /* DCN filter bar */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .dir-group {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .dir-btn {
+    padding: 0.22rem 0.55rem;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: background 0.12s, color 0.12s;
+  }
+  .dir-btn + .dir-btn { border-left: 1px solid var(--border); }
+  .dir-btn:hover { background: var(--border); color: var(--text); }
+  .dir-btn.active          { background: var(--accent-dim); color: var(--accent); }
+  .dir-btn.rx.active       { background: color-mix(in srgb, var(--green) 15%, transparent); color: var(--green); }
+  .dir-btn.tx.active       { background: var(--accent-dim); color: var(--accent); }
+
+  .addr-input {
+    width: 7ch;
+    padding: 0.22rem 0.45rem;
     border: 1px solid var(--border);
     border-radius: 5px;
     background: var(--surface);
     color: var(--text);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
+    font-family: ui-monospace, monospace;
+    text-transform: uppercase;
+  }
+  .addr-input::placeholder { color: var(--text-muted); text-transform: none; }
+  .addr-input:focus { outline: none; border-color: var(--accent); }
+
+  .bus-select {
+    padding: 0.22rem 0.45rem;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.78rem;
     cursor: pointer;
   }
   .bus-select:focus { outline: none; border-color: var(--accent); }
@@ -190,7 +260,7 @@
     font-size: 0.8rem;
     transition: background 0.15s, color 0.15s;
   }
-  .act-btn:hover { background: var(--border); color: var(--text); }
+  .act-btn:hover  { background: var(--border); color: var(--text); }
   .act-btn.paused { border-color: var(--accent); color: var(--accent); }
   .act-btn.active { border-color: var(--accent); color: var(--accent); }
 

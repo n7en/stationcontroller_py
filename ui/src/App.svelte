@@ -11,6 +11,7 @@
   import UpdateChecker    from './lib/UpdateChecker.svelte'
   import ConfigEditor     from './lib/ConfigEditor.svelte'
   import HistoryView      from './lib/HistoryView.svelte'
+  import SensorMonitor    from './lib/SensorMonitor.svelte'
   import LogView          from './lib/LogView.svelte'
   import LoginPage        from './lib/LoginPage.svelte'
   import ConfigWizard    from './lib/ConfigWizard.svelte'
@@ -245,6 +246,28 @@
       </section>
 
     {:else if page === 'history'}
+
+      <section>
+        <SensorMonitor
+          title="Temperature"
+          detect={(name, info) => {
+            const u = (info.unit ?? '').trim()
+            return /°|celsius|fahrenheit/i.test(u) || u === 'C' || u === 'F' || u === 'K'
+              || name.toLowerCase().includes('temp')
+          }}
+        />
+      </section>
+
+      <section>
+        <SensorMonitor
+          title="Voltage"
+          detect={(name, info) => {
+            const u = (info.unit ?? '').trim()
+            return /volt|^v$|^mv$|^kv$/i.test(u)
+              || /volt|^vcc|^vbat|^vsup/i.test(name)
+          }}
+        />
+      </section>
 
       <section>
         <div class="section-title">Sensor History</div>
