@@ -88,6 +88,8 @@
     showPicker = false
   }
 
+  const GRID_COLS = 3   // must match grid-template-columns count in CSS
+
   // ── Drag-and-drop ─────────────────────────────────────────────────────────
   function onDragStart(e, i) {
     dragIdx = i
@@ -102,12 +104,31 @@
   function onDrop(e, i) {
     e.preventDefault()
     if (dragIdx === null || dragIdx === i) { dragIdx = dropIdx = null; return }
+    // Swap: source position becomes whatever was at target; source becomes a
+    // blank if target was non-blank, so gaps are never left uncovered.
     const cards = [...config.cards]
-    const [moved] = cards.splice(dragIdx, 1)
-    // After removing dragIdx, indices above it shift down by 1.
-    // Compensate so the card lands before the originally-targeted position.
-    const insertAt = i > dragIdx ? i - 1 : i
-    cards.splice(insertAt, 0, moved)
+    ;[cards[dragIdx], cards[i]] = [cards[i], cards[dragIdx]]
+    config  = { ...config, cards }
+    dragIdx = null
+    dropIdx = null
+  }
+  function onDropEnd(e) {
+    e.preventDefault()
+    if (dragIdx === null) { dropIdx = null; return }
+    const cards = [...config.cards]
+    const moved = cards[dragIdx]
+    // Leave a blank at the source position
+    cards[dragIdx] = { type: 'blank' }
+    // Pad the current last partial row to a full GRID_COLS boundary
+    const totalSlots = cards.reduce((s, c) => s + (c.span ?? 1), 0)
+    const rem = totalSlots % GRID_COLS
+    if (rem !== 0) {
+      for (let j = 0; j < GRID_COLS - rem; j++) cards.push({ type: 'blank' })
+    }
+    // Place the moved card at the start of a new row, fill the rest with blanks
+    cards.push(moved)
+    const cardSpan = moved.span ?? 1
+    for (let j = cardSpan; j < GRID_COLS; j++) cards.push({ type: 'blank' })
     config  = { ...config, cards }
     dragIdx = null
     dropIdx = null
@@ -116,7 +137,9 @@
 
   // ── Card operations ───────────────────────────────────────────────────────
   function removeCard(i) {
-    config = { ...config, cards: config.cards.filter((_, idx) => idx !== i) }
+    const cards = [...config.cards]
+    cards[i] = { type: 'blank' }
+    config = { ...config, cards }
   }
 
   function setSpan(i, span) {
@@ -357,9 +380,9 @@
         role="listitem"
         on:dragover={e => { if (dragIdx === null) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; dropIdx = config.cards.length }}
         on:dragleave={() => { if (dropIdx === config.cards.length) dropIdx = null }}
-        on:drop={e => onDrop(e, config.cards.length)}
+        on:drop={onDropEnd}
       >
-        {dragIdx !== null ? 'Drop here to move to end' : '+ drag cards here'}
+        {dragIdx !== null ? 'Drop here to add a new row' : '+ drag cards here'}
       </div>
     {/if}
   </div>
@@ -673,16 +696,13 @@
   .card-filled .card-body { top: 22px; bottom: 4px; }
 
   .card-wrap.is-dragging { opacity: 0.35; cursor: grabbing; }
-  /* Left-edge insertion line — shows WHERE the card will land */
-  .card-wrap.drop-target::before {
-    content: '';
-    position: absolute;
-    left: -5px; top: 8%; height: 84%; width: 3px;
-    background: var(--accent);
-    border-radius: 3px;
-    pointer-events: none; z-index: 20;
+  /* Swap target: highlight the whole cell */
+  .card-wrap.drop-target {
+    outline: 2px solid var(--accent);
+    box-shadow: inset 0 0 0 2px var(--accent-dim);
   }
-  .card-wrap.drop-target::after { display: none; }
+  .card-wrap.drop-target::before { display: none; }
+  .card-wrap.drop-target::after  { display: none; }
   .edit-mode .card-wrap {
     outline: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
     cursor: grab;
