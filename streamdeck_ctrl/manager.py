@@ -26,11 +26,12 @@ log = logging.getLogger(__name__)
 RECONNECT_DELAY = 5.0
 
 try:
-    from StreamDeck.DeviceManager import DeviceManager
+    from StreamDeck.DeviceManager import DeviceManager, ProbeError as _ProbeError
     from StreamDeck.ImageHelpers import PILHelper
     _SDK_AVAILABLE = True
 except ImportError:
     _SDK_AVAILABLE = False
+    _ProbeError = Exception  # fallback so the except clause below still compiles
 
 try:
     from PIL import Image  # noqa: F401
@@ -163,7 +164,15 @@ class StreamDeckManager:
                             break
                     time.sleep(1.0)
 
-            except Exception:
+            except Exception as exc:
+                if isinstance(exc, _ProbeError):
+                    log.warning(
+                        "Stream Deck: no HID backend available (%s). "
+                        "Install libhidapi-libusb0 or libhidapi-hidraw0. "
+                        "Stream Deck support disabled.",
+                        exc,
+                    )
+                    return  # permanent — missing system library, no point retrying
                 log.exception("Stream Deck error — will retry in %.0fs", RECONNECT_DELAY)
 
             with self._lock:

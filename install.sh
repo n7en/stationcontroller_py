@@ -451,6 +451,45 @@ PYEOF
     fi
 fi
 
+# ── 8c. Stream Deck support (Linux / apt only) ────────────────────────────
+if [[ "$(uname -s)" == "Linux" ]] && command -v apt-get &>/dev/null; then
+    echo ""
+    info "Stream Deck support"
+
+    if dpkg -s libhidapi-libusb0 &>/dev/null 2>&1 || dpkg -s libhidapi-hidraw0 &>/dev/null 2>&1; then
+        echo "    libhidapi already installed — Stream Deck support available."
+    else
+        prompt "Install Elgato Stream Deck support (libhidapi-libusb0)? [y/N]:"
+        read -r _sd_choice </dev/tty
+        if [[ "$_sd_choice" =~ ^[Yy]$ ]]; then
+            if [[ "$EUID" -eq 0 ]]; then
+                apt-get install -y libhidapi-libusb0
+            elif command -v sudo &>/dev/null; then
+                sudo apt-get install -y libhidapi-libusb0
+            else
+                warn "Cannot install — no root/sudo available."
+                warn "Install manually: sudo apt-get install -y libhidapi-libusb0"
+            fi
+
+            # udev rule so the device is accessible without root
+            _SD_UDEV="/etc/udev/rules.d/70-streamdeck.rules"
+            if [[ ! -f "$_SD_UDEV" ]]; then
+                _SD_RULE='SUBSYSTEM=="usb", ATTR{idVendor}=="0fd9", TAG+="uaccess"'
+                if [[ "$EUID" -eq 0 ]]; then
+                    echo "$_SD_RULE" > "$_SD_UDEV"
+                    udevadm control --reload-rules && udevadm trigger
+                elif command -v sudo &>/dev/null; then
+                    echo "$_SD_RULE" | sudo tee "$_SD_UDEV" > /dev/null
+                    sudo udevadm control --reload-rules && sudo udevadm trigger
+                fi
+                echo "    udev rule added — Stream Deck accessible without root."
+            fi
+        else
+            echo "    -> skipped (Stream Deck logs a warning at startup if enabled in config)"
+        fi
+    fi
+fi
+
 # ── 9. Simulator setup (dev branches only) ────────────────────────────────
 _SIM_READY=0
 if [[ -d "$SCRIPT_DIR/simulator" ]]; then
