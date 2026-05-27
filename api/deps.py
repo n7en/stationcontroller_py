@@ -45,6 +45,7 @@ class AppState:
         self.log_buffer:       Optional["LogBuffer"]         = None
         self.logbook_manager:  Optional["LogbookManager"]    = None
         self.dx_manager:       Optional["DXClusterManager"]  = None
+        self.streamdeck_manager: Optional[Any]               = None
 
     # ------------------------------------------------------------------
     # Convenience helpers

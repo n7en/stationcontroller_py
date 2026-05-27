@@ -16,7 +16,8 @@
   import LoginPage        from './lib/LoginPage.svelte'
   import ConfigWizard    from './lib/ConfigWizard.svelte'
   import CommsEditor     from './lib/CommsEditor.svelte'
-  import BandPlanEditor  from './lib/BandPlanEditor.svelte'
+  import BandPlanEditor     from './lib/BandPlanEditor.svelte'
+  import StreamDeckEditor   from './lib/StreamDeckEditor.svelte'
 
   let page        = 'dashboard'
   let configTab   = 'comms'
@@ -287,11 +288,15 @@
         <div class="config-tabs">
           <button class="tab-btn" class:active={configTab === 'comms'}
             on:click={() => configTab = 'comms'}>Comms &amp; Devices</button>
+          <button class="tab-btn" class:active={configTab === 'streamdeck'}
+            on:click={() => configTab = 'streamdeck'}>Stream Deck</button>
           <button class="tab-btn" class:active={configTab === 'yaml'}
             on:click={() => configTab = 'yaml'}>YAML Editor</button>
         </div>
         {#if configTab === 'comms'}
           <CommsEditor />
+        {:else if configTab === 'streamdeck'}
+          <StreamDeckEditor />
         {:else}
           <div class="section-title">Configuration Editor</div>
           <ConfigEditor />

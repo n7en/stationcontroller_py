@@ -568,6 +568,24 @@ async def main() -> None:
         dx_manager.add_spots_callback(DXSpotTrigger.push_spots)
         await dx_manager.start()
 
+    # ── 9d. Stream Deck ───────────────────────────────────────────────────
+    SD_CFG = CFG / "streamdeck_config.yaml"
+    sd_manager = None
+    try:
+        from streamdeck_ctrl.manager import StreamDeckManager
+        _sd_path = SD_CFG if SD_CFG.exists() else (CFG / "streamdeck_config.yaml.example")
+        if _sd_path.exists():
+            with open(_sd_path, encoding="utf-8") as _fh:
+                _sd_raw = yaml.safe_load(_fh) or {}
+            _sd_cfg = _sd_raw.get("streamdeck", {})
+            if _sd_cfg.get("enabled", True):
+                sd_manager = StreamDeckManager(_sd_cfg, state=state)
+                sd_manager.start(asyncio.get_event_loop())
+                state.streamdeck_manager = sd_manager
+                log.info("Stream Deck manager started")
+    except Exception:
+        log.exception("Failed to start Stream Deck manager")
+
     # ── 10. Serve ─────────────────────────────────────────────────────────
     config = uvicorn.Config(
         app,
@@ -607,6 +625,8 @@ async def main() -> None:
             await dx_manager.stop()
         if store:
             await store.close()
+        if sd_manager is not None:
+            sd_manager.stop()
         if mqtt_broker is not None:
             await mqtt_broker.stop()
         log.info("Stopped.")

@@ -25,7 +25,7 @@ from .auth import COOKIE_NAME, auth_enabled, decode_token, _is_revoked, load_aut
 import jwt as _jwt
 from .deps import AppState, get_state, _state
 from .ws_hub import WSHub
-from .routers import automations, auth, band_plan, comms, config, dashboards, devices, dx, hamlib, history, labels, logbook, notifications, radio, relays, sensors, system, update, ws
+from .routers import automations, auth, band_plan, comms, config, dashboards, devices, dx, hamlib, history, labels, logbook, notifications, radio, relays, sensors, streamdeck, system, update, ws
 
 UI_DIST = Path("ui_dist")
 _log    = logging.getLogger(__name__)
@@ -149,6 +149,7 @@ def create_app(app_state: Optional[AppState] = None) -> FastAPI:
     app.include_router(history.router)
     app.include_router(system.router)
     app.include_router(band_plan.router)
+    app.include_router(streamdeck.router)
 
     # Serve built frontend - falls back gracefully if not yet built
     if UI_DIST.exists() and any(UI_DIST.iterdir()):
