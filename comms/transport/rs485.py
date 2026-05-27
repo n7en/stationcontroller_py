@@ -176,9 +176,24 @@ class RS485Transport(DCNTransport):
                     pass
 
     def _process_buffer(self) -> None:
-        while "\r" in self._buffer:
-            line, self._buffer = self._buffer.split("\r", 1)
-            line = line.strip()
+        # Split on CR, LF, or CRLF — devices at different baud rates use different terminators
+        while True:
+            cr = self._buffer.find("\r")
+            lf = self._buffer.find("\n")
+            if cr == -1 and lf == -1:
+                break
+            if cr == -1:
+                pos = lf
+            elif lf == -1:
+                pos = cr
+            else:
+                pos = min(cr, lf)
+            line = self._buffer[:pos].strip()
+            # skip the terminator (and consume CRLF as a single delimiter)
+            rest = self._buffer[pos + 1:]
+            if rest.startswith("\n") and pos == cr:
+                rest = rest[1:]
+            self._buffer = rest
             if not line:
                 continue
             packet = parse_packet(line)
@@ -189,4 +204,4 @@ class RS485Transport(DCNTransport):
                         self._dispatch(packet), self._loop
                     )
             else:
-                logger.debug("RS-485 '%s' ignored non-packet: %r", self.name, line)
+                logger.info("RS-485 '%s' ignored non-packet line: %r", self.name, line)
