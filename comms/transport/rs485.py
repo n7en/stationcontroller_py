@@ -41,10 +41,18 @@ class RS485Transport(DCNTransport):
         self._stop_event = threading.Event()
         self._buffer = ""
         self._reconnect_attempts = 0
+        self._raw_handlers: list = []
 
     # ------------------------------------------------------------------
     # Public interface
     # ------------------------------------------------------------------
+
+    def on_raw_line(self, handler) -> None:
+        """Register a callback for non-DCN lines (e.g. streaming device output).
+
+        Signature: handler(line: str, transport_name: str) -> None | Awaitable
+        """
+        self._raw_handlers.append(handler)
 
     async def connect(self) -> None:
         self._loop = asyncio.get_event_loop()
@@ -175,6 +183,15 @@ class RS485Transport(DCNTransport):
                 except Exception:
                     pass
 
+    async def _dispatch_raw(self, line: str) -> None:
+        for handler in self._raw_handlers:
+            try:
+                result = handler(line, self.name)
+                if asyncio.iscoroutine(result):
+                    await result
+            except Exception:
+                logger.exception("Error in raw line handler for transport '%s'", self.name)
+
     def _process_buffer(self) -> None:
         # Split on CR, LF, or CRLF — devices at different baud rates use different terminators
         while True:
@@ -203,5 +220,10 @@ class RS485Transport(DCNTransport):
                     asyncio.run_coroutine_threadsafe(
                         self._dispatch(packet), self._loop
                     )
+            elif self._raw_handlers:
+                if self._loop and not self._loop.is_closed():
+                    asyncio.run_coroutine_threadsafe(
+                        self._dispatch_raw(line), self._loop
+                    )
             else:
-                logger.info("RS-485 '%s' ignored non-packet line: %r", self.name, line)
+                logger.debug("RS-485 '%s' ignored non-packet line: %r", self.name, line)

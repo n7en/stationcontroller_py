@@ -183,6 +183,18 @@ class DCNNetwork:
 
         return decorator
 
+    def on_raw_line(self, handler) -> None:
+        """Register a callback for non-DCN lines on any RS-485 transport.
+
+        Signature: handler(line: str, transport_name: str) -> None | Awaitable
+        Used by streaming devices (e.g. watt meter peak mode) that send
+        plain-text data rather than DCN packets.
+        """
+        from .transport.rs485 import RS485Transport
+        for transport in self._transports.values():
+            if isinstance(transport, RS485Transport):
+                transport.on_raw_line(handler)
+
     def on_transmit(
         self,
         handler: Optional[PacketHandler] = None,

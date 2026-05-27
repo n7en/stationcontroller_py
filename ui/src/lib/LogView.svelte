@@ -7,8 +7,10 @@
   let logEl       = null
   let dcnEl       = null
   let clearedAt   = { general: 0, dcn: 0 }
+  let logLevelFilter = 'all'   // 'all' | 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR'
+  let logSrcFilter   = ''
   let dcnBusFilter  = 'all'
-  let dcnDirFilter  = 'all'   // 'all' | 'rx' | 'tx'
+  let dcnDirFilter  = 'all'   // 'all' | 'rx' | 'tx' | 'raw'
   let dcnAddrFilter = ''
   let dcnRaw        = false
   let configuredBuses = []
@@ -25,7 +27,15 @@
 
   $: trafficBuses = [...new Set($dcnEntries.map(e => e.bus).filter(Boolean))]
   $: dcnBuses    = [...new Set([...configuredBuses, ...trafficBuses])].sort()
-  $: visibleLogs = $logEntries.filter(e => e.ts > clearedAt.general)
+  $: visibleLogs = $logEntries.filter(e => {
+      if (e.ts <= clearedAt.general) return false
+      if (logLevelFilter !== 'all' && e.level !== logLevelFilter) return false
+      if (logSrcFilter) {
+        const s = logSrcFilter.trim().toLowerCase()
+        if (!e.logger?.toLowerCase().includes(s)) return false
+      }
+      return true
+    })
   $: visibleDcn  = $dcnEntries.filter(e => {
       if (e.ts <= clearedAt.dcn) return false
       if (dcnBusFilter !== 'all' && e.bus !== dcnBusFilter) return false
@@ -80,12 +90,32 @@
     </div>
   </div>
 
+  {#if tab === 'general'}
+    <div class="filter-bar">
+      <div class="dir-group">
+        <button class="dir-btn"     class:active={logLevelFilter === 'all'}     on:click={() => logLevelFilter = 'all'}>All</button>
+        <button class="dir-btn dbg" class:active={logLevelFilter === 'DEBUG'}   on:click={() => logLevelFilter = 'DEBUG'}>DEBUG</button>
+        <button class="dir-btn inf" class:active={logLevelFilter === 'INFO'}    on:click={() => logLevelFilter = 'INFO'}>INFO</button>
+        <button class="dir-btn wrn" class:active={logLevelFilter === 'WARNING'} on:click={() => logLevelFilter = 'WARNING'}>WARN</button>
+        <button class="dir-btn err" class:active={logLevelFilter === 'ERROR'}   on:click={() => logLevelFilter = 'ERROR'}>ERROR</button>
+      </div>
+      <input
+        class="addr-input"
+        type="text"
+        placeholder="Logger"
+        bind:value={logSrcFilter}
+        style="width: 16ch"
+      />
+    </div>
+  {/if}
+
   {#if tab === 'dcn'}
     <div class="filter-bar">
       <div class="dir-group">
         <button class="dir-btn" class:active={dcnDirFilter === 'all'} on:click={() => dcnDirFilter = 'all'}>All</button>
         <button class="dir-btn rx" class:active={dcnDirFilter === 'rx'} on:click={() => dcnDirFilter = 'rx'}>RX</button>
         <button class="dir-btn tx" class:active={dcnDirFilter === 'tx'} on:click={() => dcnDirFilter = 'tx'}>TX</button>
+        <button class="dir-btn raw" class:active={dcnDirFilter === 'raw'} on:click={() => dcnDirFilter = 'raw'}>RAW</button>
       </div>
       <input
         class="addr-input"
@@ -128,7 +158,7 @@
           <span class="ts">{fmtTs(e.ts)}</span>
           <span class="dir">{e.direction?.toUpperCase()}</span>
           <span class="src">{e.bus ?? ''}</span>
-          {#if dcnRaw}
+          {#if dcnRaw || e.direction === 'raw'}
             <span class="msg raw">{e.raw ?? e.payload ?? ''}</span>
           {:else}
             <span class="addr">{e.from_addr ?? '?'}&#x2192;{e.to_addr ?? '?'}</span>
@@ -224,6 +254,10 @@
   .dir-btn.active          { background: var(--accent-dim); color: var(--accent); }
   .dir-btn.rx.active       { background: color-mix(in srgb, var(--green) 15%, transparent); color: var(--green); }
   .dir-btn.tx.active       { background: var(--accent-dim); color: var(--accent); }
+  .dir-btn.dbg.active      { background: color-mix(in srgb, var(--border) 40%, transparent); color: var(--text-muted); }
+  .dir-btn.inf.active      { background: var(--accent-dim); color: var(--accent); }
+  .dir-btn.wrn.active      { background: color-mix(in srgb, #f0b860 15%, transparent); color: #f0b860; }
+  .dir-btn.err.active      { background: color-mix(in srgb, var(--red) 15%, transparent); color: var(--red); }
 
   .addr-input {
     width: 7ch;
@@ -309,8 +343,10 @@
   .debug .msg { color: var(--text-muted); }
 
   /* DCN direction colours */
-  .dcn-rx .dir { color: var(--green); }
-  .dcn-tx .dir { color: var(--accent); }
+  .dcn-rx .dir  { color: var(--green); }
+  .dcn-tx .dir  { color: var(--accent); }
+  .dcn-raw .dir { color: var(--text-muted); }
+  .dir-btn.raw.active { background: color-mix(in srgb, var(--text-muted) 15%, transparent); color: var(--text-muted); }
 
   .empty {
     color: var(--text-muted);

@@ -142,6 +142,7 @@ class WattMeter:
     def attach(self, network: DCNNetwork) -> None:
         """Register the packet handler with a DCN network."""
         network.on_packet(self._handle_packet)
+        network.on_raw_line(self._handle_raw_line)
 
     async def _handle_packet(self, packet: DCNPacket, transport_name: str) -> None:
         if packet.from_addr != self.address:
@@ -153,19 +154,26 @@ class WattMeter:
             return
         self._parse_and_publish(args)
 
-    def _parse_and_publish(self, args: list[str]) -> None:
-        try:
-            port_str   = args[1] if len(args) > 1 else "0"
-            port       = int(port_str) if port_str.strip().isdigit() else 0
-            forward_w  = float(args[2]) if len(args) > 2 else 0.0
-            reflected_w = float(args[3]) if len(args) > 3 else 0.0
-        except (ValueError, IndexError):
+    async def _handle_raw_line(self, line: str, transport_name: str) -> None:
+        """Parse peak-streaming lines: PEAK : fwd0,ref0,fwd1,ref1,..."""
+        stripped = line.strip()
+        if not stripped.upper().startswith("PEAK"):
             return
+        colon = stripped.find(":")
+        if colon == -1:
+            return
+        try:
+            values = [float(v) for v in stripped[colon + 1:].split(",") if v.strip()]
+        except ValueError:
+            return
+        for meter_idx in range(len(values) // 2):
+            forward_w   = values[meter_idx * 2]
+            reflected_w = values[meter_idx * 2 + 1]
+            self._publish_port(meter_idx, forward_w, reflected_w)
 
+    def _publish_port(self, port: int, forward_w: float, reflected_w: float) -> None:
         metrics = compute_rf_metrics(forward_w, reflected_w)
-
-        # Keep backward-compat state attributes for the most-recent reading
-        self.state.port              = port_str
+        self.state.port              = str(port)
         self.state.forward_power_w   = forward_w
         self.state.reflected_power_w = reflected_w
         self.state.swr               = metrics["swr"]
@@ -174,8 +182,8 @@ class WattMeter:
         self.state.mismatch_loss_db  = metrics["mismatch_loss_db"]
         self.state.updated_at        = time.time()
 
-        src  = f"watt_meter:{self.name}"
-        pfx  = f"{self.name}_port_{port}"
+        src = f"watt_meter:{self.name}"
+        pfx = f"{self.name}_port_{port}"
         self._registry.publish(f"{pfx}_forward_power_w",   forward_w,   "W",  src)
         self._registry.publish(f"{pfx}_reflected_power_w", reflected_w, "W",  src)
         self._registry.publish(f"{pfx}_swr",
@@ -186,6 +194,16 @@ class WattMeter:
             metrics["return_loss_db"]         if metrics["return_loss_db"]         is not None else 0.0, "dB", src)
         self._registry.publish(f"{pfx}_mismatch_loss_db",
             metrics["mismatch_loss_db"]       if metrics["mismatch_loss_db"]       is not None else 0.0, "dB", src)
+
+    def _parse_and_publish(self, args: list[str]) -> None:
+        try:
+            port_str    = args[1] if len(args) > 1 else "0"
+            port        = int(port_str) if port_str.strip().isdigit() else 0
+            forward_w   = float(args[2]) if len(args) > 2 else 0.0
+            reflected_w = float(args[3]) if len(args) > 3 else 0.0
+        except (ValueError, IndexError):
+            return
+        self._publish_port(port, forward_w, reflected_w)
 
 
 # ---------------------------------------------------------------------------

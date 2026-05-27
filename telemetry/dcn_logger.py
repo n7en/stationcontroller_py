@@ -30,6 +30,7 @@ class DCNMessageLogger:
     def attach(self, network: "DCNNetwork") -> None:
         network.on_packet(self._on_rx)
         network.on_transmit(self._on_tx)
+        network.on_raw_line(self._on_raw_line)
 
     def attach_all(self, networks: "dict[str, DCNNetwork]") -> None:
         """Attach to every bus in *networks*."""
@@ -63,3 +64,14 @@ class DCNMessageLogger:
             )
         except Exception:
             log.exception("DCNMessageLogger: failed to record TX packet")
+
+    async def _on_raw_line(self, line: str, transport_name: str) -> None:
+        try:
+            await self._store.record_dcn_message(
+                direction="raw",
+                payload=line,
+                transport=transport_name,
+                raw=line,
+            )
+        except Exception:
+            log.exception("DCNMessageLogger: failed to record raw line")

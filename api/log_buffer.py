@@ -30,13 +30,16 @@ class LogBuffer:
             pass
 
     def _push(self, msg: dict) -> None:
-        if self._ws_hub is None or self._loop is None:
+        if self._ws_hub is None or self._loop is None or self._loop.is_closed():
             return
         try:
-            # run_coroutine_threadsafe works whether called from the event-loop
-            # thread or any other thread (RS-485 reader, paho network thread, etc.)
-            asyncio.run_coroutine_threadsafe(
-                self._ws_hub.broadcast(msg), self._loop
+            # call_soon_threadsafe is safe from any thread (event-loop thread,
+            # RS-485 reader, Stream Deck thread, etc.) and correctly schedules
+            # the broadcast as a Task rather than a concurrent.futures.Future.
+            # run_coroutine_threadsafe does not work reliably when called from
+            # within the event loop itself (logging from async code).
+            self._loop.call_soon_threadsafe(
+                self._loop.create_task, self._ws_hub.broadcast(msg)
             )
         except Exception:
             pass

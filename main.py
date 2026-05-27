@@ -505,12 +505,20 @@ async def main() -> None:
                 "raw": packet.raw or str(packet), "broadcast": packet.broadcast,
                 "transport": transport,
             })
-        return _rx, _tx
+        async def _raw_line(line, transport):
+            buf.append_dcn({
+                "type": "dcn_message", "ts": _time.time(), "direction": "raw",
+                "bus": bus_name, "from_addr": "", "to_addr": "",
+                "payload": line, "raw": line, "broadcast": False,
+                "transport": transport,
+            })
+        return _rx, _tx, _raw_line
 
     for bus_name, net in networks.items():
-        _rx, _tx = _make_dcn_hooks(log_buffer, bus_name)
+        _rx, _tx, _raw_line = _make_dcn_hooks(log_buffer, bus_name)
         net.on_packet(_rx)
         net.on_transmit(_tx)
+        net.on_raw_line(_raw_line)
 
     # ── 9. Connect hardware ──────────────────────────────────────────────
     for bus_name, net in networks.items():
