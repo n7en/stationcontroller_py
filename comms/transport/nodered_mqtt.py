@@ -1,4 +1,4 @@
-﻿"""
+"""
 Node-RED MQTT bridge transport.
 
 This transport connects to an MQTT broker to exchange DCN packets with a

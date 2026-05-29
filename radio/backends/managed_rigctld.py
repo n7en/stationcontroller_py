@@ -1,4 +1,4 @@
-﻿"""
+"""
 ManagedRigctldBackend - launches and manages a rigctld subprocess, then
 connects to it exactly like a regular RigctldBackend.
 

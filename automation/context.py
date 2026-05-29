@@ -1,4 +1,4 @@
-﻿"""
+"""
 AutomationContext - unified snapshot passed to every condition and action.
 
 Bundles radio state, the live sensor registry, and the band registry so

@@ -1,4 +1,4 @@
-﻿"""
+"""
 RadioInterface - wraps a single backend, owns the poll loop, and maintains RadioState.
 """
 from __future__ import annotations

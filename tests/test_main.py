@@ -1,4 +1,4 @@
-﻿"""Tests for main.py startup utilities and the full startup sequence."""
+"""Tests for main.py startup utilities and the full startup sequence."""
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,4 +1,4 @@
-﻿"""Tests for sensors/label_registry.py and SensorRegistry label integration."""
+"""Tests for sensors/label_registry.py and SensorRegistry label integration."""
 import io
 import pytest
 import yaml

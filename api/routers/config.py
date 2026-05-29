@@ -1,4 +1,4 @@
-﻿"""GET /api/config/{name} and PUT /api/config/{name} - read/write YAML config files."""
+"""GET /api/config/{name} and PUT /api/config/{name} - read/write YAML config files."""
 from __future__ import annotations
 
 from pathlib import Path

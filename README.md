@@ -1,17 +1,17 @@
 # StationController
 
-A Python-based amateur radio station controller with a live web UI. It manages antenna switching, relay control, radio integration, RF power monitoring, and automation rules — all through a browser dashboard served from the same machine running the hardware.
+A Python-based amateur radio station controller with a live web UI. It manages antenna switching, relay control, radio integration, RF power monitoring, and automation rules -- all through a browser dashboard served from the same machine running the hardware.
 
 ---
 
 ## Features
 
-- **Live dashboard** — configurable cards: power meters, SWR bar, relay toggles, sensor readouts, radio status
-- **Radio integration** — frequency, mode, and PTT monitoring via rigctld or direct hamlib
-- **DCN hardware** — talks to GPIO modules, coax switches, VHF relays, antenna relay banks, and RF watt meters over RS-485
-- **Automation engine** — YAML-defined trigger → condition → action rules (band-change antenna switching, SWR protection, etc.)
-- **Telemetry** — SQLite (or MariaDB) logging of all sensor readings and events
-- **REST + WebSocket API** — all state accessible from the browser or external tooling
+- **Live dashboard** -- configurable cards: power meters, SWR bar, relay toggles, sensor readouts, radio status
+- **Radio integration** -- frequency, mode, and PTT monitoring via rigctld or direct hamlib
+- **DCN hardware** -- talks to GPIO modules, coax switches, VHF relays, antenna relay banks, and RF watt meters over RS-485
+- **Automation engine** -- YAML-defined trigger -> condition -> action rules (band-change antenna switching, SWR protection, etc.)
+- **Telemetry** -- SQLite (or MariaDB) logging of all sensor readings and events
+- **REST + WebSocket API** -- all state accessible from the browser or external tooling
 
 ---
 
@@ -37,7 +37,7 @@ Optional but recommended:
 curl -fsSL https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.sh | bash
 ```
 
-This clones the repository into `~/StationController_Py`, creates a Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, scans for serial ports — prompting you to assign each DCN bus — and optionally installs a systemd service so the app starts at boot. The script also offers to configure the [DCN simulator](#dcn-simulator).
+This clones the repository into `~/StationController_Py`, creates a Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, scans for serial ports -- prompting you to assign each DCN bus -- and optionally installs a systemd service so the app starts at boot. The script also offers to configure the [DCN simulator](#dcn-simulator).
 
 To include development tools (pytest, etc.) as well:
 
@@ -60,7 +60,7 @@ Open **PowerShell** and run:
 irm https://raw.githubusercontent.com/n7en/stationcontroller_py/dev/install.ps1 | iex
 ```
 
-This clones the repository into `~\StationController_Py`, sets up the Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for COM ports — prompting you to assign each DCN bus. The script also offers to configure the [DCN simulator](#dcn-simulator).
+This clones the repository into `~\StationController_Py`, sets up the Python virtual environment, installs all dependencies, builds the UI, runs the database migrations, and scans for COM ports -- prompting you to assign each DCN bus. The script also offers to configure the [DCN simulator](#dcn-simulator).
 
 To include development tools as well:
 
@@ -146,7 +146,7 @@ Edit `config\comms_config.yaml` to assign your COM ports and MQTT topics, then s
 .venv\Scripts\python main.py
 ```
 
-Re-running the install scripts at any time is safe — they skip steps already done and apply any new migrations.
+Re-running the install scripts at any time is safe -- they skip steps already done and apply any new migrations.
 
 ---
 
@@ -164,23 +164,23 @@ Re-running the install scripts at any time is safe — they skip steps already d
 .venv\Scripts\python main.py
 ```
 
-The app is available at **https://localhost:8080**. On first run the `data/` directory is created, Alembic applies the database migrations automatically, and a self-signed TLS certificate is generated in `config/certs/`. Your browser will show a security warning the first time — accept the exception to proceed. The certificate is local-only and is regenerated each install.
+The app is available at **https://localhost:8080**. On first run the `data/` directory is created, Alembic applies the database migrations automatically, and a self-signed TLS certificate is generated in `config/certs/`. Your browser will show a security warning the first time -- accept the exception to proceed. The certificate is local-only and is regenerated each install.
 
 ### Navigating the UI
 
 | Tab | What's there |
 |---|---|
-| **Dashboard** | Configurable cards — power meters, SWR bar, relay toggles, sensor readouts, radio status, DX spots. Defined in `config/dashboards/main.yaml`. |
-| **Relays** | All relay outputs in one place — toggle individually or by group. Labels are editable inline. |
+| **Dashboard** | Configurable cards -- power meters, SWR bar, relay toggles, sensor readouts, radio status, DX spots. Defined in `config/dashboards/main.yaml`. |
+| **Relays** | All relay outputs in one place -- toggle individually or by group. Labels are editable inline. |
 | **Labels** | Edit friendly names for any sensor or relay key. Changes apply immediately across the whole UI. |
-| **Settings** | Radio connection settings — backend, host/port, poll interval. Changes take effect without restarting the app. |
+| **Settings** | Radio connection settings -- backend, host/port, poll interval. Changes take effect without restarting the app. |
 | **Log** | Live log stream from the backend (general app log and raw DCN packet log on separate tabs). |
 
-The **Dashboard** tab is the main operating view. Open `config/dashboards/main.yaml` to add, remove, or rearrange cards — the changes are picked up the next time you switch to the Dashboards tab, no restart required.
+The **Dashboard** tab is the main operating view. Open `config/dashboards/main.yaml` to add, remove, or rearrange cards -- the changes are picked up the next time you switch to the Dashboards tab, no restart required.
 
 ### Network access
 
-The server binds to `0.0.0.0:8080`, so any device on the same network can reach the UI at `https://<machine-ip>:8080` — useful for phones, tablets, or a second computer in the shack. Each browser connecting for the first time will need to accept the self-signed certificate warning.
+The server binds to `0.0.0.0:8080`, so any device on the same network can reach the UI at `https://<machine-ip>:8080` -- useful for phones, tablets, or a second computer in the shack. Each browser connecting for the first time will need to accept the self-signed certificate warning.
 
 **Windows:** the firewall may block port 8080 the first time Python tries to bind to it. To open it:
 
@@ -188,9 +188,9 @@ The server binds to `0.0.0.0:8080`, so any device on the same network can reach 
 netsh advfirewall firewall add rule name="StationController" dir=in action=allow protocol=TCP localport=8080
 ```
 
-Or via the GUI: **Windows Defender Firewall → Advanced Settings → Inbound Rules → New Rule → Port → TCP 8080**.
+Or via the GUI: **Windows Defender Firewall -> Advanced Settings -> Inbound Rules -> New Rule -> Port -> TCP 8080**.
 
-**Linux / Raspberry Pi:** no firewall blocks the port by default — other devices can connect immediately.
+**Linux / Raspberry Pi:** no firewall blocks the port by default -- other devices can connect immediately.
 
 ### Manual start
 
@@ -247,10 +247,10 @@ systemctl enable --now stationcontroller
 Start both servers in separate terminals:
 
 ```bash
-# Terminal 1 — Python backend
+# Terminal 1 -- Python backend
 python main.py
 
-# Terminal 2 — Vite dev server (proxies /api and /ws to port 8080)
+# Terminal 2 -- Vite dev server (proxies /api and /ws to port 8080)
 cd ui
 npm run dev
 ```
@@ -263,7 +263,7 @@ Then open `https://localhost:5173`.
 
 All configuration lives in `config/`. The app runs without any config files (hardware sections are simply skipped), so you can start with an empty setup and add sections as you wire up hardware.
 
-### `config/comms_config.yaml` — DCN network transports
+### `config/comms_config.yaml` -- DCN network transports
 
 Defines how Python talks to the hardware bus. Three transport types are supported:
 
@@ -278,7 +278,7 @@ buses:
         baud_rate: 9600
 
   # High-speed 115200-baud bus for RF watt meter in streaming mode
-  # Keep on a dedicated USB adapter — do not share with control traffic
+  # Keep on a dedicated USB adapter -- do not share with control traffic
   - name: power
     transports:
       - name: power_serial
@@ -300,7 +300,7 @@ buses:
 
 If no config file exists or the file is empty, no hardware is connected and the app runs in a read-only/demo mode.
 
-### `config/radio_config.yaml` — Radio control
+### `config/radio_config.yaml` -- Radio control
 
 ```yaml
 radios:
@@ -329,7 +329,7 @@ radios:
 
 Radio settings can also be changed at runtime from the **Settings** page in the UI without restarting the app.
 
-### `config/telemetry_config.yaml` — Database and logging
+### `config/telemetry_config.yaml` -- Database and logging
 
 ```yaml
 telemetry:
@@ -354,7 +354,7 @@ telemetry:
     application_log_days: 30
 ```
 
-### `config/labels.yaml` — Friendly names
+### `config/labels.yaml` -- Friendly names
 
 Maps internal sensor/relay keys to human-readable names shown in the UI and available in automation rules:
 
@@ -369,9 +369,9 @@ labels:
 
 Labels can also be edited live from the **Labels** tab in the UI.
 
-### `config/automation_config.yaml` — Automation rules
+### `config/automation_config.yaml` -- Automation rules
 
-Trigger → Condition → Action rules in YAML. No Python code needed.
+Trigger -> Condition -> Action rules in YAML. No Python code needed.
 
 ```yaml
 automations:
@@ -408,7 +408,7 @@ automations:
 
 **Action types:** `log`, `set_relay`, `set_radio_power`, `sequence`, `conditional`
 
-**Execution modes:** `single` (default — skip if already running), `restart`, `queued`, `parallel`
+**Execution modes:** `single` (default -- skip if already running), `restart`, `queued`, `parallel`
 
 ---
 
@@ -450,7 +450,7 @@ cards:
   - type: sensor
     title: "PA Temperature"
     sensor: temp_pa
-    unit: "°F"
+    unit: "F"
     warn_above: 140
     critical_above: 160
 
@@ -509,7 +509,7 @@ npm run test:watch  # interactive watch mode
 
 ## DCN Simulator
 
-The `simulator/` directory contains a software DCN hardware simulator for development and integration testing — no physical RS-485 adapters or hardware required.
+The `simulator/` directory contains a software DCN hardware simulator for development and integration testing -- no physical RS-485 adapters or hardware required.
 
 The simulator connects to an MQTT broker and publishes realistic device `UPDATE` packets on the same topics used by the Node-RED MQTT bridge transport. It also subscribes for commands from the app (relay set, coax select, position select, etc.) and updates its internal state accordingly, so the app behaves exactly as it would with real hardware.
 
@@ -555,11 +555,11 @@ devices:
     name: gpio
     update_interval_s: 1.0
     relay_states: "00000000"   # initial state (8 chars, 0=off 1=on)
-    voltage_min: 11.5          # V — lower bound for all voltmeter channels
-    voltage_max: 14.5          # V — upper bound
+    voltage_min: 11.5          # V -- lower bound for all voltmeter channels
+    voltage_max: 14.5          # V -- upper bound
     voltage_drift: 0.05        # max V change per update tick
-    temp_min: 75.0             # °F — lower bound for both temp probes
-    temp_max: 80.0             # °F — upper bound
+    temp_min: 75.0             # F -- lower bound for both temp probes
+    temp_max: 80.0             # F -- upper bound
     temp_steps: [0.1, 0.2]    # step sizes applied randomly up or down
     temp_tick_min: 3           # min ticks between temp changes
     temp_tick_max: 6           # max ticks between temp changes
@@ -567,26 +567,26 @@ devices:
   - type: watt_meter
     address: "03"
     name: watt_meter
-    update_interval_s: 0.1    # 10 Hz — matches streaming-mode firmware
+    update_interval_s: 0.1    # 10 Hz -- matches streaming-mode firmware
     forward_power_w: 100.0    # nominal forward power (W) during TX
-    tx_duration_min: 10.0     # s — minimum TX-on duration per cycle
-    tx_duration_max: 15.0     # s — maximum TX-on duration per cycle
-    off_duration_min: 5.0     # s — minimum TX-off duration per cycle
-    off_duration_max: 10.0    # s — maximum TX-off duration per cycle
-    reflected_min: 1.0        # W — minimum reflected power target during TX
-    reflected_max: 5.0        # W — maximum reflected power target during TX
+    tx_duration_min: 10.0     # s -- minimum TX-on duration per cycle
+    tx_duration_max: 15.0     # s -- maximum TX-on duration per cycle
+    off_duration_min: 5.0     # s -- minimum TX-off duration per cycle
+    off_duration_max: 10.0    # s -- maximum TX-off duration per cycle
+    reflected_min: 1.0        # W -- minimum reflected power target during TX
+    reflected_max: 5.0        # W -- maximum reflected power target during TX
 
-  # coax_switch   address "02"  — selects antenna port 1–4
-  # vhf_relay     address "05"  — single SPDT relay
-  # antenna_relay address "06"  — 8-relay bank with POS / pulse / mask support
+  # coax_switch   address "02"  -- selects antenna port 1-4
+  # vhf_relay     address "05"  -- single SPDT relay
+  # antenna_relay address "06"  -- 8-relay bank with POS / pulse / mask support
 ```
 
-The app must have a `nodered_mqtt` transport configured in `config/comms_config.yaml` with matching topics — the simulator acts as the hardware side of that bridge.
+The app must have a `nodered_mqtt` transport configured in `config/comms_config.yaml` with matching topics -- the simulator acts as the hardware side of that bridge.
 
 ### Running
 
 ```bash
-# Linux / macOS — from repo root
+# Linux / macOS -- from repo root
 .venv/bin/python -m simulator
 
 # Windows
@@ -599,7 +599,7 @@ python -m simulator path/to/sim_config.yaml
 python -m simulator -v
 ```
 
-Start the simulator before or after the main app — it reconnects automatically if the broker restarts.
+Start the simulator before or after the main app -- it reconnects automatically if the broker restarts.
 
 ### Simulated devices
 
@@ -611,7 +611,7 @@ Start the simulator before or after the main app — it reconnects automatically
 | `vhf_relay` | #332 CX-2 | `05` | Single SPDT relay |
 | `antenna_relay` | #361 | `06` | 8-relay bank; supports POS, pulse, mask commands |
 
-**Voltages** drift slowly within `voltage_min`–`voltage_max` each tick. **Temperatures** step by one of the `temp_steps` values (randomly up or down) every `temp_tick_min`–`temp_tick_max` ticks, staying within `temp_min`–`temp_max`. **RF power** auto-cycles: TX on for `tx_duration_min`–`tx_duration_max` seconds at `forward_power_w` with randomly varying reflected power, then off for `off_duration_min`–`off_duration_max` seconds. **Relay commands** from the UI are applied immediately and an updated packet is published back straight away — no waiting for the next periodic tick.
+**Voltages** drift slowly within `voltage_min`-`voltage_max` each tick. **Temperatures** step by one of the `temp_steps` values (randomly up or down) every `temp_tick_min`-`temp_tick_max` ticks, staying within `temp_min`-`temp_max`. **RF power** auto-cycles: TX on for `tx_duration_min`-`tx_duration_max` seconds at `forward_power_w` with randomly varying reflected power, then off for `off_duration_min`-`off_duration_max` seconds. **Relay commands** from the UI are applied immediately and an updated packet is published back straight away -- no waiting for the next periodic tick.
 
 ### Radio simulation
 
@@ -619,7 +619,7 @@ The simulator includes two ways to simulate a radio transceiver without physical
 
 #### rigctld TCP server
 
-`SimRigctld` is an async TCP server that speaks the rigctld extended (`\`-prefix) protocol. Point the app's `rigctld` backend at it and it connects as if talking to a real `rigctld` daemon — no changes to your radio config needed beyond host and port.
+`SimRigctld` is an async TCP server that speaks the rigctld extended (`\`-prefix) protocol. Point the app's `rigctld` backend at it and it connects as if talking to a real `rigctld` daemon -- no changes to your radio config needed beyond host and port.
 
 Enable it in `simulator/sim_config.yaml`:
 
@@ -662,7 +662,7 @@ PYTHONPATH=simulator .venv/bin/python main.py
 $env:PYTHONPATH = "simulator"; .venv\Scripts\python main.py
 ```
 
-The shim is self-contained — it does not require the MQTT broker or any other part of the simulator stack.
+The shim is self-contained -- it does not require the MQTT broker or any other part of the simulator stack.
 
 ---
 
@@ -670,7 +670,7 @@ The shim is self-contained — it does not require the MQTT broker or any other 
 
 The simulator lets you develop and verify automation rules end-to-end without any physical hardware. Sensor values update continuously, commands from the app are applied immediately, and the full automation engine runs against the simulated readings exactly as it would in the shack.
 
-### 1 — Add a simulator bus to `config/comms_config.yaml`
+### 1 -- Add a simulator bus to `config/comms_config.yaml`
 
 The simulator speaks the MQTT bridge protocol, so add a `nodered_mqtt` transport on a dedicated bus:
 
@@ -686,9 +686,9 @@ buses:
         topic_tx: dcn/sim/tx    # app sends commands here
 ```
 
-You can run a simulator bus alongside a real `control` bus — they are independent, so hardware commands still go to the real RS-485 network.
+You can run a simulator bus alongside a real `control` bus -- they are independent, so hardware commands still go to the real RS-485 network.
 
-### 2 — Configure `simulator/sim_config.yaml` to match
+### 2 -- Configure `simulator/sim_config.yaml` to match
 
 ```yaml
 mqtt:
@@ -725,7 +725,7 @@ devices:
     update_interval_s: 1.0
 ```
 
-### 3 — Point devices at the simulator bus
+### 3 -- Point devices at the simulator bus
 
 In `config/comms_config.yaml`, add or duplicate devices under the `simulator` bus:
 
@@ -748,9 +748,9 @@ devices:
     persona: cc_8a
 ```
 
-If you have real hardware on a `control` bus at the same addresses, give the simulated devices unique names (`name: sim_gpio`, etc.) — the bus field routes each device's commands to the right network.
+If you have real hardware on a `control` bus at the same addresses, give the simulated devices unique names (`name: sim_gpio`, etc.) -- the bus field routes each device's commands to the right network.
 
-### 4 — Write the automation rule
+### 4 -- Write the automation rule
 
 Create or edit `config/automation_config.yaml`. This example switches the antenna relay when band changes and protects against high SWR:
 
@@ -777,32 +777,32 @@ automations:
       type: ptt_active
     action:
       type: log
-      message: "High SWR during TX — check antenna"
+      message: "High SWR during TX -- check antenna"
       level: warning
 ```
 
-Sensor keys follow the pattern `<device_name>_<measurement>` — `watt_meter_port_0_swr`, `ant_relay_1`, `gpio_relay_1`, etc. The exact keys for your device names appear in the **Relays** page and the sensor list at `/api/sensors`.
+Sensor keys follow the pattern `<device_name>_<measurement>` -- `watt_meter_port_0_swr`, `ant_relay_1`, `gpio_relay_1`, etc. The exact keys for your device names appear in the **Relays** page and the sensor list at `/api/sensors`.
 
-### 5 — Start the simulator alongside the app
+### 5 -- Start the simulator alongside the app
 
 ```bash
-# Terminal 1 — main app
+# Terminal 1 -- main app
 .venv/bin/python main.py
 
-# Terminal 2 — simulator
+# Terminal 2 -- simulator
 .venv/bin/python -m simulator
 
 # Add -v to see every packet
 .venv/bin/python -m simulator -v
 ```
 
-The app and simulator connect to the MQTT broker independently. Either one can be restarted without affecting the other — they will reconnect automatically.
+The app and simulator connect to the MQTT broker independently. Either one can be restarted without affecting the other -- they will reconnect automatically.
 
-### 6 — Watch automations fire
+### 6 -- Watch automations fire
 
 Open the **Log** page and switch to the **DCN** tab. Use the bus filter dropdown (appears when more than one bus is active) to show only the `simulator` bus. Every UPDATE packet the simulator sends and every command the app sends back is visible here in real time.
 
-For automation log output, check the **General** tab — log-action rules write there with the configured level.
+For automation log output, check the **General** tab -- log-action rules write there with the configured level.
 
 ### Adjusting simulated values for specific scenarios
 
@@ -842,7 +842,7 @@ radios:
     poll_interval_s: 0.5
 ```
 
-With both running, use the radio frequency control in the UI to tune to a different band — band-triggered automations will fire exactly as they would with real hardware.
+With both running, use the radio frequency control in the UI to tune to a different band -- band-triggered automations will fire exactly as they would with real hardware.
 
 ---
 
@@ -850,30 +850,30 @@ With both running, use the radio frequency control in the UI to tune to a differ
 
 ```
 StationController_Py/
-├── main.py                 # Application entry point
-├── api/                    # FastAPI app, routers, WebSocket hub
-├── automation/             # Trigger → Condition → Action engine
-├── comms/                  # DCN network and transport backends
-├── devices/                # Hardware modules (GPIO, relays, meters)
-├── radio/                  # Radio control and polling
-├── sensors/                # Sensor registry and label registry
-├── telemetry/              # SQLAlchemy models, recorder, logging
-├── ui/                     # Svelte frontend source
-├── ui_dist/                # Compiled frontend (served by backend)
-├── config/                 # All YAML configuration
-│   ├── comms_config.yaml
-│   ├── radio_config.yaml
-│   ├── automation_config.yaml
-│   ├── telemetry_config.yaml
-│   ├── labels.yaml
-│   └── dashboards/
-│       └── main.yaml
-├── data/                   # Runtime data (SQLite DB created here)
-├── alembic/                # Database migration scripts
-├── tests/                  # pytest test suite
-└── simulator/              # DCN hardware simulator
-    ├── dcn_sim.py          # Simulator logic and device models
-    └── sim_config.yaml     # MQTT and device configuration
++-- main.py                 # Application entry point
++-- api/                    # FastAPI app, routers, WebSocket hub
++-- automation/             # Trigger -> Condition -> Action engine
++-- comms/                  # DCN network and transport backends
++-- devices/                # Hardware modules (GPIO, relays, meters)
++-- radio/                  # Radio control and polling
++-- sensors/                # Sensor registry and label registry
++-- telemetry/              # SQLAlchemy models, recorder, logging
++-- ui/                     # Svelte frontend source
++-- ui_dist/                # Compiled frontend (served by backend)
++-- config/                 # All YAML configuration
+|   +-- comms_config.yaml
+|   +-- radio_config.yaml
+|   +-- automation_config.yaml
+|   +-- telemetry_config.yaml
+|   +-- labels.yaml
+|   +-- dashboards/
+|       +-- main.yaml
++-- data/                   # Runtime data (SQLite DB created here)
++-- alembic/                # Database migration scripts
++-- tests/                  # pytest test suite
++-- simulator/              # DCN hardware simulator
+    +-- dcn_sim.py          # Simulator logic and device models
+    +-- sim_config.yaml     # MQTT and device configuration
 ```
 
 ---

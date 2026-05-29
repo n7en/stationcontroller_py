@@ -1,4 +1,4 @@
-﻿"""
+"""
 Shared application state - injected into FastAPI routes via Depends().
 
 AppState is populated once at startup (in app.py lifespan) and holds

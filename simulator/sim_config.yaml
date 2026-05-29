@@ -47,8 +47,8 @@ devices:
     voltage_min: 11.5             # V - lower bound for all voltmeter channels
     voltage_max: 14.5             # V - upper bound
     voltage_drift: 0.05           # max V change per update tick
-    temp_min: 75.0                # °F - lower bound for both temp probes
-    temp_max: 80.0                # °F - upper bound
+    temp_min: 75.0                # F - lower bound for both temp probes
+    temp_max: 80.0                # F - upper bound
     temp_steps: [0.1, 0.2]        # step sizes (applied randomly up or down)
     temp_tick_min: 3              # min ticks between temp steps
     temp_tick_max: 6              # max ticks between temp steps

@@ -5,6 +5,7 @@
   import RadioStatus     from './RadioStatus.svelte'
   import DXSpotsPanel    from './DXSpotsPanel.svelte'
   import SolarPanel      from './SolarPanel.svelte'
+  import { formatUnit }  from './utils.js'
 
   export let card    // card config object from dashboard YAML
   export let sensors = {}
@@ -62,7 +63,7 @@
 {:else if card.type === 'sensor'}
   <div class="sensor-card">
     <span class="s-val" style="color:{thresholdColor}">
-      {(+sensorVal).toFixed(1)}{card.unit ?? ''}
+      {(+sensorVal).toFixed(1)}{formatUnit(card.unit ?? '')}
     </span>
   </div>
 

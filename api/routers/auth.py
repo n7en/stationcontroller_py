@@ -1,4 +1,4 @@
-﻿"""POST /api/auth/login  - validate credentials, set JWT cookie.
+"""POST /api/auth/login  - validate credentials, set JWT cookie.
 POST /api/auth/logout - revoke token, clear cookie.
 GET  /api/auth/me     - return current auth state (safe to call unauthenticated).
 """

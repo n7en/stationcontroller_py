@@ -61,7 +61,6 @@
     { id: 'history',   label: 'History',   icon: 'history'   },
     { id: 'logs',      label: 'Logs',      icon: 'logs'      },
     { id: 'config',    label: 'Config',    icon: 'config'    },
-    { id: 'settings',  label: 'Settings',  icon: 'settings'  },
     { id: 'bandplan',  label: 'Band Plan',  icon: 'bandplan'  },
     { id: 'wizard',    label: 'Setup',     icon: 'wizard'    },
   ]
@@ -150,7 +149,7 @@
             <path d={ICONS[item.icon]}/>
           </svg>
           <span class="nav-label">{item.label}</span>
-          {#if item.id === 'settings' && $updateAvailable}
+          {#if item.id === 'config' && $updateAvailable}
             <span class="update-dot" title="Update available"></span>
           {/if}
         </button>
@@ -292,50 +291,51 @@
             on:click={() => configTab = 'streamdeck'}>Stream Deck</button>
           <button class="tab-btn" class:active={configTab === 'yaml'}
             on:click={() => configTab = 'yaml'}>YAML Editor</button>
+          <button class="tab-btn" class:active={configTab === 'radio'}
+            on:click={() => configTab = 'radio'}>Radio</button>
+          <button class="tab-btn" class:active={configTab === 'appearance'}
+            on:click={() => configTab = 'appearance'}>Appearance</button>
+          <button class="tab-btn" class:active={configTab === 'system'}
+            on:click={() => configTab = 'system'}>
+            System
+            {#if configTab !== 'system' && $updateAvailable}
+              <span class="tab-update-dot" title="Update available"></span>
+            {/if}
+          </button>
         </div>
+
         {#if configTab === 'comms'}
           <CommsEditor />
         {:else if configTab === 'streamdeck'}
           <StreamDeckEditor />
-        {:else}
+        {:else if configTab === 'yaml'}
           <div class="section-title">Configuration Editor</div>
           <ConfigEditor />
+        {:else if configTab === 'radio'}
+          <RadioConfig />
+        {:else if configTab === 'appearance'}
+          <div class="section-title">Appearance</div>
+          <div class="theme-picker">
+            {#each [
+              { id: 'system', label: 'System', desc: 'Follows your browser / OS preference' },
+              { id: 'dark',   label: 'Dark',   desc: 'Dark background, light text'          },
+              { id: 'light',  label: 'Light',  desc: 'Light background, dark text'          },
+            ] as opt}
+              <button class="theme-opt" class:active={$theme === opt.id} on:click={() => theme.set(opt.id)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                     width="16" height="16" aria-hidden="true">
+                  <path d={opt.id === 'light' ? ICONS.sun : opt.id === 'dark' ? ICONS.moon : ICONS.auto}/>
+                </svg>
+                <span class="theme-opt-label">{opt.label}</span>
+                <span class="theme-opt-desc">{opt.desc}</span>
+              </button>
+            {/each}
+          </div>
+        {:else if configTab === 'system'}
+          <UpdateChecker />
+          <SystemControls />
         {/if}
-      </section>
-
-    {:else if page === 'settings'}
-
-      <section>
-        <div class="section-title">Appearance</div>
-        <div class="theme-picker">
-          {#each [
-            { id: 'system', label: 'System', desc: 'Follows your browser / OS preference' },
-            { id: 'dark',   label: 'Dark',   desc: 'Dark background, light text'          },
-            { id: 'light',  label: 'Light',  desc: 'Light background, dark text'          },
-          ] as opt}
-            <button class="theme-opt" class:active={$theme === opt.id} on:click={() => theme.set(opt.id)}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                   width="16" height="16" aria-hidden="true">
-                <path d={opt.id === 'light' ? ICONS.sun : opt.id === 'dark' ? ICONS.moon : ICONS.auto}/>
-              </svg>
-              <span class="theme-opt-label">{opt.label}</span>
-              <span class="theme-opt-desc">{opt.desc}</span>
-            </button>
-          {/each}
-        </div>
-      </section>
-
-      <section>
-        <RadioConfig />
-      </section>
-
-      <section>
-        <UpdateChecker />
-      </section>
-
-      <section>
-        <SystemControls />
       </section>
 
     {:else if page === 'bandplan'}
@@ -577,6 +577,14 @@
   }
   .tab-btn:hover { color: var(--text); }
   .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-update-dot {
+    display: inline-block;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    margin-left: 0.3rem;
+    vertical-align: middle;
+    animation: pulse 2s ease-in-out infinite;
+  }
 
   /* ── Theme cycle button (sidebar footer) ─────────────────────────────── */
   .theme-cycle { font-size: 0.8rem; color: var(--text-muted); }

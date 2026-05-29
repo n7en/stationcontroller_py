@@ -1,4 +1,4 @@
-﻿"""
+"""
 GET    /api/labels           - list all friendly name labels
 PUT    /api/labels/{key}     - set or update a label
 DELETE /api/labels/{key}     - remove a label

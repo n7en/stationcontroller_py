@@ -1,4 +1,4 @@
-﻿"""
+"""
 SQLAlchemy ORM models for the telemetry database.
 
 Four tables:

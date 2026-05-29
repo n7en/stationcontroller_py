@@ -1,4 +1,4 @@
-﻿"""
+"""
 Action hierarchy for the automation engine.
 
 All actions implement execute(ctx) as a coroutine.

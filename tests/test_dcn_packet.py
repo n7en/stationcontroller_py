@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for comms/dcn_packet.py - packet parsing, building, and properties.
 No I/O or mocking required; all pure logic.
 """

@@ -1,4 +1,4 @@
-﻿"""System control endpoints - restart, etc."""
+"""System control endpoints - restart, etc."""
 from __future__ import annotations
 
 import asyncio

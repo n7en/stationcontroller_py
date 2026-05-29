@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for the HA-style automation engine:
   automation/automation.py, automation/engine.py, automation/config.py
 """

@@ -1,4 +1,4 @@
-﻿"""Tests for the FastAPI backend."""
+"""Tests for the FastAPI backend."""
 import json
 import pytest
 from httpx import ASGITransport, AsyncClient

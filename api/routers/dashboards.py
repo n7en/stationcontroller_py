@@ -1,4 +1,4 @@
-﻿"""
+"""
 GET  /api/dashboards        - list all dashboard configs
 GET  /api/dashboards/{id}   - get one dashboard config
 PUT  /api/dashboards/{id}   - save dashboard config (JSON body)

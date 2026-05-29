@@ -1,11 +1,14 @@
 <script>
+  import { formatUnit } from './utils.js'
+
   export let name        // hardware key
   export let value = 0
   export let unit  = ''
   export let label = ''  // friendly name (falls back to name)
 
-  $: display = label || name
-  $: formatted = unit ? `${(+value).toFixed(unit === '' ? 0 : 2)} ${unit}` : (+value).toFixed(2)
+  $: display   = label || name
+  $: dispUnit  = formatUnit(unit)
+  $: formatted = dispUnit ? `${(+value).toFixed(2)} ${dispUnit}` : (+value).toFixed(2)
 </script>
 
 <div class="sensor">

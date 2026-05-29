@@ -1,4 +1,4 @@
-﻿"""Update-check endpoints - reads GitHub releases and compares against VERSION."""
+"""Update-check endpoints - reads GitHub releases and compares against VERSION."""
 from __future__ import annotations
 
 from pathlib import Path

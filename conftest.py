@@ -1,4 +1,4 @@
-﻿"""
+"""
 Root conftest - registers the 'hardware' pytest mark and the --hardware CLI flag.
 
 Hardware tests are skipped by default. To run them:

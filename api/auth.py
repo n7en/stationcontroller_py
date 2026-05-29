@@ -1,4 +1,4 @@
-﻿"""
+"""
 Authentication utilities - JWT, bcrypt, per-IP rate limiting, token revocation.
 
 Auth is opt-in: if auth.enabled is false (or config is absent), every route

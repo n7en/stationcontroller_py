@@ -1,4 +1,4 @@
-﻿"""
+"""
 POST /api/push/subscribe    - store a Web Push subscription
 POST /api/push/unsubscribe  - remove a subscription
 GET  /api/push/subscriptions - list active subscriptions (admin)

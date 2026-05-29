@@ -1,4 +1,4 @@
-﻿"""
+"""
 Station Controller - application entry point.
 
 Loads config, wires all hardware modules, opens the database,

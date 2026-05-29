@@ -1,4 +1,4 @@
-﻿"""
+"""
 Trigger hierarchy for the automation engine.
 
 Each trigger watches for a specific *transition* event and fires once when

@@ -10,7 +10,7 @@
 # Data is used for:
 #   - Dashboard DX spots widget (live spot list with band/mode/continent filter)
 #   - Dashboard solar panel (SFI, K-index, HF band conditions)
-#   - "Tune to spot" — click a spot in the dashboard to QSY the radio
+#   - "Tune to spot" -- click a spot in the dashboard to QSY the radio
 #   - Automation trigger: dx_spot (fire when a new spot matches criteria)
 #
 # -- Automation trigger examples -------------------------------------------

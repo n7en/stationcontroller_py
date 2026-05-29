@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for comms/dcn_network.py - transport orchestration, routing, config loading.
 Uses a MockTransport that records sent packets and can inject received ones.
 """

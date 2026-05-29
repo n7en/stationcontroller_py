@@ -1,4 +1,4 @@
-﻿"""Tests for telemetry/store.py and telemetry/recorder.py."""
+"""Tests for telemetry/store.py and telemetry/recorder.py."""
 import asyncio
 import math
 import time

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Elecraft K4 direct CAT backend - serial and TCP transports.
 
 Communicates with the K4 using its native semicolon-terminated command

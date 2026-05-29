@@ -2,19 +2,19 @@
 #
 # Each entry under 'radios' defines one radio.  Three backends are available:
 #
-#   managed_rigctld — Station Controller launches and manages its own rigctld
+#   managed_rigctld -- Station Controller launches and manages its own rigctld
 #                     process.  Just point it at the serial port; no manual
 #                     daemon startup required.  Recommended for local radios.
 #
-#   rigctld         — TCP client to an already-running rigctld daemon.
+#   rigctld         -- TCP client to an already-running rigctld daemon.
 #                     Works for local (localhost) or remote (network) daemons.
 #
-#   hamlib_direct   — Python hamlib bindings in-process.
+#   hamlib_direct   -- Python hamlib bindings in-process.
 #                     Local only (serial port on this machine).
 #                     Requires the hamlib Python bindings (python3-hamlib).
 #
 # Common model IDs:
-#   1    = Dummy (no radio — for testing)
+#   1    = Dummy (no radio -- for testing)
 #   351  = Icom IC-7300
 #   3073 = Icom IC-7610
 #   2014 = Kenwood TS-2000
@@ -24,7 +24,7 @@
 radios:
 
   # --------------------------------------------------------------------------
-  # Example: IC-7300 — auto-managed rigctld (no manual daemon startup needed)
+  # Example: IC-7300 -- auto-managed rigctld (no manual daemon startup needed)
   # --------------------------------------------------------------------------
   - name: ic7300
     backend: managed_rigctld
@@ -74,13 +74,13 @@ radios:
   #   reconnect_delay_s: 5.0
 
   # --------------------------------------------------------------------------
-  # Example: Elecraft K4 — native serial CAT (no Hamlib required)
+  # Example: Elecraft K4 -- native serial CAT (no Hamlib required)
   # --------------------------------------------------------------------------
   # - name: k4
   #   backend: elecraft_k4
   #   transport: serial
   #   port: COM4               # Windows: COM4  /  Linux/Pi: /dev/ttyACM0
-  #   baud_rate: 38400         # K4 default; match Front Panel → XCVR → KIO3 CAT
+  #   baud_rate: 38400         # K4 default; match Front Panel -> XCVR -> KIO3 CAT
   #   timeout_s: 5.0
   #   max_power_w: 100         # K4 max TX power for RF-power normalisation
   #   power_range: H           # H = high/100 W range, L = QRP/10 W range
@@ -88,8 +88,8 @@ radios:
   #   reconnect_delay_s: 5.0
 
   # --------------------------------------------------------------------------
-  # Example: Elecraft K4 — Ethernet TCP CAT (same protocol over the network)
-  #   On the K4: Front Panel → Config → Network → set TCP port and optional password
+  # Example: Elecraft K4 -- Ethernet TCP CAT (same protocol over the network)
+  #   On the K4: Front Panel -> Config -> Network -> set TCP port and optional password
   # --------------------------------------------------------------------------
   # - name: k4_net
   #   backend: elecraft_k4
@@ -104,11 +104,11 @@ radios:
   #   reconnect_delay_s: 5.0
 
 # ------------------------------------------------------------------------------
-# rigctld server — built-in rigctld-compatible TCP server
+# rigctld server -- built-in rigctld-compatible TCP server
 #
 # When enabled, Station Controller listens on a TCP port and speaks the Hamlib
-# network protocol.  Any Hamlib-compatible application — WSJT-X, JS8Call,
-# Winlink/Pat, fldigi, flrig, Ham Radio Deluxe — can connect by pointing its
+# network protocol.  Any Hamlib-compatible application -- WSJT-X, JS8Call,
+# Winlink/Pat, fldigi, flrig, Ham Radio Deluxe -- can connect by pointing its
 # radio selection to "rigctld" at 127.0.0.1:4532 (or the machine's LAN IP).
 #
 # This runs entirely within Station Controller; no separate rigctld process

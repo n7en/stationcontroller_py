@@ -1,4 +1,4 @@
-﻿"""
+"""
 Hardware connectivity tests.
 
 These tests verify the most basic layer - that we can open the serial port,

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for radio/radio_interface.py.
 
 A FakeBackend implements RadioBackend with in-memory state so no TCP

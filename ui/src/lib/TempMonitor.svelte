@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte'
   import { sensors, labels } from '../stores/ws.js'
   import LineChart from './LineChart.svelte'
+  import { formatUnit } from './utils.js'
 
   const RANGES = [
     { label: '15m', secs: 900    },
@@ -140,14 +141,14 @@
           <div class="card-header">
             <span class="card-name">{$labels[name] ?? name}</span>
             <span class="card-value" style="color:{color}">{fmtValue(name)}</span>
-            <span class="card-unit">{info.unit ?? ''}</span>
+            <span class="card-unit">{formatUnit(info.unit ?? '')}</span>
           </div>
           <LineChart
             {readings}
             {fromTs}
             toTs={now}
             {color}
-            unit={info.unit ?? ''}
+            unit={formatUnit(info.unit ?? '')}
           />
         </div>
       {/each}

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for the Python logic embedded in install.sh.
 
 Each helper function below is a faithful copy of the corresponding heredoc

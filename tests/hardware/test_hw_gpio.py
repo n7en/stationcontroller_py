@@ -1,4 +1,4 @@
-﻿"""
+"""
 GPIO Module (#321) hardware tests.
 
 Tests the Sierra Radio Systems GPIO module at its configured DCN address.

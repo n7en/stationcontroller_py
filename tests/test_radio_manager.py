@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for radio/radio_manager.py and radio/config.py.
 """
 import pytest

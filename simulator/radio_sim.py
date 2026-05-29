@@ -1,4 +1,4 @@
-﻿"""
+"""
 Simulated rigctld daemon for hardware-free radio testing.
 
 SimRigctld is an async TCP server that speaks the rigctld extended protocol.

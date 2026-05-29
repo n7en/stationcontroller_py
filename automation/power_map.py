@@ -1,4 +1,4 @@
-﻿"""
+"""
 Power maps: translate between radio drive power and antenna/output power.
 
 Three implementations:

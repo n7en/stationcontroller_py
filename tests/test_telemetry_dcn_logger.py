@@ -1,4 +1,4 @@
-﻿"""Tests for telemetry/dcn_logger.py and DcnMessageLog in the store."""
+"""Tests for telemetry/dcn_logger.py and DcnMessageLog in the store."""
 import asyncio
 import time
 import pytest

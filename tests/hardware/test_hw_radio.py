@@ -1,4 +1,4 @@
-﻿"""
+"""
 Hardware integration tests for radio control via rigctld.
 
 Prerequisites:

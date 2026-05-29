@@ -1,4 +1,4 @@
-﻿"""Tests for automation/trigger.py."""
+"""Tests for automation/trigger.py."""
 import pytest
 from datetime import datetime
 from unittest.mock import patch

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# start.sh — start StationController
+# start.sh -- start StationController
 #
 # Usage:
 #   ./start.sh          # production: serve pre-built UI on port 8080
@@ -15,17 +15,17 @@ for arg in "$@"; do
   [[ "$arg" == "--dev" ]] && DEV=true
 done
 
-# ── Activate virtualenv if present ──────────────────────────────────────────
+# -- Activate virtualenv if present ------------------------------------------
 if [[ -f ".venv/bin/activate" ]]; then
   # shellcheck disable=SC1091
   source .venv/bin/activate
 fi
 
-# ── Production mode ──────────────────────────────────────────────────────────
+# -- Production mode ----------------------------------------------------------
 if [[ "$DEV" == false ]]; then
   # Build the frontend if it hasn't been built yet
   if [[ ! -f "ui_dist/index.html" ]]; then
-    echo "ui_dist not found — building frontend..."
+    echo "ui_dist not found -- building frontend..."
     cd ui
     npm install --silent
     npm run build
@@ -36,8 +36,8 @@ if [[ "$DEV" == false ]]; then
   exec python main.py
 fi
 
-# ── Development mode ─────────────────────────────────────────────────────────
-echo "Starting in dev mode — backend on :8080, Vite on :5173"
+# -- Development mode ---------------------------------------------------------
+echo "Starting in dev mode -- backend on :8080, Vite on :5173"
 echo "Open http://localhost:5173 in your browser"
 echo "Press Ctrl+C to stop both processes."
 echo ""

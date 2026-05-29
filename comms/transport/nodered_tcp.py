@@ -1,4 +1,4 @@
-﻿"""
+"""
 Node-RED TCP bridge transport.
 
 Python acts as a TCP server; the Node-RED flow connects as a TCP client.

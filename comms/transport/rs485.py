@@ -1,4 +1,4 @@
-﻿"""
+"""
 RS-485 serial transport.
 
 Each instance owns one serial port at a configurable baud rate.

@@ -1,4 +1,4 @@
-﻿"""Tests for automation/condition.py and automation/context.py."""
+"""Tests for automation/condition.py and automation/context.py."""
 import pytest
 from unittest.mock import patch
 

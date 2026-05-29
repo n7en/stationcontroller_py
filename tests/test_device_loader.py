@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for devices/loader.py - config-driven device instantiation.
 Uses real device classes with in-memory DCNNetwork buses.
 """

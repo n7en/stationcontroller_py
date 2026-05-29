@@ -1,4 +1,4 @@
-﻿"""
+"""
 TelemetryLogHandler - Python logging.Handler that writes to TelemetryStore.
 
 Install once at startup:

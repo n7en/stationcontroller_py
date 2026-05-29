@@ -1,4 +1,4 @@
-﻿"""Tests for automation/power_map.py."""
+"""Tests for automation/power_map.py."""
 import pytest
 from automation.power_map import (
     IdentityPowerMap,

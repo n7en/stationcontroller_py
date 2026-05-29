@@ -1,4 +1,4 @@
-﻿"""
+"""
 User management CLI for StationController authentication.
 
 Usage:

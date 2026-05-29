@@ -7,12 +7,12 @@
 #
 # Supported backends (enable one or both):
 #
-#   n1mm  — N1MM+ Logger Plus
+#   n1mm  -- N1MM+ Logger Plus
 #            N1MM+ must have "Broadcast contacts to network" enabled:
-#            Tools → Configure Ports → Network → Enable Contacts Broadcasting
+#            Tools -> Configure Ports -> Network -> Enable Contacts Broadcasting
 #            No changes required in StationController beyond enabling this.
 #
-#   n3fjp — N3FJP Software (Amateur Contact Log, WS-FT8, etc.)
+#   n3fjp -- N3FJP Software (Amateur Contact Log, WS-FT8, etc.)
 #            N3FJP must have its TCP network interface enabled and accessible.
 #            StationController connects as a TCP client and polls for new QSOs.
 # ------------------------------------------------------------------------------
@@ -20,7 +20,7 @@
 logbook:
 
   # --------------------------------------------------------------------------
-  # N1MM+ Logger Plus — UDP broadcast listener
+  # N1MM+ Logger Plus -- UDP broadcast listener
   # --------------------------------------------------------------------------
   n1mm:
     enabled: false
@@ -28,7 +28,7 @@ logbook:
     port: 12060         # UDP port N1MM+ broadcasts to (default 12060)
 
   # --------------------------------------------------------------------------
-  # N3FJP Software — TCP polling client
+  # N3FJP Software -- TCP polling client
   # --------------------------------------------------------------------------
   n3fjp:
     enabled: false

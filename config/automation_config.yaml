@@ -35,7 +35,7 @@
 #   set_mode        (mode, [bandwidth_hz])            - change operating mode
 #   tune_radio      (frequency_hz, [mode], [bandwidth_hz]) - freq + mode in one step
 #   set_radio_power (watts)                           - set TX power level
-#   set_func        (func, [value: true])             - toggle rig function (NB, NR, VOX, TUNER, LOCK…)
+#   set_func        (func, [value: true])             - toggle rig function (NB, NR, VOX, TUNER, LOCK...)
 #   set_rit         (offset_hz)                       - set RIT offset (0 = off)
 #   set_xit         (offset_hz)                       - set XIT offset (0 = off)
 #   set_ctcss_tone  (tone)                            - CTCSS tone in tenths of Hz (670=67.0Hz, 0=off)
@@ -149,7 +149,7 @@ automations:
   #     mode: USB
   #     bandwidth_hz: 3000
 
-  # Example: sequence of actions — engage amp relay, then reduce TX power.
+  # Example: sequence of actions -- engage amp relay, then reduce TX power.
   #
   # - name: "engage_amp"
   #   tier: configuration

@@ -1,4 +1,4 @@
-﻿"""Tests for radio/radio_state.py - RadioState dataclass and RadioMode enum."""
+"""Tests for radio/radio_state.py - RadioState dataclass and RadioMode enum."""
 import pytest
 from radio.radio_state import RadioMode, RadioState
 

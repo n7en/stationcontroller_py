@@ -1,4 +1,4 @@
-﻿"""
+"""
 FastAPI application factory.
 
 Usage (development):

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Security-focused tests for the authentication system.
 
 Coverage:

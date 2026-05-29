@@ -1,4 +1,4 @@
-﻿"""
+"""
 Automation definition - Trigger -> Condition -> Action.
 
 An Automation fires when any of its triggers detects a transition.

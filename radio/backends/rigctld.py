@@ -1,4 +1,4 @@
-﻿"""
+"""
 Rigctld TCP backend.
 
 Connects to a running rigctld daemon (hamlib) over TCP.

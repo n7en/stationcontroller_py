@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for devices/watt_meter.py.
 
 Covers compute_rf_metrics(), WattMeter packet handling, registry publishing,

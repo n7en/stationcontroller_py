@@ -1,4 +1,4 @@
-﻿"""
+"""
 WSHub - WebSocket connection manager and broadcaster.
 
 Maintains the set of active browser connections and fans out JSON messages

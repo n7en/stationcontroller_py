@@ -1,4 +1,4 @@
-﻿"""
+"""
 Load TelemetryStore, SensorRecorder, and optionally DCNMessageLogger from config.
 """
 from __future__ import annotations

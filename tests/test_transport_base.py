@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for comms/transport/base.py - dispatch mechanism and base properties.
 Uses a minimal concrete subclass; no I/O.
 """

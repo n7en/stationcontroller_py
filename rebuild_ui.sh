@@ -20,10 +20,10 @@ die()  { echo "${bold}${red}error:${reset} $*" >&2; exit 1; }
 [[ -d "$UI_DIR" ]] || die "ui/ directory not found at $UI_DIR"
 
 if [[ ! -d "$UI_DIR/node_modules" ]]; then
-    die "ui/node_modules not found — run ./install.sh first to install dependencies"
+    die "ui/node_modules not found -- run ./install.sh first to install dependencies"
 fi
 
-info "Building UI…"
+info "Building UI..."
 npm --prefix "$UI_DIR" run build
 
-info "Done — ui_dist/ is up to date"
+info "Done -- ui_dist/ is up to date"

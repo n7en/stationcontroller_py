@@ -1,4 +1,4 @@
-﻿"""
+"""
 LabelRegistry - friendly name mappings for hardware sensor keys.
 
 Maps hardware sensor keys (e.g. "coax_port_1") to user-facing labels

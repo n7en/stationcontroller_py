@@ -1,4 +1,4 @@
-﻿"""
+"""
 DCN Watt Meter (#335) device module.
 
 Subscribes to UPDATE,WM1 packets from the DCN network, computes the full

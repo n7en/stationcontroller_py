@@ -1,4 +1,4 @@
-﻿"""
+"""
 DCN CX-2 Two Port VHF Coax Relay Module (#332).
 
 Single-pole, double-throw (SPDT) RF relay switch.  The Common port connects

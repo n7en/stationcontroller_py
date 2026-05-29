@@ -1,4 +1,4 @@
-﻿"""Tests for devices/vhf_coax_relay.py - CX-2 Two Port VHF Coax Relay Module (#332)."""
+"""Tests for devices/vhf_coax_relay.py - CX-2 Two Port VHF Coax Relay Module (#332)."""
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 

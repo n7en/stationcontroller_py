@@ -1,4 +1,4 @@
-﻿"""
+"""
 GET  /api/relays          - list known relay states from sensor registry
 POST /api/relays/{key}    - send relay command over DCN
 """

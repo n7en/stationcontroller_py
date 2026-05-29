@@ -1,4 +1,4 @@
-﻿"""
+"""
 Load device instances from comms_config.yaml.
 
 Reads the 'devices:' section, instantiates each device module, and attaches

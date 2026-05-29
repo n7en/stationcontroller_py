@@ -1,4 +1,4 @@
-﻿"""
+"""
 Condition hierarchy for the automation engine.
 
 All conditions implement evaluate(ctx) -> bool.

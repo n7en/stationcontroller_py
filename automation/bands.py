@@ -1,4 +1,4 @@
-﻿"""
+"""
 Band plan - amateur radio frequency allocations.
 
 Three levels of detail:

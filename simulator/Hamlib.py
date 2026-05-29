@@ -1,4 +1,4 @@
-﻿"""
+"""
 Drop-in fake Hamlib module for hardware-free testing of the hamlib_direct
 radio backend.
 

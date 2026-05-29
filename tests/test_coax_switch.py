@@ -1,4 +1,4 @@
-﻿"""Tests for devices/coax_switch.py - #331 CX-1 4 Port HF Coax Relay Module."""
+"""Tests for devices/coax_switch.py - #331 CX-1 4 Port HF Coax Relay Module."""
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 

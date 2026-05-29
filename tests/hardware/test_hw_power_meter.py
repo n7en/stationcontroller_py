@@ -1,4 +1,4 @@
-﻿"""
+"""
 RF Watt Meter (#335) hardware tests.
 
 Tests fall into two groups:

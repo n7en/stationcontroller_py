@@ -5,23 +5,23 @@
 # The manager auto-detects whichever Stream Deck is plugged in (Mini, Standard, XL).
 # Buttons are addressed by zero-based index, left-to-right, top-to-bottom.
 #
-# Standard (5×3):   0–14   Mini (3×2): 0–5   XL (8×4): 0–31
+# Standard (5x3):   0-14   Mini (3x2): 0-5   XL (8x4): 0-31
 #
 # Button types:
-#   relay_toggle  — press to toggle a DCN relay; LED shows ON/OFF live
-#   coax_select   — press to select a coax switch port; highlights when active
-#   radio_tune    — press to tune the radio to a preset frequency and mode
+#   relay_toggle  -- press to toggle a DCN relay; LED shows ON/OFF live
+#   coax_select   -- press to select a coax switch port; highlights when active
+#   radio_tune    -- press to tune the radio to a preset frequency and mode
 #
 # sensor_key is the hardware key in the sensor registry (check /api/sensors).
 # device_addr and bus must match the device's config in comms_config.yaml.
 
 streamdeck:
   enabled: true
-  brightness: 70          # 0–100
+  brightness: 70          # 0-100
 
   buttons:
 
-    # ── Relay toggles ───────────────────────────────────────────────────────
+    # -- Relay toggles -------------------------------------------------------
     - index: 0
       type: relay_toggle
       label: "Ant A"
@@ -38,7 +38,7 @@ streamdeck:
       bus: "control"
       relay_num: 1
 
-    # ── Coax port selectors ─────────────────────────────────────────────────
+    # -- Coax port selectors -------------------------------------------------
     - index: 5
       type: coax_select
       label: "HF Coax"
@@ -71,7 +71,7 @@ streamdeck:
       bus: "control"
       port: 3
 
-    # ── Radio frequency presets ─────────────────────────────────────────────
+    # -- Radio frequency presets ---------------------------------------------
     - index: 10
       type: radio_tune
       label: "40m SSB"

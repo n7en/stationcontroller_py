@@ -1,4 +1,4 @@
-﻿"""
+"""
 SensorRecorder - bridges SensorRegistry.on_any() to TelemetryStore.
 
 Throttles writes so rapid sensor bursts don't flood the database.

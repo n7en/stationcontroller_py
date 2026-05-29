@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Station Controller — install script
+# Station Controller -- install script
 #
 # Usage:
 #   ./install.sh          # production install
@@ -15,7 +15,7 @@ for arg in "$@"; do
     [[ "$arg" == "--dev" ]] && DEV=1
 done
 
-# ── colours ────────────────────────────────────────────────────────────────
+# -- colours ----------------------------------------------------------------
 bold=$(tput bold 2>/dev/null || true)
 green=$(tput setaf 2 2>/dev/null || true)
 yellow=$(tput setaf 3 2>/dev/null || true)
@@ -28,14 +28,14 @@ warn()    { echo "${bold}${yellow}  ! ${reset} $*"; }
 die()     { echo "${bold}${red}error:${reset} $*" >&2; exit 1; }
 prompt()  { printf "${bold}${cyan}  ?${reset} %s " "$*"; }
 
-# ── 0. Bootstrap — clone repo if running via curl pipe ────────────────────
+# -- 0. Bootstrap -- clone repo if running via curl pipe --------------------
 REPO_URL="https://github.com/n7en/stationcontroller_py"
 
 if [[ ! -f "$SCRIPT_DIR/main.py" ]]; then
     INSTALL_DIR="${STATIONCONTROLLER_DIR:-$HOME/StationController_Py}"
-    info "Cloning StationController_Py into $INSTALL_DIR…"
+    info "Cloning StationController_Py into $INSTALL_DIR..."
     if [[ -d "$INSTALL_DIR/.git" ]]; then
-        warn "Directory already exists — pulling latest changes instead."
+        warn "Directory already exists -- pulling latest changes instead."
         git -C "$INSTALL_DIR" pull --ff-only
     else
         git clone "$REPO_URL" "$INSTALL_DIR"
@@ -45,8 +45,8 @@ fi
 
 cd "$SCRIPT_DIR"
 
-# ── 1. Python ──────────────────────────────────────────────────────────────
-info "Checking Python version…"
+# -- 1. Python --------------------------------------------------------------
+info "Checking Python version..."
 
 PYTHON=""
 for candidate in python3.13 python3.12 python3.11 python3 python; do
@@ -61,13 +61,13 @@ done
 [[ -z "$PYTHON" ]] && die "Python 3.11+ is required. Install it and re-run."
 echo "  Using: $PYTHON ($($PYTHON --version))"
 
-# ── 1b. System packages (Linux / apt) ────────────────────────────────────
+# -- 1b. System packages (Linux / apt) ------------------------------------
 if [[ "$(uname -s)" == "Linux" ]] && command -v apt-get &>/dev/null; then
     NEED_APT=()
     dpkg -s python3-hamlib &>/dev/null 2>&1 || NEED_APT+=(python3-hamlib)
 
     if [[ ${#NEED_APT[@]} -gt 0 ]]; then
-        info "Installing system packages: ${NEED_APT[*]}…"
+        info "Installing system packages: ${NEED_APT[*]}..."
         if [[ "$EUID" -eq 0 ]]; then
             apt-get install -y "${NEED_APT[@]}"
         elif command -v sudo &>/dev/null; then
@@ -81,65 +81,65 @@ if [[ "$(uname -s)" == "Linux" ]] && command -v apt-get &>/dev/null; then
     fi
 fi
 
-# ── 2. Virtual environment ─────────────────────────────────────────────────
+# -- 2. Virtual environment -------------------------------------------------
 VENV="$SCRIPT_DIR/.venv"
 
 # Rebuild if existing venv lacks --system-site-packages (needed for python3-hamlib)
 if [[ -d "$VENV" ]] && grep -q "include-system-site-packages = false" "$VENV/pyvenv.cfg" 2>/dev/null; then
-    warn "Existing venv lacks --system-site-packages — rebuilding…"
+    warn "Existing venv lacks --system-site-packages -- rebuilding..."
     rm -rf "$VENV"
 fi
 
 if [[ ! -d "$VENV" ]]; then
-    info "Creating virtual environment at .venv…"
+    info "Creating virtual environment at .venv..."
     "$PYTHON" -m venv --system-site-packages "$VENV"
 else
-    info "Virtual environment already exists — skipping creation."
+    info "Virtual environment already exists -- skipping creation."
 fi
 
 PIP="$VENV/bin/pip"
 PYTHON_VENV="$VENV/bin/python"
 
-# ── 3. Python dependencies ─────────────────────────────────────────────────
-info "Installing Python dependencies…"
+# -- 3. Python dependencies -------------------------------------------------
+info "Installing Python dependencies..."
 "$PIP" install --upgrade pip --quiet
 "$PIP" install -r requirements.txt --quiet
 
 if [[ "$DEV" -eq 1 ]]; then
-    info "Installing dev dependencies…"
+    info "Installing dev dependencies..."
     "$PIP" install -r requirements-dev.txt --quiet
 fi
 
-# ── 4. Node.js / UI ────────────────────────────────────────────────────────
+# -- 4. Node.js / UI --------------------------------------------------------
 if [[ -d "$SCRIPT_DIR/ui" ]]; then
-    info "Checking Node.js…"
+    info "Checking Node.js..."
 
     if ! command -v node &>/dev/null; then
-        warn "Node.js not found — skipping UI install."
+        warn "Node.js not found -- skipping UI install."
         warn "Install Node.js LTS (https://nodejs.org) and re-run to build the UI."
     else
         NODE_VER=$(node -e "process.stdout.write(String(process.version.slice(1).split('.')[0]))")
         if [[ "$NODE_VER" -lt 18 ]]; then
-            warn "Node.js $NODE_VER detected — version 18+ is recommended."
+            warn "Node.js $NODE_VER detected -- version 18+ is recommended."
         else
             echo "  Using: node v$(node --version | tr -d v) / npm $(npm --version)"
         fi
 
-        info "Installing UI dependencies…"
+        info "Installing UI dependencies..."
         npm --prefix "$SCRIPT_DIR/ui" ci --silent
 
-        info "Building UI…"
+        info "Building UI..."
         npm --prefix "$SCRIPT_DIR/ui" run build --silent
-        echo "  UI built → ui/dist/"
+        echo "  UI built -> ui/dist/"
     fi
 fi
 
-# ── 5. Data directory ──────────────────────────────────────────────────────
-info "Creating data directory…"
+# -- 5. Data directory ------------------------------------------------------
+info "Creating data directory..."
 mkdir -p "$SCRIPT_DIR/data"
 
-# ── 6. Database migrations ─────────────────────────────────────────────────
-info "Running database migrations…"
+# -- 6. Database migrations -------------------------------------------------
+info "Running database migrations..."
 "$PYTHON_VENV" - <<'PYEOF'
 import pathlib, yaml
 cfg_path = pathlib.Path("config/telemetry_config.yaml")
@@ -159,7 +159,7 @@ alembic_cmd.upgrade(cfg, "head")
 print(f"  DB: {sync_url}")
 PYEOF
 
-# ── 7. Initial account setup ──────────────────────────────────────────────
+# -- 7. Initial account setup ----------------------------------------------
 AUTH_CFG="$SCRIPT_DIR/config/auth_config.yaml"
 echo ""
 info "Authentication setup"
@@ -175,9 +175,9 @@ if [[ "$_auth_choice" =~ ^[Yy]$ ]]; then
     read -rs _auth_pass2 </dev/tty
     echo ""
     if [[ "$_auth_pass" != "$_auth_pass2" ]]; then
-        warn "Passwords do not match — skipping account creation."
+        warn "Passwords do not match -- skipping account creation."
     elif [[ -z "$_auth_user" || -z "$_auth_pass" ]]; then
-        warn "Username and password cannot be empty — skipping."
+        warn "Username and password cannot be empty -- skipping."
     else
         "$PYTHON_VENV" - "$AUTH_CFG" "$_auth_user" "$_auth_pass" <<'PYEOF'
 import sys, pathlib, secrets, yaml, bcrypt
@@ -196,14 +196,14 @@ a.setdefault('users', {})[username] = {
 }
 cfg_path.parent.mkdir(parents=True, exist_ok=True)
 cfg_path.write_text(yaml.dump(cfg, default_flow_style=False, allow_unicode=True), encoding='utf-8', newline='\n')
-print(f"  Account '{username}' created — authentication enabled.")
+print(f"  Account '{username}' created -- authentication enabled.")
 PYEOF
     fi
 else
     echo "    -> skipped (use the Setup wizard in the UI to configure later)"
 fi
 
-# ── 8. Serial port configuration (Linux only) ─────────────────────────────
+# -- 8. Serial port configuration (Linux only) -----------------------------
 if [[ "$(uname -s)" == "Linux" ]]; then
 
     # Check dialout membership
@@ -215,7 +215,7 @@ if [[ "$(uname -s)" == "Linux" ]]; then
     COMMS_CFG="$SCRIPT_DIR/config/comms_config.yaml"
 
     if [[ -f "$COMMS_CFG" ]]; then
-        info "Scanning for serial ports…"
+        info "Scanning for serial ports..."
 
         # Collect candidate ports with descriptions via Python
         PORT_LIST=$("$PYTHON_VENV" - <<'PYEOF'
@@ -242,7 +242,7 @@ def sys_attr(dev_name, *parts):
         return ""
 
 globs = [
-    "/dev/ttyUSB*",   # USB-to-serial (FTDI, CP210x, CH340, PL2303, …)
+    "/dev/ttyUSB*",   # USB-to-serial (FTDI, CP210x, CH340, PL2303, ...)
     "/dev/ttyACM*",   # USB CDC ACM
     "/dev/ttyXRUSB*", # EXAR USB
     "/dev/ttyAMA*",   # Raspberry Pi hardware UART
@@ -281,7 +281,7 @@ PYEOF
         ) || true
 
         if [[ -z "$PORT_LIST" ]]; then
-            warn "No serial ports detected — skipping port configuration."
+            warn "No serial ports detected -- skipping port configuration."
             warn "Plug in your USB adapter and re-run, or edit config/comms_config.yaml manually."
         else
             echo ""
@@ -295,7 +295,7 @@ PYEOF
             for i in "${!DESCS[@]}"; do
                 printf "    ${bold}[%d]${reset} %s\n" "$((i+1))" "${DESCS[$i]}"
             done
-            printf "    ${bold}[0]${reset} Skip — keep existing config\n"
+            printf "    ${bold}[0]${reset} Skip -- keep existing config\n"
             echo ""
 
             # Find active rs485 transports in the config
@@ -319,12 +319,12 @@ PYEOF
                 while IFS='|' read -r t_name current_port bus_name baud_rate; do
                     if [[ "$baud_rate" -eq 115200 ]]; then
                         speed_label="${bold}${yellow}High-speed / power meter (115200 baud)${reset}"
-                        speed_note="  Use a dedicated USB adapter — do not share with control traffic."
+                        speed_note="  Use a dedicated USB adapter -- do not share with control traffic."
                     else
                         speed_label="${bold}Standard DCN (${baud_rate} baud)${reset}"
                         speed_note=""
                     fi
-                    echo "  Bus ${bold}${bus_name}${reset} · transport ${bold}${t_name}${reset} · ${speed_label}"
+                    echo "  Bus ${bold}${bus_name}${reset} . transport ${bold}${t_name}${reset} . ${speed_label}"
                     [[ -n "$speed_note" ]] && echo "  ${yellow}${speed_note}${reset}"
                     echo "  Currently: ${current_port}"
                     prompt "Select port number (0 to skip):"
@@ -335,9 +335,9 @@ PYEOF
                        [[ "$choice" -le "${#PORTS[@]}" ]]; then
                         PORT_CHOICES["$t_name"]="${PORTS[$((choice-1))]}"
                         PORT_CHOICE_COUNT=$((PORT_CHOICE_COUNT + 1))
-                        echo "    → ${PORTS[$((choice-1))]}"
+                        echo "    -> ${PORTS[$((choice-1))]}"
                     else
-                        echo "    → skipped"
+                        echo "    -> skipped"
                     fi
                     echo ""
                 done <<< "$TRANSPORTS"
@@ -402,12 +402,12 @@ PYEOF
     fi
 fi
 
-# ── 8b. Embedded MQTT broker ──────────────────────────────────────────────
+# -- 8b. Embedded MQTT broker ----------------------------------------------
 _MQTT_CFG="$SCRIPT_DIR/config/comms_config.yaml"
 echo ""
 info "Embedded MQTT broker"
 if [[ ! -f "$_MQTT_CFG" ]]; then
-    warn "comms_config.yaml not found — copy config/comms_config.yaml.example and re-run to configure."
+    warn "comms_config.yaml not found -- copy config/comms_config.yaml.example and re-run to configure."
 else
     _MQTT_ENABLED=$("$PYTHON_VENV" - "$_MQTT_CFG" <<'PYEOF'
 import sys, yaml, pathlib
@@ -425,7 +425,7 @@ PYEOF
             read -r _mqtt_port </dev/tty
             _mqtt_port="${_mqtt_port:-1883}"
             if ! [[ "$_mqtt_port" =~ ^[0-9]+$ ]] || [[ "$_mqtt_port" -lt 1 || "$_mqtt_port" -gt 65535 ]]; then
-                warn "Invalid port — using 1883"
+                warn "Invalid port -- using 1883"
                 _mqtt_port=1883
             fi
             "$PYTHON_VENV" - "$_MQTT_CFG" "$_mqtt_port" <<'PYEOF'
@@ -451,13 +451,13 @@ PYEOF
     fi
 fi
 
-# ── 8c. Stream Deck support (Linux / apt only) ────────────────────────────
+# -- 8c. Stream Deck support (Linux / apt only) ----------------------------
 if [[ "$(uname -s)" == "Linux" ]] && command -v apt-get &>/dev/null; then
     echo ""
     info "Stream Deck support"
 
     if dpkg -s libhidapi-libusb0 &>/dev/null 2>&1 || dpkg -s libhidapi-hidraw0 &>/dev/null 2>&1; then
-        echo "    libhidapi already installed — Stream Deck support available."
+        echo "    libhidapi already installed -- Stream Deck support available."
     else
         prompt "Install Elgato Stream Deck support (libhidapi-libusb0)? [y/N]:"
         read -r _sd_choice </dev/tty
@@ -467,7 +467,7 @@ if [[ "$(uname -s)" == "Linux" ]] && command -v apt-get &>/dev/null; then
             elif command -v sudo &>/dev/null; then
                 sudo apt-get install -y libhidapi-libusb0
             else
-                warn "Cannot install — no root/sudo available."
+                warn "Cannot install -- no root/sudo available."
                 warn "Install manually: sudo apt-get install -y libhidapi-libusb0"
             fi
 
@@ -482,7 +482,7 @@ if [[ "$(uname -s)" == "Linux" ]] && command -v apt-get &>/dev/null; then
                     echo "$_SD_RULE" | sudo tee "$_SD_UDEV" > /dev/null
                     sudo udevadm control --reload-rules && sudo udevadm trigger
                 fi
-                echo "    udev rule added — Stream Deck accessible without root."
+                echo "    udev rule added -- Stream Deck accessible without root."
             fi
         else
             echo "    -> skipped (Stream Deck logs a warning at startup if enabled in config)"
@@ -490,7 +490,7 @@ if [[ "$(uname -s)" == "Linux" ]] && command -v apt-get &>/dev/null; then
     fi
 fi
 
-# ── 9. Simulator setup (dev branches only) ────────────────────────────────
+# -- 9. Simulator setup (dev branches only) --------------------------------
 _SIM_READY=0
 if [[ -d "$SCRIPT_DIR/simulator" ]]; then
     _BRANCH=$(git -C "$SCRIPT_DIR" branch --show-current 2>/dev/null || \
@@ -568,7 +568,7 @@ PYEOF
     fi
 fi
 
-# ── 10. Systemd service (Linux only) ──────────────────────────────────────
+# -- 10. Systemd service (Linux only) --------------------------------------
 _SERVICE_READY=0
 if [[ "$(uname -s)" == "Linux" ]] && command -v systemctl &>/dev/null; then
     # Determine how to run privileged commands
@@ -581,7 +581,7 @@ if [[ "$(uname -s)" == "Linux" ]] && command -v systemctl &>/dev/null; then
     else
         _PRIV=""
         _SVC_USER="$USER"
-        warn "Not root and sudo not found — service installation will be skipped."
+        warn "Not root and sudo not found -- service installation will be skipped."
     fi
 
     SERVICE_NAME="stationcontroller"
@@ -615,7 +615,7 @@ WantedBy=multi-user.target"
             echo "  Service enabled: ${SERVICE_NAME}"
             _SERVICE_READY=1
         else
-            # No privilege escalation — write the unit file locally for the user to install
+            # No privilege escalation -- write the unit file locally for the user to install
             LOCAL_UNIT="$HOME/${SERVICE_NAME}.service"
             echo "$SERVICE_CONTENT" > "$LOCAL_UNIT"
             warn "No root or sudo available. Service file written to:"
@@ -630,7 +630,7 @@ WantedBy=multi-user.target"
     fi
 fi
 
-# ── Done ───────────────────────────────────────────────────────────────────
+# -- Done -------------------------------------------------------------------
 echo ""
 echo "${bold}${green}Installation complete.${reset}"
 echo ""

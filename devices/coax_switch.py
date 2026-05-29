@@ -1,4 +1,4 @@
-﻿"""
+"""
 DCN #331 CX-1 4 Port HF Coax Relay Module.
 
 Switches a common RF port to one of four antenna ports using latching relays.

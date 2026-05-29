@@ -1,4 +1,4 @@
-﻿"""Initial schema - four telemetry tables.
+"""Initial schema - four telemetry tables.
 
 Revision ID: 0001
 Revises:

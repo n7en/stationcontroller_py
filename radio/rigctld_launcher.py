@@ -1,4 +1,4 @@
-﻿"""
+"""
 RigctldLauncher - manages a rigctld subprocess.
 
 Finds a free TCP port (or uses a fixed one), spawns rigctld with the

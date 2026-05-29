@@ -1,4 +1,4 @@
-﻿"""
+"""
 Load automations from a YAML config file.
 
 YAML structure (Home Assistant style):

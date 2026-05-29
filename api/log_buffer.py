@@ -1,4 +1,4 @@
-﻿"""
+"""
 LogBuffer - in-memory circular buffer for log entries and DCN packets.
 
 Entries are broadcast live to connected WebSocket clients and kept for

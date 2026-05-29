@@ -1,4 +1,4 @@
-﻿"""
+"""
 GET  /api/automations         - list all automations + enabled state
 GET  /api/automations/config  - raw YAML of the automation config file
 PUT  /api/automations/config  - save and reload automation config

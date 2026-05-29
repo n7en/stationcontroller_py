@@ -1,4 +1,4 @@
-﻿"""
+"""
 AutomationEngine - Home Assistant-style Trigger -> Condition -> Action engine.
 
 Call process(ctx) whenever sensor or radio state changes.  The engine

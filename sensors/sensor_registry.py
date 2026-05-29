@@ -1,4 +1,4 @@
-﻿"""
+"""
 SensorRegistry - shared live-value bus for device measurements.
 
 Any module (watt meter, GPIO, future devices) publishes named float values.

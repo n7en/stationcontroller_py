@@ -1,4 +1,4 @@
-﻿"""
+"""
 RadioManager - orchestrates multiple RadioInterface instances.
 """
 from __future__ import annotations

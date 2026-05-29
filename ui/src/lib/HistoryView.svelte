@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import LineChart   from './LineChart.svelte'
   import TimelineBar from './TimelineBar.svelte'
+  import { formatUnit } from './utils.js'
 
   const RANGES = [
     { label: '1H',  secs: 3_600    },
@@ -133,7 +134,7 @@
               class:active={selected.includes(s.name)}
               on:click={() => toggleSensor(s.name)}
             >
-              {s.name}{#if s.unit}&nbsp;<span class="chip-unit">{s.unit}</span>{/if}
+              {s.name}{#if s.unit}&nbsp;<span class="chip-unit">{formatUnit(s.unit)}</span>{/if}
             </button>
           {/each}
         </div>
@@ -152,7 +153,7 @@
           <div class="chart-header">
             <span class="chart-name">{name}</span>
             {#if sensors[name]?.unit}
-              <span class="chart-unit">{sensors[name].unit}</span>
+              <span class="chart-unit">{formatUnit(sensors[name].unit)}</span>
             {/if}
             <span class="chart-type-badge">{type}</span>
             {#if loading.has(name)}
@@ -169,7 +170,7 @@
                 {fromTs}
                 {toTs}
                 color={colorFor(name)}
-                unit={sensors[name]?.unit ?? ''}
+                unit={formatUnit(sensors[name]?.unit ?? '')}
               />
             {/if}
           {:else if !loading.has(name)}

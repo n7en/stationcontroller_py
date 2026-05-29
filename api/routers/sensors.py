@@ -1,4 +1,4 @@
-﻿"""GET /api/sensors - current sensor snapshot."""
+"""GET /api/sensors - current sensor snapshot."""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends

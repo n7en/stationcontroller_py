@@ -1,4 +1,4 @@
-﻿"""
+"""
 DCNNetwork - manages one or more DCN transports as a unified network.
 
 Usage (from config file):

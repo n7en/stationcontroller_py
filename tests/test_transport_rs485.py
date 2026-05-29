@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for comms/transport/rs485.py.
 Serial port is mocked; threading is verified via asyncio event scheduling.
 """

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Direct Python hamlib bindings backend.
 
 All blocking hamlib calls run in a thread executor so they do not block

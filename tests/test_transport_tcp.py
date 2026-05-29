@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for comms/transport/nodered_tcp.py.
 Uses real asyncio TCP on 127.0.0.1 with OS-assigned ports (port=0).
 No external processes or hardware required.

@@ -1,4 +1,4 @@
-﻿"""
+"""
 DCN GPIO Module (#321) device module.
 
 Subscribes to UPDATE,GPIO1 packets from the DCN network, parses all
@@ -114,8 +114,8 @@ class GPIOModule:
         for _i in range(4):
             registry.publish(f"{name}_input_{_i}", 0.0, "", src)
             registry.publish(f"{name}_voltmeter_{_i}", 0.0, "V", src)
-        registry.publish(f"{name}_temp_0_f", 0.0, "°F", src)
-        registry.publish(f"{name}_temp_1_f", 0.0, "°F", src)
+        registry.publish(f"{name}_temp_0_f", 0.0, "F", src)
+        registry.publish(f"{name}_temp_1_f", 0.0, "F", src)
 
         if label_registry is not None:
             for _i in range(8):
@@ -183,8 +183,8 @@ class GPIOModule:
             ("voltmeter_1", v2, "V"),
             ("voltmeter_2", v3, "V"),
             ("voltmeter_3", v4, "V"),
-            ("temp_0_f",    t1, "°F"),
-            ("temp_1_f",    t2, "°F"),
+            ("temp_0_f",    t1, "F"),
+            ("temp_1_f",    t2, "F"),
         ]:
             if val is not None:
                 self._registry.publish(f"{pfx}_{key}", val, unit, src)
