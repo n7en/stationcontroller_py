@@ -176,7 +176,7 @@ class SetRelay(Action):
     """
     Send a relay command over the DCN control network.
 
-    relay_num  - 1-indexed relay number on the GPIO module
+    relay_num  - 0-indexed relay number on the GPIO module
     state      - 1 (on) or 0 (off)
     dcn_address - target device DCN address string (e.g. "01")
 

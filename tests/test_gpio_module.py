@@ -206,7 +206,7 @@ class TestGPIORegistryPublishing:
         registry = SensorRegistry()
         gpio = GPIOModule("gpio", "01", registry)
         await gpio._handle_packet(_gpio_packet("01"), "control")
-        assert registry.get("gpio_temp_0_f").unit == "°F"
+        assert registry.get("gpio_temp_0_f").unit == "F"
 
 
 # ---------------------------------------------------------------------------

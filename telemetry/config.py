@@ -31,6 +31,7 @@ def _defaults() -> dict:
                 "device_events_days": 365,
                 "automation_events_days": 365,
                 "application_log_days": 30,
+                "dcn_message_log_hours": 24,
             },
         }
     }
@@ -82,3 +83,26 @@ def load_telemetry(
     dcn_logger = DCNMessageLogger(store) if dcn_enabled else None
 
     return store, recorder, dcn_logger
+
+
+def load_retention(
+    config_path: Optional[str | Path] = None,
+    cfg: Optional[dict] = None,
+) -> dict:
+    """
+    Return retention settings as keyword arguments for TelemetryStore.prune().
+    Missing keys fall back to defaults.
+    """
+    defaults = _defaults()["telemetry"]["retention"]
+
+    if config_path is not None:
+        with open(config_path, encoding="utf-8") as f:
+            raw = yaml.safe_load(f) or {}
+        section = raw.get("telemetry", {})
+    elif cfg is not None:
+        section = cfg.get("telemetry", cfg)
+    else:
+        section = {}
+
+    retention = section.get("retention", {}) or {}
+    return {k: int(retention.get(k, v)) for k, v in defaults.items()}

@@ -155,6 +155,11 @@ class BandPlan:
     def names(self) -> list[str]:
         return [b.name for b in self._bands]
 
+    def replace_bands(self, other: "BandPlan") -> None:
+        """Adopt *other*'s bands in place so live references see the update."""
+        self._bands = list(other._bands)
+        self._by_name = {b.name: b for b in self._bands}
+
     def __len__(self) -> int:
         return len(self._bands)
 

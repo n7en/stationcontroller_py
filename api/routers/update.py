@@ -8,10 +8,12 @@ import yaml
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from ..paths import BASE_DIR, CONFIG_DIR
+
 router = APIRouter(prefix="/api/update", tags=["update"])
 
-_APP_CFG      = Path("config/app_config.yaml")
-_VERSION_FILE = Path("VERSION")
+_APP_CFG      = CONFIG_DIR / "app_config.yaml"
+_VERSION_FILE = BASE_DIR / "VERSION"
 
 _GH_HEADERS = {
     "Accept": "application/vnd.github+json",

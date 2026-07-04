@@ -14,9 +14,10 @@ import asyncio
 import logging
 import time
 import xml.etree.ElementTree as ET
+from datetime import datetime
 from typing import Callable, Optional
 
-from .log_state import QSORecord
+from .log_state import QSORecord, band_for_freq_hz
 
 log = logging.getLogger(__name__)
 
@@ -31,33 +32,59 @@ _BAND_MAP: dict[str, str] = {
 }
 
 
-def _parse_qso_element(el: ET.Element, source: str = "n3fjp") -> Optional[QSORecord]:
-    def _t(tag: str) -> str:
-        child = el.find(tag)
-        return (child.text or "").strip() if child is not None else ""
+def _parse_timestamp(date_str: str, time_str: str) -> Optional[float]:
+    """Parse N3FJP date/time strings (e.g. "2026/07/03" + "14:22") to epoch."""
+    if not date_str:
+        return None
+    for fmt in ("%Y/%m/%d %H:%M:%S", "%Y/%m/%d %H:%M", "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%d %H:%M", "%Y/%m/%d", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(f"{date_str} {time_str}".strip(), fmt).timestamp()
+        except ValueError:
+            continue
+    return None
 
-    callsign = _t("Call") or _t("call")
+
+def _parse_qso_element(el: ET.Element, source: str = "n3fjp") -> Optional[QSORecord]:
+    def _t(*tags: str) -> str:
+        for tag in tags:
+            child = el.find(tag)
+            if child is not None and child.text and child.text.strip():
+                return child.text.strip()
+        return ""
+
+    callsign = _t("Call", "call", "fldCall")
     if not callsign:
         return None
 
     freq_hz: Optional[float] = None
-    raw_freq = _t("Freq") or _t("RxFreq") or _t("freq")
+    raw_freq = _t("Freq", "RxFreq", "freq", "fldFreq")
     if raw_freq:
         try:
             freq_hz = float(raw_freq) * 1000.0  # kHz → Hz
         except ValueError:
             pass
 
-    raw_band = _t("Band") or _t("band") or ""
-    band = _BAND_MAP.get(raw_band.upper()) or (raw_band.lower() if raw_band else None)
+    raw_band = _t("Band", "band", "fldBand")
+    band = (
+        _BAND_MAP.get(raw_band.upper())
+        or band_for_freq_hz(freq_hz)
+        or (raw_band.lower() if raw_band else None)
+    )
+
+    ts = _parse_timestamp(
+        _t("Date", "date", "fldDateStr"),
+        _t("TimeOn", "timeon", "fldTimeOnStr"),
+    )
 
     return QSORecord(
         callsign=callsign,
         band=band,
-        mode=_t("Mode") or _t("mode") or None,
+        mode=_t("Mode", "mode", "fldMode") or None,
         frequency_hz=freq_hz,
-        my_callsign=_t("MyCall") or _t("mycall") or None,
-        country=_t("Country") or _t("country") or None,
+        timestamp=ts if ts is not None else time.time(),
+        my_callsign=_t("MyCall", "mycall") or None,
+        country=_t("Country", "country", "fldCountryWorked") or None,
         continent=None,
         dupe=False,
         source=source,
@@ -74,6 +101,8 @@ class N3FJPPoller:
     and fires the callback when a new callsign is seen.
     """
 
+    name = "n3fjp"
+
     def __init__(
         self,
         host: str = "localhost",
@@ -88,6 +117,19 @@ class N3FJPPoller:
         self._callbacks: list[QSOCallback] = []
         self._task: Optional[asyncio.Task] = None
         self._seen_calls: set[str] = set()   # de-dupe on (call, band, mode)
+        self._connected = False
+
+    @property
+    def connected(self) -> bool:
+        """True while a TCP session with N3FJP is established."""
+        return self._connected
+
+    def status(self) -> dict:
+        return {
+            "backend":   self.name,
+            "connected": self._connected,
+            "detail":    f"TCP {self._host}:{self._port}",
+        }
 
     def on_qso(self, cb: QSOCallback) -> None:
         self._callbacks.append(cb)
@@ -121,6 +163,7 @@ class N3FJPPoller:
             timeout=10.0,
         )
         log.info("N3FJP connected at %s:%d", self._host, self._port)
+        self._connected = True
         try:
             # Load full log on connect
             await self._load_all(reader, writer)
@@ -129,6 +172,7 @@ class N3FJPPoller:
                 await asyncio.sleep(self._poll_interval)
                 await self._poll_current(reader, writer)
         finally:
+            self._connected = False
             writer.close()
 
     async def _send_cmd(self, writer: asyncio.StreamWriter, cmd: str) -> None:
@@ -165,8 +209,17 @@ class N3FJPPoller:
                 record = _parse_qso_element(qso_el)
                 if record:
                     key = (record.callsign, record.band, record.mode)
+                    if key in self._seen_calls:
+                        continue
                     self._seen_calls.add(key)
                     count += 1
+                    # Feed existing QSOs to the manager so worked() queries
+                    # cover the whole log, not just this session's contacts.
+                    for cb in self._callbacks:
+                        try:
+                            cb(record)
+                        except Exception:
+                            log.exception("N3FJP QSO callback raised")
         log.info("N3FJP: loaded %d existing QSOs", count)
 
     async def _poll_current(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:

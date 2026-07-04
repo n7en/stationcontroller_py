@@ -27,7 +27,9 @@ from ..auth import (
     verify_password,
 )
 
-_AUTH_CFG = Path("config/auth_config.yaml")
+from ..paths import CONFIG_DIR
+
+_AUTH_CFG = CONFIG_DIR / "auth_config.yaml"
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 

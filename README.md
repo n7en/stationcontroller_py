@@ -11,6 +11,7 @@ A Python-based amateur radio station controller with a live web UI. It manages a
 - **DCN hardware** -- talks to GPIO modules, coax switches, VHF relays, antenna relay banks, and RF watt meters over RS-485
 - **Automation engine** -- YAML-defined trigger -> condition -> action rules (band-change antenna switching, SWR protection, etc.)
 - **Telemetry** -- SQLite (or MariaDB) logging of all sensor readings and events
+- **Logbook integration** -- live QSO feed from N1MM+ and N3FJP, a remote push API, and worked-before queries for automations
 - **REST + WebSocket API** -- all state accessible from the browser or external tooling
 
 ---
@@ -170,11 +171,15 @@ The app is available at **https://localhost:8080**. On first run the `data/` dir
 
 | Tab | What's there |
 |---|---|
-| **Dashboard** | Configurable cards -- power meters, SWR bar, relay toggles, sensor readouts, radio status, DX spots. Defined in `config/dashboards/main.yaml`. |
+| **Dashboard** | Configurable cards -- power meters, SWR bar, relay toggles, sensor readouts, radio status, DX spots, logbook. Defined in `config/dashboards/main.yaml`. |
+| **DX Spots** | Full-page DX cluster spot browser with band/continent/mode filters and one-click QSY. |
 | **Relays** | All relay outputs in one place -- toggle individually or by group. Labels are editable inline. |
 | **Labels** | Edit friendly names for any sensor or relay key. Changes apply immediately across the whole UI. |
-| **Settings** | Radio connection settings -- backend, host/port, poll interval. Changes take effect without restarting the app. |
-| **Log** | Live log stream from the backend (general app log and raw DCN packet log on separate tabs). |
+| **History** | Time-series charts for temperature, voltage, and any recorded sensor. |
+| **Logs** | Live log stream from the backend (general app log and raw DCN packet log on separate tabs). |
+| **Config** | Comms & devices, Stream Deck, radio connection, raw YAML editor, appearance, and system controls in one tabbed page. |
+| **Band Plan** | View and edit the band plan used for band detection and the frequency display. |
+| **Setup** | First-run wizard for buses, devices, and the radio. |
 
 The **Dashboard** tab is the main operating view. Open `config/dashboards/main.yaml` to add, remove, or rearrange cards -- the changes are picked up the next time you switch to the Dashboards tab, no restart required.
 
@@ -351,8 +356,12 @@ telemetry:
   retention:
     sensor_readings_days: 90
     device_events_days: 365
+    automation_events_days: 365
     application_log_days: 30
+    dcn_message_log_hours: 24
 ```
+
+Old records are pruned automatically at startup and then hourly.
 
 ### `config/labels.yaml` -- Friendly names
 
@@ -412,6 +421,123 @@ automations:
 
 ---
 
+### `config/logbook_config.yaml` -- Logbook integration
+
+StationController can maintain a live in-memory copy of your log by listening
+to popular logging software. The **Logbook** dashboard card shows backend
+status and recent contacts, and automations can ask whether a station has
+already been worked. Copy `config/logbook_config.yaml.example` to
+`logbook_config.yaml` and enable one or both backends:
+
+```yaml
+logbook:
+  n1mm:
+    enabled: true
+    host: "0.0.0.0"
+    port: 12060        # UDP port N1MM+ broadcasts to
+
+  n3fjp:
+    enabled: true
+    host: "localhost"  # machine running N3FJP
+    port: 1100         # N3FJP TCP API port
+    poll_interval_s: 5.0
+```
+
+**N1MM+ Logger Plus** -- passive UDP listener. In N1MM+: Config ->
+Configure Ports... -> Broadcast Data tab -> enable **Contacts** and point it
+at the StationController machine's IP, port 12060.
+
+**N3FJP** (Amateur Contact Log, etc.) -- TCP polling client. In N3FJP:
+Settings -> Application Program Interface -> enable the TCP API (port 1100).
+The full existing log is loaded on connect, then new QSOs are picked up as
+they are logged.
+
+Query endpoints:
+
+```
+GET /api/logbook/status                        # backend connection status
+GET /api/logbook/contacts?limit=100            # recent QSOs (newest first)
+GET /api/logbook/worked?call=JA1XYZ&band=20m   # worked-before check
+```
+
+The log is held in memory (capped at 10,000 QSOs) and rebuilt from the
+backends on restart.
+
+#### Remote log push API
+
+Modules on other machines can push QSOs directly over HTTPS -- no config
+file needed:
+
+```
+POST /api/logbook/qso    # single QSO as it is logged
+POST /api/logbook/qsos   # JSON array batch, max 10000 (initial sync)
+```
+
+```json
+{"callsign": "JA1XYZ", "frequency_hz": 14025000, "mode": "CW", "source": "shack_pc"}
+```
+
+Only `callsign` is required. `band` is derived from `frequency_hz` when
+omitted, `timestamp` (epoch seconds) defaults to now, and `source` labels
+where the QSO came from. If auth is enabled, log in via
+`POST /api/auth/login` first and carry the session cookie.
+
+#### Remote log pusher (`tools/log_pusher.py`)
+
+For setups where the logging PC cannot reach StationController with UDP
+broadcasts or an open TCP port, run the bundled pusher **on the logging
+machine**. It is a single file with no dependencies beyond Python 3.9+ --
+copy just `tools/log_pusher.py` to the shack PC:
+
+```bash
+# Forward local N1MM+ broadcasts (point N1MM+ contacts broadcast at 127.0.0.1:12060)
+python log_pusher.py --server https://192.168.1.50:8080
+
+# Also poll a local N3FJP instance, with auth
+python log_pusher.py --server https://station:8080 \
+    --username admin --password secret \
+    --n3fjp-host localhost --source shack_pc
+```
+
+QSOs are queued and retried with backoff while the server is unreachable,
+the N3FJP log is batch-synced on connect, and TLS verification is off by
+default to match the self-signed certificate (pass `--verify` if you have
+installed a real one). Run `python log_pusher.py --help` for all options.
+
+---
+
+## Backup and restore
+
+**Config -> System -> Backup & Restore** in the UI, or directly via the API:
+
+```
+GET  /api/system/backup                  # download config as a zip
+GET  /api/system/backup?include_db=true  # also include a SQLite snapshot
+POST /api/system/restore                 # upload a backup zip (raw body)
+```
+
+The backup contains every runtime YAML config file (buses, devices, radio,
+automations, dashboards, labels, band plan, logbook, Stream Deck) plus a
+manifest. TLS certificates are excluded -- they are machine-local and
+regenerated on install. With `include_db=true` a consistent snapshot of the
+live SQLite telemetry database is taken using SQLite's online backup API.
+
+Restoring applies config files immediately and requires a restart to take
+effect. Before anything is overwritten, the current config is snapshotted to
+`data/backups/pre_restore_<timestamp>.zip`. A database included in the
+archive is staged as `data/station.db.restore` and swapped in on the next
+startup (the previous database is kept alongside as
+`station.db.pre_restore_<timestamp>`).
+
+Command-line equivalent from another machine:
+
+```bash
+curl -k -o backup.zip "https://station:8080/api/system/backup?include_db=true"
+curl -k -X POST --data-binary @backup.zip https://station:8080/api/system/restore
+```
+
+---
+
 ## Dashboard configuration
 
 Dashboards are defined in `config/dashboards/<id>.yaml`. The main dashboard is `main.yaml`. Changes take effect the next time you navigate to the Dashboards tab (no restart needed).
@@ -463,7 +589,23 @@ cards:
 
   - type: radio_status
     title: "Radio"
+
+  - type: dx_spots
+    title: "20m DX"
+    band: "20m"            # optional pre-filters: band, continent, mode
+    span: 2
+    row_span: 3
+
+  - type: logbook
+    title: "Logbook"
+    limit: 50              # recent contacts to show
+    span: 2
+    row_span: 3
 ```
+
+**Card types:** `power_meter`, `swr_bar`, `relay`, `sensor`, `radio_status`,
+`dx_spots`, `logbook`, `solar`, `blank`. Cards can also be added and edited
+directly in the UI via the dashboard's edit mode.
 
 ---
 
@@ -858,6 +1000,8 @@ StationController_Py/
 +-- radio/                  # Radio control and polling
 +-- sensors/                # Sensor registry and label registry
 +-- telemetry/              # SQLAlchemy models, recorder, logging
++-- logging_integration/    # Logbook backends (N1MM+, N3FJP) and manager
++-- tools/                  # Standalone helpers (remote log pusher)
 +-- ui/                     # Svelte frontend source
 +-- ui_dist/                # Compiled frontend (served by backend)
 +-- config/                 # All YAML configuration
@@ -865,6 +1009,7 @@ StationController_Py/
 |   +-- radio_config.yaml
 |   +-- automation_config.yaml
 |   +-- telemetry_config.yaml
+|   +-- logbook_config.yaml
 |   +-- labels.yaml
 |   +-- dashboards/
 |       +-- main.yaml

@@ -160,7 +160,7 @@ class TestLoadDevicesEdgeCases:
         assert "gpio" in devices
         assert addr_bus["01"] == "nonexistent"
 
-    def test_duplicate_device_name_second_skipped(self, tmp_path, registry):
+    def test_duplicate_device_name_renamed_with_bus_suffix(self, tmp_path, registry):
         path = _yaml(
             "devices:\n"
             "  - type: gpio\n"
@@ -170,13 +170,22 @@ class TestLoadDevicesEdgeCases:
             "  - type: gpio\n"
             "    name: gpio\n"
             "    address: '02'\n"
+            "    bus: control\n"
+            "  - type: gpio\n"
+            "    name: gpio\n"
+            "    address: '03'\n"
             "    bus: control\n",
             tmp_path,
         )
         networks = {"control": DCNNetwork()}
         devices, addr_bus = load_devices(path, registry, networks)
-        assert len(devices) == 1
-        assert "02" not in addr_bus  # second entry was skipped
+        # Second entry is auto-renamed to '<name>_<bus>'; third collides with
+        # the auto-name too and is skipped.
+        assert set(devices) == {"gpio", "gpio_control"}
+        assert devices["gpio"].address == "01"
+        assert devices["gpio_control"].address == "02"
+        assert addr_bus["02"] == "control"
+        assert "03" not in addr_bus  # third entry was skipped
 
     def test_mixed_valid_and_invalid_types(self, tmp_path, registry):
         path = _yaml(

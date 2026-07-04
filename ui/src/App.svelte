@@ -18,6 +18,8 @@
   import CommsEditor     from './lib/CommsEditor.svelte'
   import BandPlanEditor     from './lib/BandPlanEditor.svelte'
   import StreamDeckEditor   from './lib/StreamDeckEditor.svelte'
+  import DXSpotsPanel       from './lib/DXSpotsPanel.svelte'
+  import BackupPanel        from './lib/BackupPanel.svelte'
 
   let page        = 'dashboard'
   let configTab   = 'comms'
@@ -56,6 +58,7 @@
 
   const NAV = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+    { id: 'dx',        label: 'DX Spots',  icon: 'dx'        },
     { id: 'relays',    label: 'Relays',    icon: 'relays'    },
     { id: 'labels',    label: 'Labels',    icon: 'labels'    },
     { id: 'history',   label: 'History',   icon: 'history'   },
@@ -73,6 +76,7 @@
     wizard:     'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12l2 2 4-4',
     history:    'M3 3v18h18M9 17V9M13 17V5M17 17v-3',
     dashboard:  'M10 3H3v7h7V3zm11 0h-7v7h7V3zm0 11h-7v7h7v-7zm-11 0H3v7h7v-7z',
+    dx:         'M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z',
     relays:     'M18 7a5 5 0 010 10M6 7a5 5 0 000 10M6 12h12',
     dashboards: 'M18 20V10M12 20V4M6 20v-6',
     labels:     'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01',
@@ -197,6 +201,15 @@
     {#if page === 'dashboard'}
 
       <DashboardView dashboardId="main" />
+
+    {:else if page === 'dx'}
+
+      <section class="dx-page">
+        <div class="section-title">DX Cluster Spots</div>
+        <div class="dx-page-panel">
+          <DXSpotsPanel card={{}} />
+        </div>
+      </section>
 
     {:else if page === 'relays'}
 
@@ -334,6 +347,7 @@
           </div>
         {:else if configTab === 'system'}
           <UpdateChecker />
+          <BackupPanel />
           <SystemControls />
         {/if}
       </section>
@@ -544,6 +558,20 @@
   }
 
   section { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  /* ── DX Spots page ── */
+  .dx-page { flex: 1; min-height: 0; }
+  .dx-page-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+  }
+  .dx-page-panel > :global(.dx-panel) { flex: 1; min-height: 0; }
 
   .section-title {
     font-size: 0.72rem;

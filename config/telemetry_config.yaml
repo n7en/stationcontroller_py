@@ -19,3 +19,4 @@ telemetry:
     device_events_days: 365
     automation_events_days: 365
     application_log_days: 30
+    dcn_message_log_hours: 24

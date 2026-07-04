@@ -18,6 +18,8 @@ import jwt
 import yaml
 from fastapi import HTTPException, Request, status
 
+from .paths import CONFIG_DIR
+
 ALGORITHM   = "HS256"
 COOKIE_NAME = "sc_token"
 
@@ -35,7 +37,7 @@ _cfg_mtime: float = 0.0  # mtime of the last successful load
 
 def load_auth_config(path: Optional[Path] = None) -> None:
     global _cfg, _cfg_mtime
-    p = path or Path("config/auth_config.yaml")
+    p = path or (CONFIG_DIR / "auth_config.yaml")
     _cfg = {}
     _cfg_mtime = 0.0
     if p.exists():
@@ -47,7 +49,7 @@ def load_auth_config(path: Optional[Path] = None) -> None:
 def reload_if_changed(path: Optional[Path] = None) -> None:
     """Re-read config from disk only when the file has been modified since last load."""
     global _cfg, _cfg_mtime
-    p = path or Path("config/auth_config.yaml")
+    p = path or (CONFIG_DIR / "auth_config.yaml")
     if not p.exists():
         return
     try:

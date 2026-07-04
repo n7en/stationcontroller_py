@@ -25,6 +25,7 @@ def _mock_serial(is_open=True):
     mock_port = MagicMock()
     mock_port.is_open = is_open
     mock_port.in_waiting = 0
+    mock_port.read.return_value = b""   # keep the reader thread's buffer clean
     mock_cls.return_value = mock_port
     return patcher, mock_cls, mock_port
 
@@ -41,11 +42,16 @@ class TestConnectDisconnect:
             t = _make(port="/dev/ttyUSB0", baud=9600)
             await t.connect()
             kw = mock_cls.call_args.kwargs
-            assert kw["port"] == "/dev/ttyUSB0"
+            # The port is opened in two steps (construct with port=None, then
+            # assign and open()) so the DTR/RTS modem-control ioctls can be
+            # suppressed before the device is touched.
+            assert kw["port"] is None
             assert kw["baudrate"] == 9600
             assert kw["bytesize"] == serial.EIGHTBITS
             assert kw["parity"] == serial.PARITY_NONE
             assert kw["stopbits"] == serial.STOPBITS_ONE
+            assert mock_port.port == "/dev/ttyUSB0"
+            mock_port.open.assert_called_once()
             assert t.connected
         finally:
             await t.disconnect()

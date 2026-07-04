@@ -11,8 +11,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from ..deps import AppState, get_state
+from ..paths import CONFIG_DIR
 
-LABELS_PATH = Path("config/labels.yaml")
+LABELS_PATH = CONFIG_DIR / "labels.yaml"
 
 router = APIRouter(prefix="/api/labels", tags=["labels"])
 

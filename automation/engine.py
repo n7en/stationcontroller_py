@@ -51,13 +51,34 @@ class AutomationEngine:
         self._sort()
 
     def remove_automation(self, name: str) -> None:
-        before = len(self._automations)
-        self._automations = [a for a in self._automations if a.name != name]
-        if len(self._automations) == before:
+        removed = [a for a in self._automations if a.name == name]
+        if not removed:
             raise KeyError(f"Automation {name!r} not found")
+        self._automations = [a for a in self._automations if a.name != name]
+        for a in removed:
+            for t in a.triggers:
+                t.detach()
         self._executing.discard(name)
         self._tasks.pop(name, None)
         self._queues.pop(name, None)
+
+    def replace_automations(self, automations: list[Automation]) -> None:
+        """Replace the entire rule set (config hot-reload).
+
+        Detaches all existing triggers from external event sources, drops any
+        queued executions, and installs the new automations.
+        """
+        for a in self._automations:
+            for t in a.triggers:
+                t.detach()
+        self._automations = []
+        self._tasks.clear()
+        self._queues.clear()
+        # _executing is left alone: in-flight actions discard their own names
+        # when they finish, and a fresh automation with the same name must
+        # still respect the single/queued gate while the old action runs.
+        for a in automations:
+            self.add_automation(a)
 
     def get_automation(self, name: str) -> Optional[Automation]:
         return next((a for a in self._automations if a.name == name), None)

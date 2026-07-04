@@ -15,8 +15,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from ..deps import AppState, get_state
+from ..paths import CONFIG_DIR
 
-AUTOMATION_CONFIG = Path("config/automation_config.yaml")
+AUTOMATION_CONFIG = CONFIG_DIR / "automation_config.yaml"
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/automations", tags=["automations"])
 
@@ -66,8 +67,13 @@ async def save_automation_config(
     # Reload into live engine if available
     if state.engine is not None and parsed:
         try:
-            from automation.config import load_automations
-            load_automations(state.engine, parsed, state.band_registry)
+            from automation.config import load_automations, load_band_registry
+            new_automations = load_automations(parsed)
+            state.engine.replace_automations(new_automations)
+            # Update bands in place so live references (automation contexts)
+            # pick up the change without a restart.
+            if state.band_registry is not None:
+                state.band_registry.replace_bands(load_band_registry(parsed))
         except Exception as e:
             log.exception("Failed to reload automations")
             raise HTTPException(status_code=422, detail=f"Reload error: {e}")

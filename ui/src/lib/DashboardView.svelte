@@ -33,6 +33,7 @@
     { id: 'power_meter',  label: 'Power Meter'  },
     { id: 'swr_bar',      label: 'SWR Bar'      },
     { id: 'dx_spots',     label: 'DX Spots'     },
+    { id: 'logbook',      label: 'Logbook'      },
     { id: 'solar',        label: 'Solar / Propagation' },
     { id: 'blank',        label: 'Blank Space'  },
   ]
@@ -232,10 +233,11 @@
     switch (type) {
       case 'radio_status': return { type, span: 2, row_span: 3, radio_name: '' }
       case 'sensor':       return { type, title: '', sensor: '', unit: '' }
-      case 'relay':        return { type, title: '', relay_key: '', device_addr: '01', relay_num: 1 }
+      case 'relay':        return { type, title: '', relay_key: '', device_addr: '01', relay_num: 0 }
       case 'power_meter':  return { type, title: 'Power', sensor: '', max_w: 1500, row_span: 2 }
       case 'swr_bar':      return { type, title: 'SWR', sensor: '', span: 2, row_span: 2,
                                     thresholds: { good: 1.5, warning: 2.0, critical: 3.0 } }
+      case 'logbook':      return { type, title: 'Logbook', span: 2, row_span: 3, limit: 50 }
       case 'blank':        return { type }
       default: return { type }
     }
@@ -484,7 +486,7 @@
                   {#each relaysByDevice as { dev, relays }}
                     <optgroup label="{dev.name} · {dev.type.replace(/_/g, ' ')} · addr {dev.address}">
                       {#each relays as s}
-                        <option value={JSON.stringify({ key: s.key, device_addr: dev.address, relay_num: s.relay_num + 1 })}>
+                        <option value={JSON.stringify({ key: s.key, device_addr: dev.address, relay_num: s.relay_num })}>
                           {$labels[s.key] || s.key}
                         </option>
                       {/each}
@@ -502,8 +504,8 @@
               <label>Device addr
                 <input bind:value={pickerConfig.device_addr} placeholder="01" />
               </label>
-              <label>Relay #
-                <input type="number" bind:value={pickerConfig.relay_num} min="1" />
+              <label>Relay # (0-based)
+                <input type="number" bind:value={pickerConfig.relay_num} min="0" />
               </label>
             </div>
 

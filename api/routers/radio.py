@@ -15,7 +15,9 @@ from ..deps import AppState, get_state
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/radio", tags=["radio"])
 
-RADIO_CFG = Path("config/radio_config.yaml")
+from ..paths import CONFIG_DIR
+
+RADIO_CFG = CONFIG_DIR / "radio_config.yaml"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -98,23 +100,23 @@ async def _rebuild_radio(state: AppState) -> bool:
         if not manager.names():
             return False
 
-        ws_hub = state.ws_hub
+        # Publish the new manager on state first so the shared wiring helper
+        # (WS broadcast + automation engine handlers) sees the new primary.
+        primary = manager[manager.names()[0]]
+        state.radio_manager   = manager
+        state.radio_interface = primary
+        state.radio_state     = primary.state
+
+        from ..radio_wiring import wire_radio_handlers
+        wire_radio_handlers(state)
 
         for iface in manager:
-            if ws_hub is not None:
-                async def _on_change(rs, _diff, _hub=ws_hub, _name=iface.name):
-                    await _hub.broadcast_radio(_name, rs)
-                iface.on_state_change(_on_change)
             try:
                 await iface.connect()
             except Exception:
                 log.warning("Radio '%s' connect failed - poll loop will retry", iface.name)
             await iface.start()
 
-        primary = manager[manager.names()[0]]
-        state.radio_manager   = manager
-        state.radio_interface = primary
-        state.radio_state     = primary.state
         return True
 
     except Exception:

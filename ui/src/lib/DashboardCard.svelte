@@ -5,6 +5,7 @@
   import RadioStatus     from './RadioStatus.svelte'
   import DXSpotsPanel    from './DXSpotsPanel.svelte'
   import SolarPanel      from './SolarPanel.svelte'
+  import LogbookPanel    from './LogbookPanel.svelte'
   import { formatUnit }  from './utils.js'
 
   export let card    // card config object from dashboard YAML
@@ -55,7 +56,7 @@
     label={lbl(card.relay_key)}
     value={val(card.relay_key)}
     deviceAddr={card.device_addr ?? '01'}
-    relayNum={card.relay_num ?? 1}
+    relayNum={card.relay_num ?? 0}
     bus={card.bus ?? ''}
     standalone={false}
   />
@@ -72,6 +73,9 @@
 
 {:else if card.type === 'dx_spots'}
   <DXSpotsPanel {card} />
+
+{:else if card.type === 'logbook'}
+  <LogbookPanel {card} />
 
 {:else if card.type === 'solar'}
   <SolarPanel />

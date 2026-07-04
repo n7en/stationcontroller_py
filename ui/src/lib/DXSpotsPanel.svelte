@@ -17,6 +17,8 @@
   const CONTINENTS = ['', 'AF', 'AN', 'AS', 'EU', 'NA', 'OC', 'SA']
   const BANDS = ['', '160m', '80m', '60m', '40m', '30m', '20m', '17m',
                  '15m', '12m', '10m', '6m', '2m', '70cm']
+  // Matches spot mode or mode_type (PHONE/CW/DIGI are Spothole mode types)
+  const MODES = ['', 'CW', 'SSB', 'PHONE', 'FT8', 'FT4', 'RTTY', 'DIGI']
 
   let interval
 
@@ -86,6 +88,11 @@
     <select bind:value={filterContinent} on:change={loadSpots} class="dx-sel">
       {#each CONTINENTS as c}
         <option value={c}>{c || 'All Continents'}</option>
+      {/each}
+    </select>
+    <select bind:value={filterMode} on:change={loadSpots} class="dx-sel">
+      {#each MODES as m}
+        <option value={m}>{m || 'All Modes'}</option>
       {/each}
     </select>
     <button class="dx-refresh" on:click={loadSpots} title="Refresh">↻</button>

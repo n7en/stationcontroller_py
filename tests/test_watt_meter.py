@@ -34,7 +34,8 @@ class TestComputeRfMetrics:
         m = compute_rf_metrics(100.0, 0.0)
         assert m["swr"] == pytest.approx(1.0, abs=0.01)
         assert m["reflection_coefficient"] == pytest.approx(0.0, abs=0.001)
-        assert m["return_loss_db"] == float("inf")
+        # Return loss is capped at 99.9 dB (zero reflected would be infinite)
+        assert m["return_loss_db"] == pytest.approx(99.9)
 
     def test_known_swr_calculation(self):
         # Gamma = 0.5 -> SWR = (1+0.5)/(1-0.5) = 3.0
@@ -140,7 +141,8 @@ class TestWattMeterPacketHandling:
         meter = WattMeter("main", "03", registry)
         pkt = _wm1_packet("03", forward=50.0, reflected=5.0, port="02")
         await meter._handle_packet(pkt, "control")
-        assert meter.state.port == "02"
+        # Port is normalized to an int for 0-indexed port_N sensor keys
+        assert meter.state.port == "2"
 
     async def test_zero_forward_sets_none_metrics(self):
         registry = SensorRegistry()
@@ -197,16 +199,17 @@ class TestWattMeterRegistryPublishing:
         assert registry.value("hf_port_0_forward_power_w") == pytest.approx(100.0)
         assert registry.value("vhf_port_0_forward_power_w") == pytest.approx(50.0)
 
-    async def test_zero_forward_does_not_update_swr(self):
+    async def test_zero_forward_publishes_zero_swr(self):
         registry = SensorRegistry()
         meter = WattMeter("main", "03", registry)
-        # Pre-registration seeds swr at 0.0; a zero-forward packet must not
-        # overwrite it with a real SWR value (transmitter is off).
-        pre_ts = registry.get("main_port_0_swr").timestamp
+        # With the transmitter off (zero forward), SWR is republished as 0.0
+        # so the UI resets rather than holding the last on-air reading.
+        pkt = _wm1_packet("03", forward=100.0, reflected=25.0)
+        await meter._handle_packet(pkt, "control")
+        assert registry.get("main_port_0_swr").value == pytest.approx(3.0, abs=0.01)
         pkt = _wm1_packet("03", forward=0.0, reflected=0.0)
         await meter._handle_packet(pkt, "control")
         assert registry.get("main_port_0_swr").value == pytest.approx(0.0)
-        assert registry.get("main_port_0_swr").timestamp == pre_ts
 
     async def test_source_is_set_correctly(self):
         registry = SensorRegistry()

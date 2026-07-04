@@ -65,6 +65,9 @@ class StreamDeckManager:
         self._sensor_values: dict[str, Any] = {}
         # Map sensor_key → list of button indices that care about it
         self._key_watchers: dict[str, list[int]] = {}
+        # SensorRegistry.on_any has no unsubscribe - attach exactly once,
+        # not on every deck reconnect (the callback survives reconnects).
+        self._sensor_cb_attached = False
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -190,9 +193,12 @@ class StreamDeckManager:
     # ── Sensor callbacks ──────────────────────────────────────────────────────
 
     def _attach_sensor_callbacks(self) -> None:
+        if self._sensor_cb_attached:
+            return
         reg: Optional[SensorRegistry] = getattr(self._state, "sensor_registry", None)
         if reg is None:
             return
+        self._sensor_cb_attached = True
 
         def _on_sensor(measurement) -> None:
             key = measurement.name

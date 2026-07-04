@@ -27,7 +27,7 @@ async def get_relays(state: AppState = Depends(get_state)) -> dict:
 class RelayCommand(BaseModel):
     state: int          # 0 or 1
     device_addr: str    # DCN address e.g. "01"
-    relay_num: int      # 1-indexed relay on that device
+    relay_num: int      # 0-indexed relay on that device
     bus: str = ""       # explicit bus name; empty = auto-detect by address
 
 

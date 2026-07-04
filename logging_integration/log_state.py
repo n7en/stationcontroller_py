@@ -7,6 +7,24 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
+_band_plan = None
+
+
+def band_for_freq_hz(freq_hz: Optional[float]) -> Optional[str]:
+    """Return the canonical band name ("20m", ...) for a frequency in Hz.
+
+    Fallback for logging software that sends band values we cannot map
+    directly.  Uses the amateur band plan from automation.bands.
+    """
+    if not freq_hz:
+        return None
+    global _band_plan
+    if _band_plan is None:
+        from automation.bands import BandPlan
+        _band_plan = BandPlan.amateur()
+    band = _band_plan.band_for_freq(freq_hz)
+    return band.name if band else None
+
 
 @dataclass
 class QSORecord:

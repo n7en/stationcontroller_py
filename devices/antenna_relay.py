@@ -9,13 +9,13 @@ Status packet (device -> master, UPDATE,ARC1):
     args[1]  <relay_states>  8-char string, one char per relay ("0"/"1")
 
 Control commands (master -> device):
-    RYx,y           Set relay x (1-8) to state y (1=ON, 0=OFF)
+    RYx,y           Set relay x (0-7) to state y (1=ON, 0=OFF)
     RY              Turn off all 8 relays
     RY,xxxxxxxx     Set relays by mask -- "1" on, "0" off, any other char = no change
     RYx,T           Toggle relay x
     RYx,P           Pulse relay x on for 500 ms (default)
     RYx,P,y         Pulse relay x on for y seconds
-    POS,x           One-hot position select -- turns off all relays then turns on relay x
+    POS,x           One-hot position select -- turns off all relays then turns on relay x (0-7)
 
 Published sensor names (with name="ant"):
     ant_relay_0 ... relay_{N-1}   1.0 = ON, 0.0 = OFF  (N determined by persona)
@@ -154,7 +154,7 @@ class AntennaRelayModule:
     # ------------------------------------------------------------------
 
     async def set_relay(self, network: DCNNetwork, relay_num: int, state: bool) -> None:
-        """Set relay *relay_num* (1-8) on or off."""
+        """Set relay *relay_num* (0-7) on or off."""
         await network.send(self.address, f"RY{relay_num},{1 if state else 0}")
 
     async def all_off(self, network: DCNNetwork) -> None:
@@ -165,13 +165,13 @@ class AntennaRelayModule:
         """
         Set relays by 8-character mask string.
 
-        Each position maps to relay 1-8: "1" turns on, "0" turns off,
+        Character position i maps to relay i (0-7): "1" turns on, "0" turns off,
         any other character (e.g. "X") leaves that relay unchanged.
         """
         await network.send(self.address, f"RY,{mask}")
 
     async def toggle_relay(self, network: DCNNetwork, relay_num: int) -> None:
-        """Toggle relay *relay_num* (1-8) to its opposite state."""
+        """Toggle relay *relay_num* (0-7) to its opposite state."""
         await network.send(self.address, f"RY{relay_num},T")
 
     async def pulse_relay(
@@ -196,9 +196,8 @@ class AntennaRelayModule:
         """
         One-hot position select.
 
-        Turns off all 8 relays then turns on relay *position* (1-8).
-        Position 0 is not a valid one-hot position for this command; use
-        all_off() instead.
+        Turns off all 8 relays then turns on relay *position* (0-7).
+        Use all_off() to clear all relays.
         """
         await network.send(self.address, f"POS,{position}")
 

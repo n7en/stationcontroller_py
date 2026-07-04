@@ -175,7 +175,10 @@ class RS485Transport(DCNTransport):
                 if data:
                     self._buffer += data.decode("ascii", errors="replace")
                     self._process_buffer()
-            except serial.SerialException as exc:
+            # OSError covers SerialException plus the raw errno errors some
+            # USB-disconnect paths raise directly; anything uncaught here
+            # would kill the reader thread and end reconnection forever.
+            except OSError as exc:
                 logger.error("RS-485 '%s' read error: %s - will reconnect", self.name, exc)
                 self._connected = False
                 try:

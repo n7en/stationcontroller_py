@@ -5,7 +5,7 @@
   export let label      = ''
   export let value      = 0
   export let deviceAddr = '01'
-  export let relayNum   = 1
+  export let relayNum   = 0
   export let bus        = ''     // explicit DCN bus name; empty = auto-detect
   export let standalone = true   // false when hosted inside a dashboard card
 

@@ -14,14 +14,24 @@ import logging
 import xml.etree.ElementTree as ET
 from typing import Callable, Optional
 
-from .log_state import QSORecord
+from .log_state import QSORecord, band_for_freq_hz
 
 log = logging.getLogger(__name__)
 
 QSOCallback = Callable[[QSORecord], None]
 
-# Map N1MM band-in-meters strings to canonical band names
+# Map N1MM band strings to canonical band names.  N1MM normally sends the
+# band as its MHz value ("14" = 20m, "3.5" = 80m); meters strings are kept
+# for older versions.  Ambiguous values ("10" = 30m in MHz but 10m in
+# meters) are resolved by preferring the frequency-derived band in
+# _parse_contact - this map is only the fallback.
 _BAND_MAP: dict[str, str] = {
+    # MHz values (current N1MM+ ContactInfo format)
+    "1.8": "160m", "3.5": "80m", "5.3": "60m", "7": "40m",
+    "14": "20m",   "18": "17m",  "21": "15m",
+    "24": "12m",   "28": "10m",  "50": "6m",   "144": "2m",
+    "420": "70cm", "902": "33cm",
+    # meters strings (legacy)
     "160": "160m", "80": "80m", "60": "60m", "40": "40m",
     "30": "30m",   "20": "20m", "17": "17m", "15": "15m",
     "12": "12m",   "10": "10m", "6": "6m",   "2": "2m",
@@ -48,13 +58,13 @@ def _parse_contact(root: ET.Element) -> Optional[QSORecord]:
         except ValueError:
             pass
 
-    # Band: N1MM sends MHz value (e.g. "14" for 20m) or meters string
-    band: Optional[str] = None
+    # Band: derive from frequency when possible (unambiguous), fall back to
+    # the band string (MHz value or meters, varies by N1MM version).
+    band: Optional[str] = band_for_freq_hz(freq_hz)
     raw_band = _t("band")
-    if raw_band:
+    if band is None and raw_band:
         band = _BAND_MAP.get(raw_band)
         if band is None:
-            # Some versions send the band in meters directly
             band = _BAND_MAP.get(raw_band.replace("M", "").replace("m", ""))
 
     cq_zone = itu_zone = None
@@ -119,11 +129,25 @@ class N1MMListener:
     (Tools → Configure Ports → Network → Enable).
     """
 
+    name = "n1mm"
+
     def __init__(self, host: str = "0.0.0.0", port: int = 12060) -> None:
         self._host = host
         self._port = port
         self._callbacks: list[QSOCallback] = []
         self._transport: Optional[asyncio.DatagramTransport] = None
+
+    @property
+    def connected(self) -> bool:
+        """True while the UDP listener socket is open."""
+        return self._transport is not None
+
+    def status(self) -> dict:
+        return {
+            "backend":   self.name,
+            "connected": self.connected,
+            "detail":    f"UDP {self._host}:{self._port}",
+        }
 
     def on_qso(self, cb: QSOCallback) -> None:
         self._callbacks.append(cb)

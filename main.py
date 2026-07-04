@@ -202,6 +202,31 @@ def _read_db_url() -> str:
     return raw.get("telemetry", {}).get("database", {}).get("url", default)
 
 
+def _apply_staged_db_restore(db_url: str) -> None:
+    """Swap in a database staged by POST /api/system/restore.
+
+    Runs before the store opens so the file is not in use.  The replaced
+    database is kept alongside as station.db.pre_restore_<timestamp>.
+    """
+    import time as _t
+
+    staged = DATA / "station.db.restore"
+    if not staged.exists():
+        return
+    if not db_url.startswith("sqlite"):
+        log.warning("Staged DB restore found but the database is not SQLite - ignoring %s", staged)
+        return
+    raw_path = Path(db_url.split("///", 1)[-1])
+    db_path = raw_path if raw_path.is_absolute() else BASE / raw_path
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    if db_path.exists():
+        keep = db_path.with_name(f"{db_path.name}.pre_restore_{_t.strftime('%Y%m%d_%H%M%S')}")
+        db_path.rename(keep)
+        log.info("Previous database kept as %s", keep.name)
+    staged.rename(db_path)
+    log.info("Restored database applied from backup")
+
+
 # ---------------------------------------------------------------------------
 # TLS - self-signed certificate
 # ---------------------------------------------------------------------------
@@ -273,6 +298,7 @@ async def main() -> None:
 
     # ── 1. Migrations ────────────────────────────────────────────────────
     db_url = _read_db_url()
+    _apply_staged_db_restore(db_url)
     _run_migrations(db_url)
 
     # ── 2. Sensor & label registries ────────────────────────────────────
@@ -368,6 +394,8 @@ async def main() -> None:
 
     store = recorder = dcn_logger = None
 
+    prune_task = None
+
     if TELEMETRY_CFG.exists():
         try:
             store, recorder, dcn_logger = load_telemetry(config_path=TELEMETRY_CFG)
@@ -376,6 +404,20 @@ async def main() -> None:
             if dcn_logger and networks:
                 dcn_logger.attach_all(networks)
             log.info("Telemetry store open")
+
+            from telemetry.config import load_retention
+            retention = load_retention(config_path=TELEMETRY_CFG)
+
+            async def _prune_loop() -> None:
+                while True:
+                    try:
+                        await store.prune(**retention)
+                        log.debug("Telemetry prune complete")
+                    except Exception:
+                        log.exception("Telemetry prune failed")
+                    await asyncio.sleep(3600)
+
+            prune_task = asyncio.create_task(_prune_loop(), name="telemetry.prune")
         except Exception:
             log.exception("Failed to open telemetry store - telemetry disabled")
 
@@ -401,17 +443,20 @@ async def main() -> None:
     state.log_buffer       = log_buffer
 
     # ── 7b. Logbook integration ───────────────────────────────────────────
-    logbook_manager = None
+    # The manager always exists so remote modules can push QSOs via
+    # POST /api/logbook/qso even without a logbook_config.yaml; the config
+    # file only adds passive listener backends (N1MM+/N3FJP).
+    from logging_integration.manager import LogbookManager
+    logbook_manager = LogbookManager()
     if LOGBOOK_CFG.exists():
         try:
-            from logging_integration.manager import LogbookManager
             with open(LOGBOOK_CFG, encoding="utf-8") as _fh:
                 _lb_raw = yaml.safe_load(_fh) or {}
             logbook_manager = LogbookManager.from_config(_lb_raw.get("logbook", {}))
-            state.logbook_manager = logbook_manager
             log.info("Logbook integration loaded")
         except Exception:
-            log.exception("Failed to load logbook config - logbook integration disabled")
+            log.exception("Failed to load logbook config - logbook backends disabled")
+    state.logbook_manager = logbook_manager
 
     # ── 7c. DX cluster ────────────────────────────────────────────────────
     dx_manager = None
@@ -434,49 +479,24 @@ async def main() -> None:
 
     # ── 8. Cross-wiring ───────────────────────────────────────────────────
 
-    # Control bus reference used by automation (single-bus for now).
-    control_network = state.control_network
+    # Radio state changes -> WS broadcast + automation engine (primary only).
+    # Handlers resolve everything through `state` so a radio config rebuild
+    # (PUT /api/radio/config) re-wires cleanly without stale references.
+    from api.radio_wiring import wire_radio_handlers
+    wire_radio_handlers(state)
 
-    # Radio state changes -> WS broadcast + automation engine (primary only)
-    if radio_manager is not None:
-        for _iface in radio_manager:
-            _is_primary = (_iface is radio_interface)
-
-            def _make_radio_handler(_iface=_iface, _is_primary=_is_primary):
-                async def _on_radio(rs: RadioState, changed: dict) -> None:
-                    await ws_hub.broadcast_radio(_iface.name, rs)
-                    if "ptt" in changed:
-                        log.info("Radio %s PTT %s", _iface.name, "ON" if rs.ptt else "off")
-                    if "connected" in changed:
-                        log.info(
-                            "Radio %s %s",
-                            _iface.name,
-                            "connected" if rs.connected else "disconnected",
-                        )
-                    if _is_primary and engine and band_registry:
-                        ctx = AutomationContext(
-                            radio_state=rs,
-                            registry=sensor_registry,
-                            band_registry=band_registry,
-                            radio_interface=_iface,
-                            control_network=control_network,
-                        )
-                        await engine.process(ctx)
-                return _on_radio
-
-            _iface.on_state_change(_make_radio_handler())
-
-    # Sensor changes -> automation engine
+    # Sensor changes -> automation engine.  Reads radio state/interface from
+    # `state` at event time - they are replaced when the radio is rebuilt.
     if engine and band_registry:
         def _on_sensor(m) -> None:
             try:
                 loop = asyncio.get_running_loop()
                 ctx = AutomationContext(
-                    radio_state=radio_state,
+                    radio_state=state.radio_state,
                     registry=sensor_registry,
-                    band_registry=band_registry,
-                    radio_interface=radio_interface,
-                    control_network=control_network,
+                    band_registry=state.band_registry,
+                    radio_interface=state.radio_interface,
+                    control_network=state.control_network,
                 )
                 loop.create_task(
                     engine.process(ctx),
@@ -631,6 +651,12 @@ async def main() -> None:
             await logbook_manager.stop()
         if dx_manager is not None:
             await dx_manager.stop()
+        if prune_task is not None:
+            prune_task.cancel()
+            try:
+                await prune_task
+            except asyncio.CancelledError:
+                pass
         if store:
             await store.close()
         if sd_manager is not None:

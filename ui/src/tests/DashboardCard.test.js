@@ -26,14 +26,16 @@ describe('DashboardCard — power_meter', () => {
     expect(container.querySelector('svg')).toBeInTheDocument()
   })
 
-  test('passes title to gauge', () => {
+  test('does not render title inside the gauge (shown in card header)', () => {
     render(DashboardCard, {
       props: {
         ...BASE_PROPS,
         card: { type: 'power_meter', title: 'Forward Power', sensor: 'wm_fwd', max_w: 1500 },
       },
     })
-    expect(screen.getByText('Forward Power')).toBeInTheDocument()
+    // DashboardView renders the card title in the header chrome; the gauge
+    // itself must not duplicate it.
+    expect(screen.queryByText('Forward Power')).not.toBeInTheDocument()
   })
 
 })
@@ -96,15 +98,16 @@ describe('DashboardCard — relay', () => {
 
 describe('DashboardCard — sensor', () => {
 
-  test('renders sensor value', () => {
+  test('renders sensor value with formatted unit', () => {
     render(DashboardCard, {
       props: {
         ...BASE_PROPS,
-        card: { type: 'sensor', title: 'PA Temp', sensor: 'temp_pa', unit: '°F' },
-        sensors: { temp_pa: { value: 135.5, unit: '°F' } },
+        card: { type: 'sensor', title: 'PA Temp', sensor: 'temp_pa', unit: 'F' },
+        sensors: { temp_pa: { value: 135.5, unit: 'F' } },
       },
     })
-    expect(screen.getByText('PA Temp')).toBeInTheDocument()
+    // Title lives in the card header chrome; the card body shows the value
+    // with the ASCII unit code mapped to a display unit (F -> °F).
     expect(screen.getByText('135.5°F')).toBeInTheDocument()
   })
 
@@ -146,11 +149,11 @@ describe('DashboardCard — sensor', () => {
 
 describe('DashboardCard — radio_status', () => {
 
-  test('renders radio offline text when radio is null', () => {
+  test('renders offline status when radio is null', () => {
     render(DashboardCard, {
       props: { ...BASE_PROPS, card: { type: 'radio_status', title: 'Radio' } },
     })
-    expect(screen.getByText('Radio offline')).toBeInTheDocument()
+    expect(screen.getByText('Offline')).toBeInTheDocument()
   })
 
 })

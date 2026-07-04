@@ -19,7 +19,9 @@ log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/band_plan", tags=["band_plan"])
 
-BAND_PLAN_CFG = Path("config/band_plan.yaml")
+from ..paths import CONFIG_DIR
+
+BAND_PLAN_CFG = CONFIG_DIR / "band_plan.yaml"
 
 BUILT_IN_PLANS = [
     {"key": "us_extra",     "label": "US Amateur Extra"},

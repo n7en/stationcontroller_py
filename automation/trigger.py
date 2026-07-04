@@ -58,6 +58,13 @@ class Trigger(ABC):
     def reset(self) -> None:
         """Clear internal state so the next update re-establishes baseline."""
 
+    def detach(self) -> None:
+        """Unregister from external event sources.
+
+        Called when the owning automation is removed or replaced.  Most
+        triggers hold no external registrations; DXSpotTrigger overrides this.
+        """
+
 
 # ---------------------------------------------------------------------------
 # Sensor triggers
@@ -505,6 +512,13 @@ class DXSpotTrigger(Trigger):
         return True
 
     def reset(self) -> None:
+        self._pending.clear()
+
+    def detach(self) -> None:
+        try:
+            DXSpotTrigger._all_triggers.remove(self)
+        except ValueError:
+            pass
         self._pending.clear()
 
 

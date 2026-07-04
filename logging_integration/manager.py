@@ -8,6 +8,10 @@ Usage::
     contacts = mgr.contacts()           # all QSOs seen so far
     in_log   = mgr.worked(callsign)     # True/False
     on_band  = mgr.worked_on_band(callsign, "20m")
+
+QSOs can also be pushed directly (REST API, remote modules)::
+
+    mgr.add_qso(QSORecord(callsign="JA1XYZ", frequency_hz=14_025_000))
 """
 from __future__ import annotations
 
@@ -15,7 +19,7 @@ import logging
 from collections import deque
 from typing import Optional
 
-from .log_state import QSORecord
+from .log_state import QSORecord, band_for_freq_hz
 from .n1mm import N1MMListener
 from .n3fjp import N3FJPPoller
 
@@ -94,6 +98,27 @@ class LogbookManager:
         self._index[key].add((record.band, record.mode))
 
     # ------------------------------------------------------------------
+    # Direct entry (REST API / remote modules)
+    # ------------------------------------------------------------------
+
+    def add_qso(self, record: QSORecord) -> QSORecord:
+        """Add a QSO pushed from an external source (e.g. the REST API).
+
+        Normalises the band name and derives it from the frequency when the
+        caller did not supply one.
+        """
+        record.callsign = record.callsign.strip().upper()
+        if record.band:
+            record.band = record.band.strip().lower()
+        elif record.frequency_hz:
+            record.band = band_for_freq_hz(record.frequency_hz)
+        self._on_qso(record)
+        # DEBUG: batch syncs push thousands of records - callers log summaries
+        log.debug("Logbook: %s logged %s on %s %s",
+                  record.source, record.callsign, record.band, record.mode)
+        return record
+
+    # ------------------------------------------------------------------
     # Query API
     # ------------------------------------------------------------------
 
@@ -127,3 +152,7 @@ class LogbookManager:
     @property
     def enabled(self) -> bool:
         return bool(self._backends)
+
+    def backend_status(self) -> list[dict]:
+        """Per-backend connection status for the API/UI."""
+        return [b.status() for b in self._backends]

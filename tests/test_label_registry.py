@@ -158,13 +158,21 @@ class TestLabelRegistryYaml:
         lr2 = LabelRegistry.from_yaml(p)
         assert lr2.label_for("coax_port_1") == "Yağı Anteni"
 
-    def test_loads_bundled_config(self):
-        """Smoke-test that config/labels.yaml parses cleanly."""
+    def test_loads_bundled_example_config(self):
+        """Smoke-test that config/labels.yaml.example parses cleanly."""
         from pathlib import Path
-        config_path = Path(__file__).parent.parent / "config" / "labels.yaml"
+        config_path = Path(__file__).parent.parent / "config" / "labels.yaml.example"
         lr = LabelRegistry.from_yaml(config_path)
         assert len(lr) > 0
         assert lr.resolve("20m Yagi") == "coax_port_0"
+
+    def test_loads_runtime_config(self):
+        """config/labels.yaml is user data (may be empty) - must parse cleanly."""
+        from pathlib import Path
+        config_path = Path(__file__).parent.parent / "config" / "labels.yaml"
+        if not config_path.exists():
+            return
+        LabelRegistry.from_yaml(config_path)  # must not raise
 
 
 # ---------------------------------------------------------------------------

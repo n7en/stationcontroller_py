@@ -8,15 +8,17 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
+from ..paths import CONFIG_DIR
+
 router = APIRouter(prefix="/api/config", tags=["config"])
 
 _CONFIG_FILES: dict[str, Path] = {
-    "comms":      Path("config/comms_config.yaml"),
-    "labels":     Path("config/labels.yaml"),
-    "radio":      Path("config/radio_config.yaml"),
-    "automation": Path("config/automation_config.yaml"),
-    "telemetry":  Path("config/telemetry_config.yaml"),
-    "auth":       Path("config/auth_config.yaml"),
+    "comms":      CONFIG_DIR / "comms_config.yaml",
+    "labels":     CONFIG_DIR / "labels.yaml",
+    "radio":      CONFIG_DIR / "radio_config.yaml",
+    "automation": CONFIG_DIR / "automation_config.yaml",
+    "telemetry":  CONFIG_DIR / "telemetry_config.yaml",
+    "auth":       CONFIG_DIR / "auth_config.yaml",
 }
 
 

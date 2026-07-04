@@ -15,6 +15,15 @@
 #   n3fjp -- N3FJP Software (Amateur Contact Log, WS-FT8, etc.)
 #            N3FJP must have its TCP network interface enabled and accessible.
 #            StationController connects as a TCP client and polls for new QSOs.
+#
+# Remote modules can also push QSOs directly over HTTPS - no config needed:
+#
+#   POST /api/logbook/qso    single QSO as it is logged
+#   POST /api/logbook/qsos   batch (e.g. sync the full log on startup, max 10000)
+#
+#   Body (qso):  {"callsign": "JA1XYZ", "frequency_hz": 14025000,
+#                 "mode": "CW", "source": "my_remote_module"}
+#   band is derived from frequency_hz when omitted; timestamp defaults to now.
 # ------------------------------------------------------------------------------
 
 logbook:

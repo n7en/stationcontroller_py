@@ -11,7 +11,9 @@ from pathlib import Path
 import yaml
 from fastapi import APIRouter, HTTPException, Request
 
-DASHBOARDS_DIR = Path("config/dashboards")
+from ..paths import CONFIG_DIR
+
+DASHBOARDS_DIR = CONFIG_DIR / "dashboards"
 router = APIRouter(prefix="/api/dashboards", tags=["dashboards"])
 
 _SAFE_ID = re.compile(r"^[a-zA-Z0-9_\-]+$")
