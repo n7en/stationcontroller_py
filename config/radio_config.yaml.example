@@ -1,0 +1,126 @@
+# Radio control configuration
+#
+# Each entry under 'radios' defines one radio.  Three backends are available:
+#
+#   managed_rigctld -- Station Controller launches and manages its own rigctld
+#                     process.  Just point it at the serial port; no manual
+#                     daemon startup required.  Recommended for local radios.
+#
+#   rigctld         -- TCP client to an already-running rigctld daemon.
+#                     Works for local (localhost) or remote (network) daemons.
+#
+#   hamlib_direct   -- Python hamlib bindings in-process.
+#                     Local only (serial port on this machine).
+#                     Requires the hamlib Python bindings (python3-hamlib).
+#
+# Common model IDs:
+#   1    = Dummy (no radio -- for testing)
+#   351  = Icom IC-7300
+#   3073 = Icom IC-7610
+#   2014 = Kenwood TS-2000
+#   135  = Yaesu FT-991A
+#   122  = Yaesu FT-817ND
+
+radios:
+
+  # --------------------------------------------------------------------------
+  # Example: IC-7300 -- auto-managed rigctld (no manual daemon startup needed)
+  # --------------------------------------------------------------------------
+  - name: ic7300
+    backend: managed_rigctld
+    model_id: 351              # Hamlib model number
+    serial_port: COM3          # Windows: COM3  /  Linux/Pi: /dev/ttyACM0 or /dev/ttyUSB0
+    serial_baud: 9600          # CAT baud rate
+    port: 0                    # 0 = auto-select a free port (recommended)
+    timeout_s: 15.0
+    startup_timeout_s: 10.0
+    poll_interval_s: 1.0
+    reconnect_delay_s: 5.0
+
+  # --------------------------------------------------------------------------
+  # Example: Remote radio (rigctld running on another machine on the network)
+  # --------------------------------------------------------------------------
+  # - name: remote_hf
+  #   backend: rigctld
+  #   host: 192.168.1.50
+  #   port: 4532
+  #   poll_interval_s: 1.0
+  #   reconnect_delay_s: 10.0
+  #   timeout_s: 15.0
+
+  # --------------------------------------------------------------------------
+  # Example: Connect to an already-running local rigctld
+  # --------------------------------------------------------------------------
+  # - name: ic7300_manual
+  #   backend: rigctld
+  #   host: localhost
+  #   port: 4532
+  #   poll_interval_s: 1.0
+  #   reconnect_delay_s: 5.0
+  #   timeout_s: 15.0
+
+  # --------------------------------------------------------------------------
+  # Example: FT-991A via direct hamlib Python bindings (Linux)
+  # --------------------------------------------------------------------------
+  # - name: ft991
+  #   backend: hamlib_direct
+  #   model_id: 135
+  #   port: /dev/ttyUSB1       # Windows: COM3
+  #   baud_rate: 38400
+  #   data_bits: 8
+  #   stop_bits: 1
+  #   parity: N
+  #   poll_interval_s: 1.0
+  #   reconnect_delay_s: 5.0
+
+  # --------------------------------------------------------------------------
+  # Example: Elecraft K4 -- native serial CAT (no Hamlib required)
+  # --------------------------------------------------------------------------
+  # - name: k4
+  #   backend: elecraft_k4
+  #   transport: serial
+  #   port: COM4               # Windows: COM4  /  Linux/Pi: /dev/ttyACM0
+  #   baud_rate: 38400         # K4 default; match Front Panel -> XCVR -> KIO3 CAT
+  #   timeout_s: 5.0
+  #   max_power_w: 100         # K4 max TX power for RF-power normalisation
+  #   power_range: H           # H = high/100 W range, L = QRP/10 W range
+  #   poll_interval_s: 1.0
+  #   reconnect_delay_s: 5.0
+
+  # --------------------------------------------------------------------------
+  # Example: Elecraft K4 -- Ethernet TCP CAT (same protocol over the network)
+  #   On the K4: Front Panel -> Config -> Network -> set TCP port and optional password
+  # --------------------------------------------------------------------------
+  # - name: k4_net
+  #   backend: elecraft_k4
+  #   transport: tcp
+  #   host: 192.168.1.100      # K4 IP address or hostname
+  #   tcp_port: 9204           # TCP port configured on the K4 (default 9204)
+  #   password: ""             # Remote access password (leave blank if RRP not set)
+  #   timeout_s: 5.0
+  #   max_power_w: 100
+  #   power_range: H
+  #   poll_interval_s: 1.0
+  #   reconnect_delay_s: 5.0
+
+# ------------------------------------------------------------------------------
+# rigctld server -- built-in rigctld-compatible TCP server
+#
+# When enabled, Station Controller listens on a TCP port and speaks the Hamlib
+# network protocol.  Any Hamlib-compatible application -- WSJT-X, JS8Call,
+# Winlink/Pat, fldigi, flrig, Ham Radio Deluxe -- can connect by pointing its
+# radio selection to "rigctld" at 127.0.0.1:4532 (or the machine's LAN IP).
+#
+# This runs entirely within Station Controller; no separate rigctld process
+# is needed or launched.
+#
+# radio: name of the radio entry (above) to expose.  Defaults to the first
+#        configured radio if omitted.
+# host:  "0.0.0.0" allows LAN access; "127.0.0.1" restricts to localhost.
+# port:  4532 is the rigctld default; change it if another rigctld is running.
+# ------------------------------------------------------------------------------
+rigctld_server:
+  enabled: true
+  host: "0.0.0.0"
+  port: 4532
+  # radio: ic7300    # uncomment to target a specific radio by name

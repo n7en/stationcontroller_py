@@ -1,0 +1,670 @@
+"""
+Station Controller - application entry point.
+
+Loads config, wires all hardware modules, opens the database,
+and starts the FastAPI/Uvicorn server on port 8080.
+
+Usage:
+    python main.py
+
+Config files (edit before first run):
+    config/comms_config.yaml      - DCN buses, transports, and device instances
+    config/radio_config.yaml      - radio backend (rigctld or hamlib)
+    config/automation_config.yaml - automation rules
+    config/telemetry_config.yaml  - SQLite path and recording settings
+    config/labels.yaml            - friendly sensor names (optional)
+"""
+from __future__ import annotations
+
+import asyncio
+import logging
+import logging.handlers
+import os
+import sys
+from pathlib import Path
+
+import uvicorn
+import yaml
+
+# ---------------------------------------------------------------------------
+# Paths - resolve relative to this file so the app can be launched from any CWD
+# ---------------------------------------------------------------------------
+
+BASE = Path(__file__).parent
+CFG  = BASE / "config"
+DATA = BASE / "data"
+
+COMMS_CFG      = CFG / "comms_config.yaml"
+RADIO_CFG      = CFG / "radio_config.yaml"
+AUTOMATION_CFG = CFG / "automation_config.yaml"
+TELEMETRY_CFG  = CFG / "telemetry_config.yaml"
+LABELS_CFG     = CFG / "labels.yaml"
+LOGGING_CFG    = CFG / "logging_config.yaml"
+LOGBOOK_CFG    = CFG / "logbook_config.yaml"
+DX_CFG         = CFG / "dx_config.yaml"
+
+TLS_CERT = CFG / "certs" / "cert.pem"
+TLS_KEY  = CFG / "certs" / "key.pem"
+
+# ---------------------------------------------------------------------------
+# First-run config bootstrap
+# ---------------------------------------------------------------------------
+
+def _ensure_default_configs() -> None:
+    """
+    Copy <name>.yaml.example -> <name>.yaml for any machine-specific config
+    that is missing.  Runs before logging is configured so it uses print().
+    """
+    import shutil
+    for cfg in (COMMS_CFG, RADIO_CFG, LOGGING_CFG, CFG / "dashboards" / "main.yaml"):
+        if not cfg.exists():
+            example = Path(str(cfg) + ".example")
+            if example.exists():
+                cfg.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(example, cfg)
+                print(
+                    f"[setup] Created {cfg.name} from {example.name}. "
+                    f"Edit it for your hardware before restarting.",
+                    file=sys.stderr,
+                )
+
+
+_ensure_default_configs()
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+def _configure_logging(cfg_path: Path) -> None:
+    """
+    Configure the root logger from logging_config.yaml.
+
+    Two handlers are always set up:
+      • StreamHandler (stdout) - level controlled by console_level
+      • RotatingFileHandler   - level controlled by file.level
+                                CRITICAL is always captured (it exceeds any threshold)
+
+    The root logger is set to DEBUG so each handler can filter independently.
+    Noisy third-party libraries are capped at WARNING even in DEBUG mode.
+    """
+    console_level = logging.INFO
+    file_enabled  = True
+    file_path     = BASE / "logs" / "station.log"
+    file_level    = logging.WARNING
+    max_bytes     = 10 * 1024 * 1024   # 10 MB
+    backup_count  = 5
+
+    if cfg_path.exists():
+        try:
+            with open(cfg_path, encoding="utf-8") as fh:
+                raw = yaml.safe_load(fh) or {}
+            cfg = raw.get("logging", {})
+
+            console_level = getattr(
+                logging,
+                str(cfg.get("console_level", "INFO")).upper(),
+                logging.INFO,
+            )
+
+            fc = cfg.get("file", {})
+            file_enabled = fc.get("enabled", True)
+            file_level   = getattr(
+                logging,
+                str(fc.get("level", "WARNING")).upper(),
+                logging.WARNING,
+            )
+            raw_path = fc.get("path", "logs/station.log")
+            fp = Path(raw_path)
+            file_path = fp if fp.is_absolute() else BASE / fp
+            max_bytes    = int(fc.get("max_bytes", max_bytes))
+            backup_count = int(fc.get("backup_count", backup_count))
+        except Exception as exc:
+            print(f"WARNING: Could not read {cfg_path} ({exc}) - using logging defaults",
+                  file=sys.stderr)
+
+    # LOG_LEVEL env var overrides the config file — useful for production deployments
+    # without editing logging_config.yaml (e.g. set LOG_LEVEL=WARNING on main branch).
+    _env_level = os.environ.get("LOG_LEVEL", "").upper()
+    if _env_level:
+        _override = getattr(logging, _env_level, None)
+        if _override is not None:
+            console_level = _override
+        else:
+            print(f"WARNING: LOG_LEVEL={_env_level!r} is not a valid log level - ignored",
+                  file=sys.stderr)
+
+    # Root logger sees everything; individual handlers filter by level.
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    _console_fmt = logging.Formatter(
+        "%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
+        datefmt="%H:%M:%S",
+    )
+    _file_fmt = logging.Formatter(
+        "%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    console_h = logging.StreamHandler(sys.stdout)
+    console_h.setLevel(console_level)
+    console_h.setFormatter(_console_fmt)
+    root.addHandler(console_h)
+
+    if file_enabled:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_h = logging.handlers.RotatingFileHandler(
+            file_path,
+            maxBytes=max_bytes,
+            backupCount=backup_count,
+            encoding="utf-8",
+        )
+        file_h.setLevel(file_level)
+        file_h.setFormatter(_file_fmt)
+        root.addHandler(file_h)
+
+    # Prevent very noisy libraries from flooding DEBUG output.
+    for _noisy in ("uvicorn.access", "asyncio", "httpx", "hpack", "h2"):
+        logging.getLogger(_noisy).setLevel(logging.WARNING)
+
+
+_configure_logging(LOGGING_CFG)
+log = logging.getLogger("main")
+
+
+# ---------------------------------------------------------------------------
+# Database migrations (sync - runs before the async loop)
+# ---------------------------------------------------------------------------
+
+def _run_migrations(db_url: str) -> None:
+    from alembic.config import Config as AlembicConfig
+    from alembic import command as alembic_cmd
+
+    DATA.mkdir(parents=True, exist_ok=True)
+
+    # Alembic needs the sync SQLite URL (strip the aiosqlite driver prefix)
+    sync_url = db_url.replace("sqlite+aiosqlite", "sqlite")
+
+    cfg = AlembicConfig(str(BASE / "alembic.ini"))
+    cfg.set_main_option("script_location", str(BASE / "alembic"))
+    cfg.set_main_option("sqlalchemy.url", sync_url)
+    log.info("Running database migrations...")
+    alembic_cmd.upgrade(cfg, "head")
+
+
+def _read_db_url() -> str:
+    """Pull the DB URL from telemetry config, fall back to the default."""
+    default = "sqlite+aiosqlite:///data/station.db"
+    if not TELEMETRY_CFG.exists():
+        return default
+    with open(TELEMETRY_CFG, encoding="utf-8") as fh:
+        raw = yaml.safe_load(fh) or {}
+    return raw.get("telemetry", {}).get("database", {}).get("url", default)
+
+
+def _apply_staged_db_restore(db_url: str) -> None:
+    """Swap in a database staged by POST /api/system/restore.
+
+    Runs before the store opens so the file is not in use.  The replaced
+    database is kept alongside as station.db.pre_restore_<timestamp>.
+    """
+    import time as _t
+
+    staged = DATA / "station.db.restore"
+    if not staged.exists():
+        return
+    if not db_url.startswith("sqlite"):
+        log.warning("Staged DB restore found but the database is not SQLite - ignoring %s", staged)
+        return
+    raw_path = Path(db_url.split("///", 1)[-1])
+    db_path = raw_path if raw_path.is_absolute() else BASE / raw_path
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    if db_path.exists():
+        keep = db_path.with_name(f"{db_path.name}.pre_restore_{_t.strftime('%Y%m%d_%H%M%S')}")
+        db_path.rename(keep)
+        log.info("Previous database kept as %s", keep.name)
+    staged.rename(db_path)
+    log.info("Restored database applied from backup")
+
+
+# ---------------------------------------------------------------------------
+# TLS - self-signed certificate
+# ---------------------------------------------------------------------------
+
+def _ensure_tls_cert(cert_path: Path, key_path: Path) -> None:
+    """Generate a self-signed TLS cert+key if they do not already exist."""
+    if cert_path.exists() and key_path.exists():
+        return
+
+    import datetime
+    import ipaddress
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import NameOID
+
+    cert_path.parent.mkdir(parents=True, exist_ok=True)
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    subject = issuer = x509.Name([
+        x509.NameAttribute(NameOID.COMMON_NAME, "StationController"),
+    ])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(now + datetime.timedelta(days=3650))
+        .add_extension(
+            x509.SubjectAlternativeName([
+                x509.DNSName("localhost"),
+                x509.IPAddress(ipaddress.ip_address("127.0.0.1")),
+            ]),
+            critical=False,
+        )
+        .sign(key, hashes.SHA256())
+    )
+
+    cert_path.write_bytes(cert.public_bytes(serialization.Encoding.PEM))
+    key_path.write_bytes(
+        key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.TraditionalOpenSSL,
+            serialization.NoEncryption(),
+        )
+    )
+    log.info("Generated self-signed TLS certificate -> %s", cert_path)
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+async def main() -> None:
+
+    # ── 0a. Log buffer (captures all startup logs for WS replay) ────────
+    import time as _time
+    from api.log_buffer import LogBuffer
+
+    log_buffer = LogBuffer(maxlen=500)
+    logging.getLogger().addHandler(log_buffer.make_handler())
+
+    # ── 0b. TLS certificate ──────────────────────────────────────────────
+    _ensure_tls_cert(TLS_CERT, TLS_KEY)
+
+    # ── 1. Migrations ────────────────────────────────────────────────────
+    db_url = _read_db_url()
+    _apply_staged_db_restore(db_url)
+    _run_migrations(db_url)
+
+    # ── 2. Sensor & label registries ────────────────────────────────────
+    from sensors.sensor_registry import SensorRegistry
+    from sensors.label_registry  import LabelRegistry
+
+    sensor_registry = SensorRegistry()
+    label_registry  = LabelRegistry()
+
+    if LABELS_CFG.exists():
+        label_registry = LabelRegistry.from_yaml(LABELS_CFG)
+        log.info("Loaded %d label(s)", len(label_registry.all()))
+
+    sensor_registry.attach_labels(label_registry)
+
+    # ── 2b. Embedded MQTT broker (must start before DCN transports connect) ──
+    from comms.mqtt_broker import EmbeddedMQTTBroker
+
+    mqtt_broker: EmbeddedMQTTBroker | None = None
+
+    if COMMS_CFG.exists():
+        with open(COMMS_CFG, encoding="utf-8") as _fh:
+            _comms_raw = yaml.safe_load(_fh) or {}
+        _broker_cfg = _comms_raw.get("mqtt_broker", {})
+        if _broker_cfg.get("enabled", False):
+            try:
+                mqtt_broker = EmbeddedMQTTBroker.from_config(_broker_cfg)
+                await mqtt_broker.start()
+            except Exception:
+                log.exception("Failed to start embedded MQTT broker")
+
+    # ── 3. DCN buses ─────────────────────────────────────────────────────
+    from comms.dcn_network import DCNNetwork
+    from devices.loader    import load_devices
+
+    networks: dict[str, DCNNetwork] = {}
+    devices:  dict[str, object]     = {}
+    addr_bus: dict[str, str]        = {}
+
+    if COMMS_CFG.exists():
+        networks = DCNNetwork.buses_from_config(COMMS_CFG)
+        for bus_name, net in networks.items():
+            log.info("DCN bus '%s': %s", bus_name, net)
+
+        devices, addr_bus = load_devices(COMMS_CFG, sensor_registry, networks, label_registry)
+        log.info(
+            "Loaded %d device(s) across %d bus(es): %s",
+            len(devices), len(networks), list(devices.keys()),
+        )
+    else:
+        log.warning("comms_config.yaml not found - running without DCN hardware")
+
+    # ── 4. Radio ─────────────────────────────────────────────────────────
+    from radio.radio_manager import RadioManager
+    from radio.radio_state   import RadioState
+
+    radio_manager   = None
+    radio_interface = None
+    radio_state     = RadioState(name="primary")
+
+    if RADIO_CFG.exists():
+        try:
+            radio_manager   = RadioManager.from_config(str(RADIO_CFG))
+            primary         = radio_manager.names()[0] if radio_manager.names() else None
+            if primary:
+                radio_interface = radio_manager[primary]
+                radio_state     = radio_interface.state
+                log.info("Primary radio: %s", primary)
+        except Exception:
+            log.exception("Failed to load radio config - radio control disabled")
+    else:
+        log.warning(
+            "radio_config.yaml not found - radio control disabled.  "
+            "Copy config/radio_config.yaml.example to config/radio_config.yaml and edit it."
+        )
+
+    # ── 5. Automation engine ─────────────────────────────────────────────
+    from automation.config  import load_engine as load_automation
+    from automation.context import AutomationContext
+
+    engine        = None
+    band_registry = None
+
+    if AUTOMATION_CFG.exists():
+        try:
+            engine, band_registry = load_automation(AUTOMATION_CFG)
+            log.info("Automation engine: %d rule(s)", len(engine.automations()))
+        except Exception:
+            log.exception("Failed to load automation config - automations disabled")
+
+    # ── 6. Telemetry ─────────────────────────────────────────────────────
+    from telemetry.config import load_telemetry
+
+    store = recorder = dcn_logger = None
+
+    prune_task = None
+
+    if TELEMETRY_CFG.exists():
+        try:
+            store, recorder, dcn_logger = load_telemetry(config_path=TELEMETRY_CFG)
+            await store.open()
+            recorder.attach(sensor_registry)
+            if dcn_logger and networks:
+                dcn_logger.attach_all(networks)
+            log.info("Telemetry store open")
+
+            from telemetry.config import load_retention
+            retention = load_retention(config_path=TELEMETRY_CFG)
+
+            async def _prune_loop() -> None:
+                while True:
+                    try:
+                        await store.prune(**retention)
+                        log.debug("Telemetry prune complete")
+                    except Exception:
+                        log.exception("Telemetry prune failed")
+                    await asyncio.sleep(3600)
+
+            prune_task = asyncio.create_task(_prune_loop(), name="telemetry.prune")
+        except Exception:
+            log.exception("Failed to open telemetry store - telemetry disabled")
+
+    # ── 7. AppState + FastAPI app ─────────────────────────────────────────
+    from api.app  import create_app
+    from api.auth import load_auth_config
+    from api.deps import AppState
+
+    load_auth_config()
+
+    state                  = AppState()
+    state.sensor_registry  = sensor_registry
+    state.label_registry   = label_registry
+    state.networks         = networks
+    state.devices          = devices
+    state.device_bus       = addr_bus
+    state.radio_state      = radio_state
+    state.radio_interface  = radio_interface
+    state.radio_manager    = radio_manager
+    state.engine           = engine
+    state.band_registry    = band_registry
+    state.telemetry        = store
+    state.log_buffer       = log_buffer
+
+    # ── 7b. Logbook integration ───────────────────────────────────────────
+    # The manager always exists so remote modules can push QSOs via
+    # POST /api/logbook/qso even without a logbook_config.yaml; the config
+    # file only adds passive listener backends (N1MM+/N3FJP).
+    from logging_integration.manager import LogbookManager
+    logbook_manager = LogbookManager()
+    if LOGBOOK_CFG.exists():
+        try:
+            with open(LOGBOOK_CFG, encoding="utf-8") as _fh:
+                _lb_raw = yaml.safe_load(_fh) or {}
+            logbook_manager = LogbookManager.from_config(_lb_raw.get("logbook", {}))
+            log.info("Logbook integration loaded")
+        except Exception:
+            log.exception("Failed to load logbook config - logbook backends disabled")
+    state.logbook_manager = logbook_manager
+
+    # ── 7c. DX cluster ────────────────────────────────────────────────────
+    dx_manager = None
+    if DX_CFG.exists():
+        try:
+            from dx_cluster.manager import DXClusterManager
+            with open(DX_CFG, encoding="utf-8") as _fh:
+                _dx_raw = yaml.safe_load(_fh) or {}
+            _dx_cfg = _dx_raw.get("dx_cluster", {})
+            if _dx_cfg.get("enabled", True):
+                dx_manager = DXClusterManager.from_config(_dx_cfg)
+                state.dx_manager = dx_manager
+                log.info("DX cluster manager loaded (Spothole)")
+        except Exception:
+            log.exception("Failed to load DX cluster config - DX cluster disabled")
+
+    app    = create_app(state)
+    ws_hub = state.ws_hub  # populated by create_app()
+    log_buffer.attach_ws_hub(ws_hub)
+
+    # ── 8. Cross-wiring ───────────────────────────────────────────────────
+
+    # Radio state changes -> WS broadcast + automation engine (primary only).
+    # Handlers resolve everything through `state` so a radio config rebuild
+    # (PUT /api/radio/config) re-wires cleanly without stale references.
+    from api.radio_wiring import wire_radio_handlers
+    wire_radio_handlers(state)
+
+    # Sensor changes -> automation engine.  Reads radio state/interface from
+    # `state` at event time - they are replaced when the radio is rebuilt.
+    if engine and band_registry:
+        def _on_sensor(m) -> None:
+            try:
+                loop = asyncio.get_running_loop()
+                ctx = AutomationContext(
+                    radio_state=state.radio_state,
+                    registry=sensor_registry,
+                    band_registry=state.band_registry,
+                    radio_interface=state.radio_interface,
+                    control_network=state.control_network,
+                )
+                loop.create_task(
+                    engine.process(ctx),
+                    name=f"automation.sensor.{m.name}",
+                )
+            except RuntimeError:
+                pass
+
+        sensor_registry.on_any(_on_sensor)
+
+    # DCN packets -> live log stream
+    def _make_dcn_hooks(buf, bus_name):
+        async def _rx(packet, transport):
+            buf.append_dcn({
+                "type": "dcn_message", "ts": _time.time(), "direction": "rx",
+                "bus": bus_name, "from_addr": packet.from_addr,
+                "to_addr": packet.to_addr, "payload": packet.payload,
+                "raw": packet.raw or str(packet), "broadcast": packet.broadcast,
+                "transport": transport,
+            })
+        async def _tx(packet, transport):
+            buf.append_dcn({
+                "type": "dcn_message", "ts": _time.time(), "direction": "tx",
+                "bus": bus_name, "from_addr": packet.from_addr,
+                "to_addr": packet.to_addr, "payload": packet.payload,
+                "raw": packet.raw or str(packet), "broadcast": packet.broadcast,
+                "transport": transport,
+            })
+        async def _raw_line(line, transport):
+            buf.append_dcn({
+                "type": "dcn_message", "ts": _time.time(), "direction": "raw",
+                "bus": bus_name, "from_addr": "", "to_addr": "",
+                "payload": line, "raw": line, "broadcast": False,
+                "transport": transport,
+            })
+        return _rx, _tx, _raw_line
+
+    for bus_name, net in networks.items():
+        _rx, _tx, _raw_line = _make_dcn_hooks(log_buffer, bus_name)
+        net.on_packet(_rx)
+        net.on_transmit(_tx)
+        net.on_raw_line(_raw_line)
+
+    # ── 9. Connect hardware ──────────────────────────────────────────────
+    for bus_name, net in networks.items():
+        try:
+            await net.connect_all()
+        except Exception:
+            log.exception("Failed to connect bus '%s'", bus_name)
+
+    if radio_manager is not None:
+        for _iface in radio_manager:
+            try:
+                await _iface.connect()
+            except Exception:
+                log.warning("Radio '%s' connect failed - poll loop will retry", _iface.name)
+            await _iface.start()
+
+    # ── 9b. rigctld server ────────────────────────────────────────────────
+    # Exposes the primary radio as a rigctld-compatible TCP service so that
+    # WSJT-X, JS8Call, Winlink, fldigi, flrig, etc. can connect without a
+    # separate rigctld process.
+    rigctld_task = None
+    if radio_interface is not None and RADIO_CFG.exists():
+        from radio.rigctld_server import RigctldServer
+        try:
+            with open(RADIO_CFG, encoding="utf-8") as _fh:
+                _radio_raw = yaml.safe_load(_fh) or {}
+        except Exception:
+            _radio_raw = {}
+        _srv_cfg = _radio_raw.get("rigctld_server", {})
+        if _srv_cfg.get("enabled", True):
+            _srv_host = _srv_cfg.get("host", "0.0.0.0")
+            _srv_port = int(_srv_cfg.get("port", 4532))
+            _srv_radio_name = _srv_cfg.get("radio", "")
+            _srv_iface = (
+                radio_manager[_srv_radio_name]
+                if _srv_radio_name and radio_manager and _srv_radio_name in radio_manager.names()
+                else radio_interface
+            )
+            _rig_server = RigctldServer(_srv_iface, host=_srv_host, port=_srv_port)
+            rigctld_task = asyncio.create_task(
+                _rig_server.serve(), name="rigctld_server"
+            )
+            log.info(
+                "rigctld server started on %s:%d  (radio: %s)",
+                _srv_host, _srv_port, _srv_iface.name,
+            )
+
+    # ── 9c. Start logbook + DX cluster ───────────────────────────────────
+    if logbook_manager is not None:
+        await logbook_manager.start()
+
+    if dx_manager is not None:
+        # Wire new spots into the automation trigger class-level registry.
+        from automation.trigger import DXSpotTrigger
+        dx_manager.add_spots_callback(DXSpotTrigger.push_spots)
+        await dx_manager.start()
+
+    # ── 9d. Stream Deck ───────────────────────────────────────────────────
+    SD_CFG = CFG / "streamdeck_config.yaml"
+    sd_manager = None
+    try:
+        from streamdeck_ctrl.manager import StreamDeckManager
+        _sd_path = SD_CFG if SD_CFG.exists() else (CFG / "streamdeck_config.yaml.example")
+        if _sd_path.exists():
+            with open(_sd_path, encoding="utf-8") as _fh:
+                _sd_raw = yaml.safe_load(_fh) or {}
+            _sd_cfg = _sd_raw.get("streamdeck", {})
+            if _sd_cfg.get("enabled", True):
+                sd_manager = StreamDeckManager(_sd_cfg, state=state)
+                sd_manager.start(asyncio.get_event_loop())
+                state.streamdeck_manager = sd_manager
+                log.info("Stream Deck manager started")
+    except Exception:
+        log.exception("Failed to start Stream Deck manager")
+
+    # ── 10. Serve ─────────────────────────────────────────────────────────
+    config = uvicorn.Config(
+        app,
+        host="0.0.0.0",
+        port=8080,
+        log_level="warning",
+        access_log=False,
+        ssl_certfile=str(TLS_CERT),
+        ssl_keyfile=str(TLS_KEY),
+    )
+    server = uvicorn.Server(config)
+
+    log.info("=" * 55)
+    log.info("  Station Controller  ->  https://localhost:8080")
+    log.info("=" * 55)
+
+    try:
+        await server.serve()
+    finally:
+        log.info("Shutting down...")
+        if rigctld_task is not None:
+            rigctld_task.cancel()
+            try:
+                await rigctld_task
+            except asyncio.CancelledError:
+                pass
+        if radio_manager is not None:
+            await radio_manager.stop_all()
+        for bus_name, net in networks.items():
+            try:
+                await net.disconnect_all()
+            except Exception:
+                log.exception("Error disconnecting bus '%s'", bus_name)
+        if logbook_manager is not None:
+            await logbook_manager.stop()
+        if dx_manager is not None:
+            await dx_manager.stop()
+        if prune_task is not None:
+            prune_task.cancel()
+            try:
+                await prune_task
+            except asyncio.CancelledError:
+                pass
+        if store:
+            await store.close()
+        if sd_manager is not None:
+            sd_manager.stop()
+        if mqtt_broker is not None:
+            await mqtt_broker.stop()
+        log.info("Stopped.")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

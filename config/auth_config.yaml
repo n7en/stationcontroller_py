@@ -1,0 +1,6 @@
+auth:
+  enabled: false
+  secret: a46bfe20c4b7e41ab606bd9de713ae7087965b5c1ba6a45a22ffd8477238e4e7
+  secure_cookie: false
+  token_expiry_hours: 24
+  users: {}

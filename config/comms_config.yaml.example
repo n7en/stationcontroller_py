@@ -1,0 +1,153 @@
+# Station Controller - DCN Communications Configuration
+#
+# Each entry under 'buses' defines an independent DCN network (separate address
+# space).  Devices on different buses cannot hear each other's packets.
+#
+# Each bus may have one or more 'transports' -- simultaneous physical connections
+# to the same bus (e.g. RS-485 + MQTT fallback on the same wire segment).
+#
+# Transport types:
+#   rs485        - direct RS-485 USB serial connection
+#   nodered_mqtt - bridge through a Node-RED flow via an MQTT broker
+#   nodered_tcp  - bridge through a Node-RED flow via a TCP socket
+#
+# Device-to-bus assignment is configured in main.py.
+# Uncomment/add bus entries to match your hardware layout.
+
+# -- Embedded MQTT broker (optional) -----------------------------------------
+# Set enabled: true to start a built-in MQTT broker (amqtt) on startup.
+# Use this when running the simulator or a Node-RED bridge without an external
+# Mosquitto installation.  Binds to host:port below.
+# For external broker setups, leave enabled: false and point transports at
+# the external broker address directly.
+
+mqtt_broker:
+  enabled: false
+  host: "127.0.0.1"    # use "0.0.0.0" to accept remote connections (e.g. Node-RED on a Pi)
+  port: 1883
+  allow_anonymous: true   # set to false to require credentials
+  # users:              # define users when allow_anonymous is false
+  #   - username: "stationcontroller"
+  #     password: "changeme"
+  #   - username: "nodered"
+  #     password: "changeme"
+
+buses:
+
+  # -- Control bus ------------------------------------------------------------
+  # Carries GPIO module (01), coax switch (02), VHF relay (05),
+  # and antenna relay module (06) at standard 9600 baud.
+  #
+  # Set enabled: false on a bus to disable it entirely without removing the
+  # config (all devices on that bus will be created but not attached).
+  # Set enabled: false on an individual transport to disable just that link.
+  - name: control
+    # enabled: false          # uncomment to disable this entire bus
+    transports:
+
+      # Direct RS-485 USB adapter
+      - name: control_serial
+        type: rs485
+        # enabled: false      # uncomment to disable just this transport
+        port: /dev/ttyUSB0      # Linux. Windows example: COM3
+        baud_rate: 9600
+        description: "Main control DCN - GPIO, antennas, coax"
+
+      # -- Optional: Node-RED MQTT bridge for this bus -----------------------
+      # Use when a Raspberry Pi / Node-RED box sits between the PC and
+      # the RS-485 wire.  Import nodered/dcn_mqtt_bridge_flow.json.
+      #- name: control_mqtt
+      #  type: nodered_mqtt
+      #  broker: localhost        # or remote Pi IP, e.g. 192.168.1.100
+      #  port: 1883
+      #  topic_rx: dcn/control/rx
+      #  topic_tx: dcn/control/tx
+      #  username: ""
+      #  password: ""
+      #  description: "Node-RED MQTT bridge for control bus"
+
+      # -- Optional: Node-RED TCP bridge (no MQTT broker needed) -------------
+      # Python listens as TCP server; Node-RED connects as TCP client.
+      # Import nodered/dcn_tcp_bridge_flow.json.
+      #- name: control_tcp
+      #  type: nodered_tcp
+      #  host: 0.0.0.0            # listen on all interfaces
+      #  port: 4880
+      #  description: "Node-RED TCP bridge for control bus"
+
+  # -- Power meter bus (separate high-speed segment) -------------------------
+  # The RF watt meter (#351, address 03) runs at 115200 baud for real-time
+  # measurements.  Keep it on its own USB adapter -- do NOT mix control
+  # traffic on this segment.
+  #- name: power
+  #  transports:
+  #    - name: power_serial
+  #      type: rs485
+  #      port: /dev/ttyUSB1      # Linux. Windows example: COM4
+  #      baud_rate: 115200
+  #      description: "High-speed power meter DCN"
+
+  # -- Example: second shack controller on a third USB dongle ---------------
+  #- name: shack2
+  #  transports:
+  #    - name: shack2_serial
+  #      type: rs485
+  #      port: /dev/ttyUSB2      # Windows: COM5
+  #      baud_rate: 9600
+  #      description: "Second antenna controller in shack 2"
+
+
+# -- Device instances ---------------------------------------------------------
+# Each entry defines one physical hardware module, the bus it lives on, and
+# the name prefix used for sensor registry keys.
+#
+# Device types:
+#   gpio          - DCN #321 GPIO module (relays, inputs, voltmeters, temps)
+#   coax_switch   - DCN #331 CX-1 4-port HF coax relay
+#   watt_meter    - DCN #351 RF watt/SWR meter
+#   vhf_relay     - DCN #332 CX-2 VHF/UHF SPDT coax relay
+#   antenna_relay - DCN #361 8-relay antenna relay control module
+#
+# 'address' is set by the dip switches on the physical hardware.
+# 'bus' must match a bus name defined above.
+# 'name' becomes the sensor key prefix (e.g. name="wm1" -> "wm1_forward_power_w").
+#
+# Multiple devices of the same type are supported -- give each a unique name
+# and bus.  Watt meters in streaming mode typically run on dedicated high-speed
+# buses (see the 'power' bus example above).
+
+devices:
+
+  - type: gpio
+    name: gpio
+    address: "01"
+    bus: control
+
+  - type: coax_switch
+    name: coax
+    address: "02"
+    bus: control
+
+  - type: watt_meter
+    name: watt_meter
+    address: "03"
+    bus: control          # change to 'power' if using a dedicated 115200-baud bus
+
+  - type: vhf_relay
+    name: vhf
+    address: "05"
+    bus: control
+
+  - type: antenna_relay
+    name: ant
+    address: "06"
+    bus: control
+    persona: cc_8a        # options: 1_of_8, dual_vertical, bcd, three_ant_phasing,
+                          #          two_ant_phasing, cc_8a, hi_z_3el, hi_z_4el,
+                          #          hi_z_4_8_pro, hi_z_8el
+
+  # -- Example: second watt meter on its own high-speed bus ------------------
+  #- type: watt_meter
+  #  name: watt_meter_2
+  #  address: "03"
+  #  bus: power            # dedicated 115200-baud bus defined above

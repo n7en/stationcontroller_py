@@ -1,0 +1,870 @@
+<script>
+  import { onMount } from 'svelte'
+  import { sensors, labels, radio, radios } from '../stores/ws.js'
+  import DashboardCard from './DashboardCard.svelte'
+
+  export let dashboardId = 'main'
+
+  let config  = { cards: [] }
+  let error   = null
+  let loading = true
+  let editMode  = false
+  let saving    = false
+  let saveBanner = ''
+
+  // Drag-and-drop state
+  let dragIdx = null
+  let dropIdx = null
+
+  // Card picker state
+  let showPicker  = false
+  let editingIdx  = null   // null = new card, number = editing existing
+  let pickerType  = 'radio_status'
+  let pickerConfig = {}
+
+  let devices       = []
+  let selectedRelay  = ''
+  let selectedSensor = ''
+
+  const CARD_TYPES = [
+    { id: 'radio_status', label: 'Radio Status' },
+    { id: 'sensor',       label: 'Sensor Value' },
+    { id: 'relay',        label: 'Relay Button' },
+    { id: 'power_meter',  label: 'Power Meter'  },
+    { id: 'swr_bar',      label: 'SWR Bar'      },
+    { id: 'dx_spots',     label: 'DX Spots'     },
+    { id: 'logbook',      label: 'Logbook'      },
+    { id: 'solar',        label: 'Solar / Propagation' },
+    { id: 'blank',        label: 'Blank Space'  },
+  ]
+
+  onMount(async () => {
+    loading = true
+    try {
+      const r = await fetch(`/api/dashboards/${dashboardId}`)
+      if (r.ok) {
+        const d = await r.json()
+        config = { cards: [], ...d }
+      } else if (r.status === 404) {
+        config = { cards: [] }
+      } else {
+        throw new Error(`HTTP ${r.status}`)
+      }
+    } catch (e) {
+      error = e.message
+    } finally {
+      loading = false
+    }
+
+    try {
+      const r = await fetch('/api/devices')
+      if (r.ok) {
+        const d = await r.json()
+        devices = d.devices ?? []
+      }
+    } catch {}
+  })
+
+  async function save() {
+    saving = true
+    try {
+      const r = await fetch(`/api/dashboards/${dashboardId}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(config),
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      saveBanner = 'Saved'
+      setTimeout(() => saveBanner = '', 2000)
+    } catch (e) {
+      saveBanner = 'Save failed: ' + e.message
+    } finally {
+      saving = false
+    }
+  }
+
+  function toggleEdit() {
+    if (editMode) save()
+    editMode   = !editMode
+    showPicker = false
+  }
+
+  const GRID_COLS = 3   // must match grid-template-columns count in CSS
+
+  // ── Drag-and-drop ─────────────────────────────────────────────────────────
+  function onDragStart(e, i) {
+    dragIdx = i
+    e.dataTransfer.effectAllowed = 'move'
+  }
+  function onDragOver(e, i) {
+    if (dragIdx === null) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    dropIdx = i
+  }
+  function onDrop(e, i) {
+    e.preventDefault()
+    if (dragIdx === null || dragIdx === i) { dragIdx = dropIdx = null; return }
+    // Swap: source position becomes whatever was at target; source becomes a
+    // blank if target was non-blank, so gaps are never left uncovered.
+    const cards = [...config.cards]
+    ;[cards[dragIdx], cards[i]] = [cards[i], cards[dragIdx]]
+    config  = { ...config, cards }
+    dragIdx = null
+    dropIdx = null
+  }
+  function onDropEnd(e) {
+    e.preventDefault()
+    if (dragIdx === null) { dropIdx = null; return }
+    const cards = [...config.cards]
+    const moved = cards[dragIdx]
+    // Leave a blank at the source position
+    cards[dragIdx] = { type: 'blank' }
+    // Pad the current last partial row to a full GRID_COLS boundary
+    const totalSlots = cards.reduce((s, c) => s + (c.span ?? 1), 0)
+    const rem = totalSlots % GRID_COLS
+    if (rem !== 0) {
+      for (let j = 0; j < GRID_COLS - rem; j++) cards.push({ type: 'blank' })
+    }
+    // Place the moved card at the start of a new row, fill the rest with blanks
+    cards.push(moved)
+    const cardSpan = moved.span ?? 1
+    for (let j = cardSpan; j < GRID_COLS; j++) cards.push({ type: 'blank' })
+    config  = { ...config, cards }
+    dragIdx = null
+    dropIdx = null
+  }
+  function onDragEnd() { dragIdx = null; dropIdx = null }
+
+  // ── Card operations ───────────────────────────────────────────────────────
+  function removeCard(i) {
+    const cards = [...config.cards]
+    cards[i] = { type: 'blank' }
+    config = { ...config, cards }
+  }
+
+  function setSpan(i, span) {
+    const cards = [...config.cards]
+    if (span === 1) {
+      const { span: _s, ...rest } = cards[i]
+      cards[i] = rest
+    } else {
+      cards[i] = { ...cards[i], span }
+    }
+    config = { ...config, cards }
+  }
+
+  function setRowSpan(i, rows) {
+    const cards = [...config.cards]
+    if (rows === 1) {
+      const { row_span: _r, ...rest } = cards[i]
+      cards[i] = rest
+    } else {
+      cards[i] = { ...cards[i], row_span: rows }
+    }
+    config = { ...config, cards }
+  }
+
+  function parseBoard(card) {
+    if (card.type === 'radio_status') return card.radio_name || 'Radio'
+    const key = card.sensor || card.relay_key || ''
+    if (key.startsWith('watt_meter')) return 'Watt Meter'
+    if (key.startsWith('gpio_'))      return 'GPIO'
+    const seg = key.split('_')[0]
+    return seg ? seg.charAt(0).toUpperCase() + seg.slice(1) : '—'
+  }
+
+  // ── Card picker ───────────────────────────────────────────────────────────
+  function openPicker(idx = null) {
+    editingIdx     = idx
+    selectedRelay  = ''
+    selectedSensor = ''
+    if (idx !== null) {
+      const c = config.cards[idx]
+      pickerType     = c.type
+      pickerConfig   = JSON.parse(JSON.stringify(c))
+      selectedSensor = c.sensor || ''
+    } else {
+      pickerType   = 'radio_status'
+      pickerConfig = mkDefault('radio_status')
+    }
+    showPicker = true
+  }
+
+  function applyRelaySelection(val) {
+    if (!val) return
+    const { key, device_addr, relay_num } = JSON.parse(val)
+    pickerConfig = { ...pickerConfig, relay_key: key, device_addr, relay_num }
+  }
+
+  function applySensorSelection(val) {
+    pickerConfig = { ...pickerConfig, sensor: val }
+  }
+
+  $: relaysByDevice = devices
+    .map(dev => ({
+      dev,
+      relays: (dev.sensors ?? []).filter(s => s.role === 'relay'),
+    }))
+    .filter(({ relays }) => relays.length > 0)
+
+  const POWER_ROLES   = new Set(['forward_power', 'reflected_power'])
+  const SWR_ROLES     = new Set(['swr'])
+  const SENSOR_ROLES  = new Set([
+    'temperature', 'voltmeter', 'digital_input', 'active_port',
+    'forward_power', 'reflected_power', 'swr',
+    'reflection_coefficient', 'return_loss', 'mismatch_loss',
+  ])
+
+  function sensorsForRoles(roles) {
+    return devices
+      .map(dev => ({
+        dev,
+        sensors: (dev.sensors ?? []).filter(s => roles.has(s.role)),
+      }))
+      .filter(({ sensors }) => sensors.length > 0)
+  }
+
+  $: powerSensorGroups  = sensorsForRoles(POWER_ROLES)
+  $: swrSensorGroups    = sensorsForRoles(SWR_ROLES)
+  $: generalSensorGroups = sensorsForRoles(SENSOR_ROLES)
+
+  function mkDefault(type) {
+    switch (type) {
+      case 'radio_status': return { type, span: 2, row_span: 3, radio_name: '' }
+      case 'sensor':       return { type, title: '', sensor: '', unit: '' }
+      case 'relay':        return { type, title: '', relay_key: '', device_addr: '01', relay_num: 0 }
+      case 'power_meter':  return { type, title: 'Power', sensor: '', max_w: 1500, row_span: 2 }
+      case 'swr_bar':      return { type, title: 'SWR', sensor: '', span: 2, row_span: 2,
+                                    thresholds: { good: 1.5, warning: 2.0, critical: 3.0 } }
+      case 'logbook':      return { type, title: 'Logbook', span: 2, row_span: 3, limit: 50 }
+      case 'blank':        return { type }
+      default: return { type }
+    }
+  }
+
+  function onPickerTypeChange(type) {
+    const oldTitle = pickerConfig.title
+    pickerConfig   = { ...mkDefault(type), title: oldTitle ?? '' }
+    pickerType     = type
+    selectedSensor = ''
+    selectedRelay  = ''
+  }
+
+  function commitPicker() {
+    const card  = { ...pickerConfig, type: pickerType }
+    const cards = [...config.cards]
+    if (editingIdx !== null) {
+      cards[editingIdx] = card
+    } else {
+      cards.push(card)
+      // Auto-add a blank card to fill the column(s) left unused by wide/tall cards.
+      // radio_status is 2-wide in a 3-col grid → 1 column × row_span rows left empty.
+      if (pickerType === 'radio_status') {
+        const fillerCols = 3 - (card.span ?? 2)
+        const fillerRows = card.row_span ?? 1
+        if (fillerCols > 0 && fillerRows > 1) {
+          cards.push({ type: 'blank', span: fillerCols, row_span: fillerRows })
+        }
+      }
+    }
+    config     = { ...config, cards }
+    showPicker = false
+  }
+
+  $: sensorKeys      = Object.keys($sensors).sort()
+  $: relayKeys       = sensorKeys.filter(k =>  k.toLowerCase().includes('relay'))
+  $: nonRelayKeys    = sensorKeys.filter(k => !k.toLowerCase().includes('relay'))
+</script>
+
+{#if loading}
+  <div class="msg">Loading dashboard…</div>
+{:else if error}
+  <div class="msg err">Could not load dashboard: {error}</div>
+{:else}
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <div class="dash-header">
+    {#if config.title}
+      <span class="dash-title">{config.title}</span>
+    {:else}
+      <span></span>
+    {/if}
+    <div class="dash-actions">
+      {#if saveBanner}
+        <span class="save-banner">{saveBanner}</span>
+      {/if}
+      {#if editMode}
+        <button class="btn-add" on:click={() => openPicker()}>+ Add Card</button>
+      {/if}
+      <button class="btn-edit" class:active={editMode} on:click={toggleEdit}>
+        {#if editMode}{saving ? 'Saving…' : 'Done'}{:else}Edit{/if}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Empty state ─────────────────────────────────────────────────────── -->
+  {#if config.cards.length === 0}
+    <div class="empty-state">
+      {#if editMode}
+        No cards yet — click <strong>+ Add Card</strong> to build your dashboard.
+      {:else}
+        This dashboard is empty. Click <strong>Edit</strong> to add cards.
+      {/if}
+    </div>
+  {/if}
+
+  <!-- ── Card grid ───────────────────────────────────────────────────────── -->
+  <div class="card-grid" class:edit-mode={editMode} role="list">
+    {#each config.cards as card, i (i)}
+      <div
+        role="listitem"
+        class="card-wrap"
+        class:is-dragging={dragIdx === i}
+        class:drop-target={dropIdx === i && dragIdx !== i}
+        class:card-filled={card.type !== 'blank'}
+        style="grid-column: span {card.span ?? 1}; grid-row: span {card.row_span ?? 1}"
+        draggable={editMode}
+        on:dragstart={e => onDragStart(e, i)}
+        on:dragover={e  => onDragOver(e, i)}
+        on:dragleave={() => { if (dropIdx === i) dropIdx = null }}
+        on:drop={e      => onDrop(e, i)}
+        on:dragend={onDragEnd}
+      >
+        {#if card.type !== 'blank'}
+          <div class="card-header">
+            <span class="ch-board">{parseBoard(card)}</span>
+            {#if card.title && card.type !== 'radio_status'}
+              <span class="ch-sep">·</span>
+              <span class="ch-entity">{card.title}</span>
+            {/if}
+          </div>
+        {/if}
+        <div class="card-body">
+          <DashboardCard {card} sensors={$sensors} labels={$labels} radio={$radio} radios={$radios} />
+        </div>
+
+        {#if editMode}
+          <div class="edit-overlay">
+            <div class="drag-handle" title="Drag to reorder">⠿</div>
+            <div class="overlay-actions">
+              <span class="span-label">W</span>
+              {#each [1, 2, 3] as s}
+                <button
+                  class="span-btn"
+                  class:active={(card.span ?? 1) === s}
+                  title="Width {s}"
+                  on:click={() => setSpan(i, s)}
+                >{s}</button>
+              {/each}
+              <span class="span-label span-label-h">H</span>
+              {#each [1, 2, 3] as s}
+                <button
+                  class="span-btn"
+                  class:active={(card.row_span ?? 1) === s}
+                  title="Height {s}"
+                  on:click={() => setRowSpan(i, s)}
+                >{s}</button>
+              {/each}
+              <button class="ov-btn" title="Edit card"   on:click={() => openPicker(i)}>✏</button>
+              <button class="ov-btn del" title="Remove"  on:click={() => removeCard(i)}>✕</button>
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/each}
+
+    <!-- Drop zone at the end so cards can be moved after the last item -->
+    {#if editMode}
+      <div
+        class="end-drop-zone"
+        class:active={dropIdx === config.cards.length && dragIdx !== null}
+        role="listitem"
+        on:dragover={e => { if (dragIdx === null) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; dropIdx = config.cards.length }}
+        on:dragleave={() => { if (dropIdx === config.cards.length) dropIdx = null }}
+        on:drop={onDropEnd}
+      >
+        {dragIdx !== null ? 'Drop here to add a new row' : '+ drag cards here'}
+      </div>
+    {/if}
+  </div>
+
+{/if}
+
+<!-- ── Card picker modal ──────────────────────────────────────────────────── -->
+{#if showPicker}
+  <div
+    class="picker-backdrop"
+    role="presentation"
+    on:click|self={() => showPicker = false}
+    on:keydown={(e) => { if (e.key === 'Escape') showPicker = false }}
+  >
+    <div class="picker-modal">
+
+      <div class="picker-header">
+        <span>{editingIdx !== null ? 'Edit Card' : 'Add Card'}</span>
+        <button class="close-btn" on:click={() => showPicker = false}>✕</button>
+      </div>
+
+      <div class="picker-body">
+
+        <div class="type-list">
+          {#each CARD_TYPES as t}
+            <button
+              class="type-btn"
+              class:active={pickerType === t.id}
+              on:click={() => onPickerTypeChange(t.id)}
+            >{t.label}</button>
+          {/each}
+        </div>
+
+        <div class="picker-form">
+          {#if pickerType === 'radio_status'}
+            {#if Object.keys($radios).length > 1}
+              <label>Radio
+                <select bind:value={pickerConfig.radio_name}>
+                  <option value="">Auto (first configured)</option>
+                  {#each Object.keys($radios) as name}
+                    <option value={name}>{name}</option>
+                  {/each}
+                </select>
+              </label>
+            {:else}
+              <p class="form-hint">Shows the radio's frequency, mode, signal level and PTT state in real time. No configuration needed.</p>
+            {/if}
+
+          {:else if pickerType === 'sensor'}
+            <label>Title
+              <input bind:value={pickerConfig.title} placeholder="e.g. Temperature" />
+            </label>
+            <label>Sensor
+              <select
+                bind:value={selectedSensor}
+                on:change={() => applySensorSelection(selectedSensor)}
+              >
+                <option value="">— pick a sensor —</option>
+                {#if generalSensorGroups.length > 0}
+                  {#each generalSensorGroups as { dev, sensors }}
+                    <optgroup label="{dev.name} · {dev.type.replace(/_/g, ' ')} · addr {dev.address}">
+                      {#each sensors as s}
+                        <option value={s.key}>{$labels[s.key] || s.key}</option>
+                      {/each}
+                    </optgroup>
+                  {/each}
+                {:else}
+                  {#each nonRelayKeys as k}
+                    <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
+                  {/each}
+                {/if}
+              </select>
+            </label>
+            <label>Unit
+              <input bind:value={pickerConfig.unit} placeholder="e.g. °F, V, A" />
+            </label>
+            <div class="form-subhead">Thresholds (optional)</div>
+            <div class="form-row">
+              <label>Warn above  <input type="number" bind:value={pickerConfig.warn_above}     /></label>
+              <label>Warn below  <input type="number" bind:value={pickerConfig.warn_below}     /></label>
+            </div>
+            <div class="form-row">
+              <label>Crit above  <input type="number" bind:value={pickerConfig.critical_above} /></label>
+              <label>Crit below  <input type="number" bind:value={pickerConfig.critical_below} /></label>
+            </div>
+
+          {:else if pickerType === 'relay'}
+            <label>Title
+              <input bind:value={pickerConfig.title} placeholder="e.g. Antenna A" />
+            </label>
+
+            {#if relaysByDevice.length > 0}
+              <label>Relay
+                <select
+                  bind:value={selectedRelay}
+                  on:change={() => applyRelaySelection(selectedRelay)}
+                >
+                  <option value="">— pick from device —</option>
+                  {#each relaysByDevice as { dev, relays }}
+                    <optgroup label="{dev.name} · {dev.type.replace(/_/g, ' ')} · addr {dev.address}">
+                      {#each relays as s}
+                        <option value={JSON.stringify({ key: s.key, device_addr: dev.address, relay_num: s.relay_num })}>
+                          {$labels[s.key] || s.key}
+                        </option>
+                      {/each}
+                    </optgroup>
+                  {/each}
+                </select>
+              </label>
+            {/if}
+
+            <div class="form-subhead">Override</div>
+            <label>Relay key
+              <input bind:value={pickerConfig.relay_key} list="dv-relay-keys" placeholder="hardware_key" />
+            </label>
+            <div class="form-row">
+              <label>Device addr
+                <input bind:value={pickerConfig.device_addr} placeholder="01" />
+              </label>
+              <label>Relay # (0-based)
+                <input type="number" bind:value={pickerConfig.relay_num} min="0" />
+              </label>
+            </div>
+
+          {:else if pickerType === 'power_meter'}
+            <label>Title
+              <input bind:value={pickerConfig.title} placeholder="e.g. Forward Power" />
+            </label>
+            <label>Power sensor
+              <select
+                bind:value={selectedSensor}
+                on:change={() => applySensorSelection(selectedSensor)}
+              >
+                <option value="">— pick a power sensor —</option>
+                {#if powerSensorGroups.length > 0}
+                  {#each powerSensorGroups as { dev, sensors }}
+                    <optgroup label="{dev.name} · addr {dev.address}">
+                      {#each sensors as s}
+                        <option value={s.key}>{$labels[s.key] || s.key}</option>
+                      {/each}
+                    </optgroup>
+                  {/each}
+                {:else}
+                  {#each nonRelayKeys.filter(k => k.includes('power')) as k}
+                    <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
+                  {/each}
+                {/if}
+              </select>
+            </label>
+            <label>Max watts
+              <input type="number" bind:value={pickerConfig.max_w} min="1" />
+            </label>
+
+          {:else if pickerType === 'swr_bar'}
+            <label>Title
+              <input bind:value={pickerConfig.title} placeholder="e.g. SWR" />
+            </label>
+            <label>SWR sensor
+              <select
+                bind:value={selectedSensor}
+                on:change={() => applySensorSelection(selectedSensor)}
+              >
+                <option value="">— pick an SWR sensor —</option>
+                {#if swrSensorGroups.length > 0}
+                  {#each swrSensorGroups as { dev, sensors }}
+                    <optgroup label="{dev.name} · addr {dev.address}">
+                      {#each sensors as s}
+                        <option value={s.key}>{$labels[s.key] || s.key}</option>
+                      {/each}
+                    </optgroup>
+                  {/each}
+                {:else}
+                  {#each nonRelayKeys.filter(k => k.includes('swr')) as k}
+                    <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
+                  {/each}
+                {/if}
+              </select>
+            </label>
+            <div class="form-subhead">Thresholds</div>
+            <div class="form-row">
+              <label>Good &lt;    <input type="number" step="0.1" bind:value={pickerConfig.thresholds.good}     /></label>
+              <label>Warning &lt; <input type="number" step="0.1" bind:value={pickerConfig.thresholds.warning}  /></label>
+              <label>Critical &lt;<input type="number" step="0.1" bind:value={pickerConfig.thresholds.critical} /></label>
+            </div>
+
+          {:else if pickerType === 'blank'}
+            <p class="form-hint">Holds an empty grid cell. Use the width buttons (W 1 2 3) to size it, then drag it into position. Edit it later to replace it with a real card.</p>
+          {/if}
+        </div>
+
+      </div>
+
+      <datalist id="dv-relay-keys">
+        {#each relayKeys as k}
+          <option value={k}>{$labels[k] ? $labels[k] + ' (' + k + ')' : k}</option>
+        {/each}
+      </datalist>
+
+      <div class="picker-footer">
+        <button class="btn-cancel" on:click={() => showPicker = false}>Cancel</button>
+        <button class="btn-commit" on:click={commitPicker}>
+          {editingIdx !== null ? 'Update' : 'Add'}
+        </button>
+      </div>
+
+    </div>
+  </div>
+{/if}
+
+<style>
+  .msg       { padding: 1rem; color: var(--text-muted); font-size: 0.85rem; }
+  .err       { color: var(--red); }
+
+  /* ── Header ───────────────────────────────────────────────────────────── */
+  .dash-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5rem; margin-bottom: 0.75rem;
+  }
+  .dash-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+  .dash-actions { display: flex; align-items: center; gap: 0.4rem; }
+  .save-banner { font-size: 0.75rem; color: var(--green); }
+
+  .btn-edit {
+    padding: 0.3rem 0.8rem;
+    background: var(--accent-dim); color: var(--accent);
+    border: 1px solid var(--accent); border-radius: 4px;
+    font-size: 0.78rem; cursor: pointer;
+  }
+  .btn-edit.active, .btn-edit:hover { background: var(--accent); color: #fff; }
+  .btn-add {
+    padding: 0.3rem 0.8rem;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 4px;
+    font-size: 0.78rem; cursor: pointer; font-weight: 600;
+  }
+  .btn-add:hover { opacity: 0.88; }
+
+  /* ── Empty state ──────────────────────────────────────────────────────── */
+  .empty-state {
+    text-align: center; padding: 3rem 1rem;
+    color: var(--text-muted); font-size: 0.85rem;
+    border: 1px dashed var(--border); border-radius: 8px;
+    margin-top: 0.5rem;
+  }
+
+  /* ── Card grid ────────────────────────────────────────────────────────── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 94px;
+    grid-auto-flow: row dense;
+    gap: 0.5rem;
+  }
+  .card-grid.edit-mode { gap: 0.75rem; }
+
+  /* Responsive: 2 cols on medium, 1 col on small */
+  @media (max-width: 700px) {
+    .card-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 440px) {
+    .card-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Touch devices: edit overlay always visible (no hover) */
+  @media (hover: none) {
+    .edit-mode .card-wrap .edit-overlay { opacity: 1; pointer-events: all; }
+    .span-btn { width: 1.75rem; height: 1.75rem; font-size: 0.7rem; }
+    .ov-btn   { padding: 0.28rem 0.5rem; font-size: 0.8rem; }
+  }
+
+  /* ── Card wrap ────────────────────────────────────────────────────────── */
+  .card-wrap {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: opacity 0.15s;
+  }
+  .card-filled { background: var(--surface); }
+
+  .card-header {
+    position: relative;
+    height: 22px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.6rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  }
+  .ch-board {
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+  .ch-sep    { font-size: 0.58rem; color: var(--border); }
+  .ch-entity {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-body {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+  }
+  /* Non-blank cards have a 22px header; push body down to clear it.
+     4px bottom inset prevents border-radius from clipping content at very bottom edge. */
+  .card-filled .card-body { top: 22px; bottom: 4px; }
+
+  .card-wrap.is-dragging { opacity: 0.35; cursor: grabbing; }
+  /* Swap target: highlight the whole cell */
+  .card-wrap.drop-target {
+    outline: 2px solid var(--accent);
+    box-shadow: inset 0 0 0 2px var(--accent-dim);
+  }
+  .card-wrap.drop-target::before { display: none; }
+  .card-wrap.drop-target::after  { display: none; }
+  .edit-mode .card-wrap {
+    outline: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
+    cursor: grab;
+  }
+
+  /* ── Edit overlay ─────────────────────────────────────────────────────── */
+  .edit-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 0.3rem 0.35rem;
+    background: rgba(8, 10, 18, 0.6);
+    border-radius: 8px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.12s;
+  }
+  .card-wrap:hover .edit-overlay { opacity: 1; pointer-events: all; }
+
+  .drag-handle {
+    color: var(--text-muted); font-size: 1rem; line-height: 1;
+    cursor: grab; padding: 0.15rem 0.1rem; user-select: none;
+  }
+  .drag-handle:active { cursor: grabbing; }
+
+  .overlay-actions { display: flex; align-items: center; gap: 0.2rem; }
+  .span-label { font-size: 0.6rem; color: var(--text-muted); margin-right: 0.05rem; }
+  .span-label-h { margin-left: 0.2rem; }
+
+  .span-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 3px; color: var(--text-muted);
+    font-size: 0.63rem; width: 1.2rem; height: 1.2rem;
+    cursor: pointer; padding: 0; line-height: 1;
+  }
+  .span-btn.active  { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .span-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+  .ov-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 3px; color: var(--text);
+    font-size: 0.7rem; padding: 0.15rem 0.35rem;
+    cursor: pointer; line-height: 1;
+  }
+  .ov-btn:hover     { border-color: var(--accent); color: var(--accent); }
+  .ov-btn.del:hover { border-color: var(--red);    color: var(--red); }
+
+  /* ── End drop zone ────────────────────────────────────────────────────── */
+  .end-drop-zone {
+    grid-column: 1 / -1;     /* always spans all columns */
+    min-height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    font-size: 0.72rem; color: var(--text-muted);
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    pointer-events: all;
+  }
+  .end-drop-zone.active {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  /* ── Picker modal ─────────────────────────────────────────────────────── */
+  .picker-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+  }
+  .picker-modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px;
+    width: min(540px, 95vw);
+    display: flex; flex-direction: column;
+    max-height: 85vh; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .picker-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.7rem 1rem; border-bottom: 1px solid var(--border);
+    font-size: 0.85rem; font-weight: 600;
+  }
+  .close-btn {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 0.9rem; padding: 0.1rem 0.3rem;
+  }
+  .close-btn:hover { color: var(--text); }
+
+  .picker-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+  .type-list {
+    display: flex; flex-direction: column; gap: 0.1rem;
+    padding: 0.6rem 0.4rem;
+    border-right: 1px solid var(--border);
+    min-width: 130px;
+  }
+  .type-btn {
+    background: none; border: none; border-radius: 5px;
+    padding: 0.45rem 0.6rem; text-align: left;
+    font-size: 0.78rem; color: var(--text-muted); cursor: pointer;
+  }
+  .type-btn:hover        { background: var(--accent-dim); color: var(--text); }
+  .type-btn.active       { background: var(--accent-dim); color: var(--accent); }
+
+  .picker-form {
+    flex: 1; padding: 0.75rem 1rem;
+    overflow-y: auto; display: flex; flex-direction: column; gap: 0.55rem;
+  }
+  .picker-form label {
+    display: flex; flex-direction: column; gap: 0.2rem;
+    font-size: 0.74rem; color: var(--text-muted);
+  }
+  .picker-form input,
+  .picker-form select {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text);
+    padding: 0.35rem 0.5rem; font-size: 0.82rem;
+  }
+  .picker-form input:focus,
+  .picker-form select:focus { outline: none; border-color: var(--accent); }
+  .picker-form select option { background: var(--bg); }
+  .picker-form select optgroup { color: var(--text-muted); font-size: 0.75rem; }
+  .form-hint { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
+  .form-subhead {
+    font-size: 0.68rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted); margin-top: 0.2rem;
+  }
+  .form-row { display: flex; gap: 0.5rem; }
+  .form-row label { flex: 1; }
+
+  .picker-footer {
+    display: flex; justify-content: flex-end; gap: 0.5rem;
+    padding: 0.7rem 1rem; border-top: 1px solid var(--border);
+  }
+  .btn-cancel {
+    background: none; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text-muted); font-size: 0.78rem;
+    padding: 0.35rem 0.8rem; cursor: pointer;
+  }
+  .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-commit {
+    background: var(--accent); border: none; border-radius: 4px;
+    color: #fff; font-size: 0.78rem;
+    padding: 0.35rem 0.9rem; cursor: pointer; font-weight: 600;
+  }
+  .btn-commit:hover { opacity: 0.88; }
+
+  /* Picker modal: stack on narrow screens */
+  @media (max-width: 500px) {
+    .picker-modal { width: 95vw; max-height: 90vh; }
+    .picker-body  { flex-direction: column; overflow-y: auto; }
+    .type-list {
+      flex-direction: row;
+      flex-wrap: wrap;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      min-width: auto;
+      padding: 0.35rem;
+    }
+    .type-btn { flex: 1; min-width: 80px; text-align: center; }
+    .picker-form { padding: 0.6rem 0.75rem; }
+  }
+</style>

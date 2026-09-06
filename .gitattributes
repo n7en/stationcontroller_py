@@ -1,0 +1,58 @@
+# Default — normalize all text files to LF in the repo;
+# Git will convert to the platform line ending on checkout.
+* text=auto eol=lf
+
+# ── Source files (explicit LF) ────────────────────────────────────────────────
+*.py        text eol=lf
+*.js        text eol=lf
+*.svelte    text eol=lf
+*.ts        text eol=lf
+*.json      text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.toml      text eol=lf
+*.cfg       text eol=lf
+*.ini       text eol=lf
+*.md        text eol=lf
+*.txt       text eol=lf
+*.sh        text eol=lf
+*.ps1       text eol=lf
+
+# Shell scripts must always be LF — CRLF breaks the shebang on Linux/macOS.
+start.sh    text eol=lf
+
+# Windows batch files must be CRLF.
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# ── Binary files ──────────────────────────────────────────────────────────────
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.svg       binary
+*.woff      binary
+*.woff2     binary
+*.ttf       binary
+*.otf       binary
+*.eot       binary
+*.db        binary
+*.sqlite    binary
+*.sqlite3   binary
+*.pyc       binary
+
+# ── GitHub Actions / archive export ──────────────────────────────────────────
+# Files omitted when someone downloads a repo archive (not a git clone).
+.github/            export-ignore
+tests/              export-ignore
+ui/                 export-ignore
+requirements-dev.txt export-ignore
+.gitignore          export-ignore
+.gitattributes      export-ignore
+
+# ── GitHub Linguist ───────────────────────────────────────────────────────────
+# Prevent generated / vendored files from skewing language stats.
+ui/node_modules/    linguist-vendored
+ui_dist/            linguist-generated
+alembic/versions/   linguist-generated

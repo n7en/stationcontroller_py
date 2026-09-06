@@ -1,0 +1,5 @@
+# Friendly name labels for hardware sensor keys.
+# Edit via the UI Labels tab or directly here.
+# See labels.yaml.example for the full format and key reference.
+
+labels: {}

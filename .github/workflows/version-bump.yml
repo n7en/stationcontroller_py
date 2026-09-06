@@ -1,0 +1,89 @@
+name: Version Bump
+
+# Runs when a pull request is merged into main.
+# Add one of these labels to the PR to control the bump type:
+#   bump:major  ->  1.0.0  (breaking change)
+#   bump:minor  ->  0.2.0  (new feature)
+#   (no label)  ->  0.1.1  (default - bug fix / patch)
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [dev, main]
+
+permissions:
+  contents: write   # push VERSION commit + tag
+  pull-requests: read
+
+jobs:
+  bump:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          # GITHUB_TOKEN works for repos without branch-protection push rules.
+          # If your repo has branch protection, create a PAT with repo scope,
+          # store it as a secret (e.g. RELEASE_TOKEN), and replace the line below.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+
+      - name: Read current version
+        id: current
+        run: echo "version=$(cat VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Determine bump type from PR labels
+        id: bump
+        env:
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          if echo "$LABELS" | grep -q "bump:major"; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -q "bump:minor"; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Calculate new version
+        id: new
+        run: |
+          current="${{ steps.current.outputs.version }}"
+          type="${{ steps.bump.outputs.type }}"
+
+          IFS='.' read -r major minor patch <<< "$current"
+          case "$type" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+
+          new_ver="$major.$minor.$patch"
+          echo "$new_ver" > VERSION
+          echo "version=$new_ver" >> "$GITHUB_OUTPUT"
+          echo "tag=v$new_ver"    >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push new version
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          git commit -m "chore: bump version to ${{ steps.new.outputs.tag }} [skip ci]"
+          git push
+
+      - name: Create annotated tag
+        run: |
+          git tag -a "${{ steps.new.outputs.tag }}" \
+                  -m "Release ${{ steps.new.outputs.tag }}"
+          git push origin "${{ steps.new.outputs.tag }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.new.outputs.tag }}" \
+            --title "${{ steps.new.outputs.tag }}" \
+            --generate-notes
