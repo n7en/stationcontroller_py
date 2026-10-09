@@ -175,7 +175,7 @@ print(f"  DB: {sync_url}")
 '@ | & $PYTHON_VENV -
 
 # -- 7. Initial account setup -----------------------------------------------
-$AUTH_CFG = Join-Path $SCRIPT_DIR "config" "auth_config.yaml"
+$AUTH_CFG = Join-Path (Join-Path $SCRIPT_DIR "config") "auth_config.yaml"
 Write-Host ""
 Info "Authentication setup"
 Prompt "Create an admin account to secure the web interface? [y/N]:"
@@ -221,7 +221,7 @@ print(f"  Account '{username}' created - authentication enabled.")
 }
 
 # -- 8. COM port configuration ----------------------------------------------
-$COMMS_CFG = Join-Path $SCRIPT_DIR "config" "comms_config.yaml"
+$COMMS_CFG = Join-Path (Join-Path $SCRIPT_DIR "config") "comms_config.yaml"
 
 if (Test-Path $COMMS_CFG) {
     Info "Scanning for serial (COM) ports..."
@@ -359,7 +359,7 @@ print(f"  Updated {cfg_path}")
 }
 
 # -- 8b. Embedded MQTT broker -----------------------------------------------
-$mqttCfg = Join-Path $SCRIPT_DIR "config" "comms_config.yaml"
+$mqttCfg = Join-Path (Join-Path $SCRIPT_DIR "config") "comms_config.yaml"
 Write-Host ""
 Info "Embedded MQTT broker"
 if (-not (Test-Path $mqttCfg)) {
