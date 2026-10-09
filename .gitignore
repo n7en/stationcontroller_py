@@ -42,13 +42,16 @@ ui/.vite/
 data/
 
 # Machine-specific config
-# These contain hardware paths (serial ports, etc.) that differ per machine.
-# Rename the .example files and edit them on each deployment.
+# These contain hardware paths (serial ports, etc.), secrets, or other
+# per-machine settings. Rename the .example files and edit them on each
+# deployment -- never commit the real files back.
 config/radio_config.yaml
 config/comms_config.yaml
 config/logging_config.yaml
 config/labels.yaml
 config/dashboards/main.yaml
+config/auth_config.yaml
+config/hardware_test_config.yaml
 simulator/sim_config.yaml
 
 # Log files
