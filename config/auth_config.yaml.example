@@ -1,0 +1,20 @@
+# Authentication Configuration
+#
+# Auth is opt-in: if auth.enabled is false (or this file is absent), every
+# route treats the caller as "anonymous" and all checks pass.
+#
+# To enable:
+#   1. Copy this file to config/auth_config.yaml
+#   2. Set enabled: true
+#   3. Generate your own random secret -- never reuse the one in this example:
+#        python -c "import secrets; print(secrets.token_hex(32))"
+#   4. Add at least one user (password hashes only -- never plaintext):
+#        python -c "import bcrypt; print(bcrypt.hashpw(b'yourpassword', bcrypt.gensalt()).decode())"
+
+auth:
+  enabled: false
+  secret: "REPLACE_WITH_YOUR_OWN_RANDOM_SECRET_NEVER_COMMIT_THIS"
+  secure_cookie: true
+  token_expiry_hours: 24
+  users:
+    admin: "$2b$12$REPLACE_WITH_A_BCRYPT_HASH_OF_YOUR_OWN_PASSWORD"
